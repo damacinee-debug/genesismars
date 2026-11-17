@@ -1,0 +1,382 @@
+// ============================================================
+// MODELS — construções e personagens procedurais (estilo das artes de referência:
+// módulos brancos com nervuras e faixas laranja, tanques prateados, vidro geodésico).
+// Origem de cada construção = centro da área ocupada, no nível do chão.
+// ============================================================
+var Models = (function () {
+  var T = THREE, G = Gfx, TS = G.TS, M = G.mats;
+  var R = Math.PI;
+  function grp() { return new T.Group(); }
+  function mesh(geo, mat, p, r, s, parent, noShadow) { var m = new T.Mesh(geo, mat); if (p) m.position.set(p[0], p[1], p[2]); if (r) m.rotation.set(r[0], r[1], r[2]); if (s != null) { if (typeof s === 'number') m.scale.setScalar(s); else m.scale.set(s[0], s[1], s[2]); } m.castShadow = !noShadow; m.receiveShadow = true; if (parent) parent.add(m); return m; }
+
+  // ---------- peças reutilizáveis ----------
+  function window_(k, x, y, z, w, h, ry) { k.add('dark', G.rbox(w + 0.12, h + 0.12, 0.08, 0.05), { p: [x, y, z], r: [0, ry || 0, 0] }); k.add('winOn', G.rbox(w, h, 0.1, 0.04), { p: [x, y, z], r: [0, ry || 0, 0], uv: 'keep' }); }
+  function band(k, mat, w, h, d, r, x, y, z) { k.add(mat, G.rbox(w, h, d, r), { p: [x, y, z] }); }
+  function skid(k, w, d, y) { k.add('dark', G.rbox(w, 0.22, d, 0.06), { p: [0, (y || 0) + 0.11, 0] }); for (var i = -1; i <= 1; i += 2) for (var j = -1; j <= 1; j += 2) k.add('dark', G.cyl(0.08, 0.1, 0.25), { p: [i * (w / 2 - 0.2), 0.05, j * (d / 2 - 0.2)] }); }
+  function pipe(k, pts, r, mat) { k.add(mat || 'metal', G.tube(pts, r || 0.06, 24), { uv: 'keep' }); }
+  function ladder(k, x, z, y0, y1, ry) { var c = Math.cos(ry || 0), s = Math.sin(ry || 0); for (var i = -1; i <= 1; i += 2) k.add('dark', G.rod([x + c * i * 0.18, y0, z - s * i * 0.18], [x + c * i * 0.18, y1, z - s * i * 0.18], 0.025));
+    for (var y = y0 + 0.2; y < y1; y += 0.3) k.add('dark', G.rod([x - c * 0.18, y, z + s * 0.18], [x + c * 0.18, y, z - s * 0.18], 0.018)); }
+  function led(k, mat, x, y, z) { k.add(mat, G.sphere(0.05, 8, 6), { p: [x, y, z], uv: 'keep' }); }
+  function vTank(k, x, z, R0, H, body, bandMat, y) { y = y || 0; k.add(body || 'metal', G.tank(R0, H, 28), { p: [x, y, z], uv: 'scale', su: 3, sv: 1.5 });
+    var hb = H - R0 * 0.75; [0.18, 0.55, 0.85].forEach(function (f, i) { k.add(i === 1 ? (bandMat || 'paint') : 'dark', G.cyl(R0 + 0.025, R0 + 0.025, i === 1 ? 0.22 : 0.07, 28, true), { p: [x, y + hb * f, z], uv: 'scale', su: 3, sv: 0.2 }); });
+    k.add('dark', G.cyl(R0 * 0.25, R0 * 0.3, 0.18, 12), { p: [x, y + H + 0.05, z] }); }
+  function berm(k, w, d, z, h) { k.add('bags', G.rbox(w, h || 0.75, d, 0.18, 2), { p: [0, (h || 0.75) / 2 - 0.05, z], d: 1.4 }); }
+
+  // ---------- construções ----------
+  var B = {};
+  B.lander = function (k, o) { // Módulo de pouso (Estágio 1): cápsula com quatro pernas articuladas
+    k.add('hull', G.rbox(4.2, 2.2, 3.7, 0.95, 4), { p: [0, 2.75, 0], d: 2.4 });
+    k.add('hull', G.rbox(3.0, 0.9, 2.6, 0.42, 3), { p: [0, 3.95, -0.1], d: 2.4 });
+    band(k, 'paint', 4.26, 0.32, 3.76, 0.16, 0, 2.2, 0); band(k, 'paint', 0.34, 2.24, 3.76, 0.17, -1.2, 2.75, 0); band(k, 'paint', 0.34, 2.24, 3.76, 0.17, 1.2, 2.75, 0);
+    k.add('dark', G.rbox(4.0, 0.5, 3.5, 0.25), { p: [0, 1.6, 0] });
+    window_(k, 0, 3.1, 1.86, 2.0, 0.42); window_(k, 2.12, 3.0, 0.4, 0.9, 0.36, R / 2); window_(k, -2.12, 3.0, 0.4, 0.9, 0.36, -R / 2);
+    k.add('foil', G.lathe([[1.5, 0], [1.3, -0.5], [0.8, -0.75], [0.0001, -0.78]], 24), { p: [0, 1.55, 0], uv: 'scale', su: 4, sv: 1 });
+    k.add('dark', G.lathe([[0.35, 0], [0.42, -0.2], [0.75, -0.7], [0.72, -0.72], [0.38, -0.25], [0.3, 0]], 20), { p: [0, 0.85, 0] });
+    for (var i = 0; i < 4; i++) { var sx = i % 2 ? 1 : -1, sz = i < 2 ? 1 : -1, hip = [sx * 1.75, 2.0, sz * 1.45], knee = [sx * 2.75, 1.55, sz * 2.35], foot = [sx * 2.95, 0.18, sz * 2.55];
+      k.add('metal', G.rod(hip, knee, 0.1, 10)); k.add('dark', G.rod(knee, foot, 0.12, 10)); k.add('metal', G.rod([sx * 1.4, 1.45, sz * 1.1], [(knee[0] + foot[0]) / 2, 0.9, (knee[2] + foot[2]) / 2], 0.06, 8));
+      k.add('chrome', G.rod([knee[0], 1.35, knee[2]], [foot[0], 0.55, foot[2]], 0.07, 10)); k.add('dark', G.sphere(0.17, 12, 10), { p: knee });
+      k.add('dark', G.cyl(0.42, 0.5, 0.14, 20), { p: [foot[0], 0.07, foot[2]] }); k.add('paint', G.cyl(0.3, 0.3, 0.06, 16), { p: [foot[0], 0.16, foot[2]] });
+      k.add('dark', G.rbox(0.36, 0.3, 0.36, 0.08), { p: [sx * 1.95, 3.3, sz * 1.62] }); }
+    k.add('dark', G.rbox(1.1, 1.55, 0.12, 0.08), { p: [0, 1.95, 1.9] }); k.add('paint', G.rbox(1.3, 1.75, 0.08, 0.12), { p: [0, 1.95, 1.86] });
+    var rp = grp(); rp.position.set(0, 1.2, 1.97); var rk = new G.Kit(); rk.add('metal', G.rbox(1.0, 0.06, 2.3, 0.02), { p: [0, 0, 1.15] }); for (var ri = 0; ri < 6; ri++) rk.add('dark', G.rbox(0.9, 0.03, 0.05, 0.01), { p: [0, 0.04, 0.3 + ri * 0.33] }); rk.add('paint', G.rbox(0.06, 0.1, 2.3, 0.02), { p: [0.5, 0.03, 1.15] }); rk.add('paint', G.rbox(0.06, 0.1, 2.3, 0.02), { p: [-0.5, 0.03, 1.15] }); rk.build(rp); rp.rotation.x = 0.52; o.dyn.ramp = rp; k.extra.push(rp);
+    k.add('dark', G.cyl(0.35, 0.4, 0.2, 18), { p: [0.6, 4.5, -0.3] }); k.add('metal', G.rod([-0.9, 4.4, -0.6], [-0.9, 5.4, -0.6], 0.03)); led(k, 'ledR', -0.9, 5.45, -0.6);
+    k.add('hull', G.lathe([[0.0001, 0], [0.4, 0.04], [0.45, 0.16], [0.42, 0.18]], 16), { p: [-0.9, 4.75, -0.6], r: [R / 2 - 0.4, 0, 0], uv: 'keep' });
+    o.lights = [[0, 2.4, 3.3]]; o.flameY = 0.1; return 5.5; };
+
+  B.habitat = function (k, o, W, D) { // Habitat inicial: módulo retangular arredondado sobre pés
+    k.add('hull', G.rbox(5.2, 2.5, 3.9, 0.6, 4), { p: [0, 1.75, 0], d: 2.6 });
+    band(k, 'paint', 0.34, 2.56, 3.96, 0.62, -1.75, 1.75, 0); band(k, 'paint', 0.34, 2.56, 3.96, 0.62, 1.75, 1.75, 0); band(k, 'dark', 0.16, 2.54, 3.94, 0.6, 0, 1.75, 0);
+    k.add('dark', G.rbox(4.8, 0.3, 3.5, 0.1), { p: [0, 0.4, 0] }); for (var i = -1; i <= 1; i++) for (var j = -1; j <= 1; j += 2) { k.add('dark', G.cyl(0.1, 0.12, 0.45), { p: [i * 2.0, 0.2, j * 1.4] }); k.add('dark', G.cyl(0.25, 0.28, 0.06, 14), { p: [i * 2.0, 0.03, j * 1.4] }); }
+    window_(k, -0.85, 2.05, 1.96, 0.75, 0.5); window_(k, 0.85, 2.05, 1.96, 0.75, 0.5); window_(k, -0.85, 2.05, -1.96, 0.75, 0.5); window_(k, 0.85, 2.05, -1.96, 0.75, 0.5);
+    k.add('dark', G.rbox(0.12, 1.6, 1.0, 0.06), { p: [2.62, 1.45, 0] }); k.add('paint', G.rbox(0.1, 1.85, 1.3, 0.1), { p: [2.58, 1.5, 0] }); led(k, 'ledO', 2.66, 2.5, 0);
+    k.add('metal', G.rbox(0.9, 0.06, 1.0, 0.02), { p: [2.95, 0.5, 0], r: [0, 0, -0.35] });
+    k.add('metal', G.rbox(1.6, 0.06, 1.1, 0.02), { p: [-1.1, 3.25, -0.6], r: [0.25, 0, 0] }); k.add('dark', G.rbox(0.7, 0.35, 0.7, 0.12), { p: [1.2, 3.1, 0.5] }); k.add('dark', G.cyl(0.22, 0.22, 0.3, 16), { p: [0.2, 3.1, -0.5] });
+    k.add('metal', G.rod([1.9, 3.0, -1.2], [1.9, 4.4, -1.2], 0.03)); led(k, 'ledR', 1.9, 4.45, -1.2);
+    berm(k, 5.4, 0.55, 2.62, 0.7); berm(k, 5.4, 0.55, -2.62, 0.7);
+    o.lights = [[3.2, 2.0, 0], [0, 2.2, 2.8]]; return 3.4; };
+
+  B.solar = function (k, o, W, D) { // Painel com rastreador
+    k.add('dark', G.rbox(0.8, 0.25, 0.8, 0.08), { p: [0, 0.12, 0] }); k.add('metal', G.cyl(0.11, 0.14, 1.5, 12), { p: [0, 0.85, 0] }); k.add('dark', G.rbox(0.4, 0.3, 0.3, 0.08), { p: [0, 1.65, 0] });
+    pipe(k, [[0.1, 1.2, 0.1], [0.4, 0.4, 0.3], [0.8, 0.05, 0.6]], 0.03, 'rubber');
+    var head = grp(); head.position.y = 1.72; var dk = new G.Kit();
+    dk.add('metal', G.rbox(3.7, 0.08, 2.6, 0.03), {}); dk.add('solar', G.rbox(3.6, 0.06, 2.5, 0.02), { p: [0, 0.03, 0], d: 1.25 });
+    for (var i = -1; i <= 1; i++) dk.add('metal', G.rbox(0.05, 0.1, 2.6, 0.02), { p: [i * 1.2, 0.0, 0] }); dk.add('dark', G.rbox(0.3, 0.14, 1.8, 0.05), { p: [0, -0.1, 0] });
+    dk.build(head); o.dyn.panel = head; k.extra.push(head); return 2.8; };
+
+  B.battery = function (k, o) {
+    k.add('dark', G.rbox(1.6, 0.2, 1.4, 0.06), { p: [0, 0.1, 0] });
+    k.add('hull', G.rbox(1.3, 1.95, 1.1, 0.3, 3), { p: [0, 1.17, 0], d: 1.8 }); band(k, 'paint', 1.34, 0.22, 1.14, 0.1, 0, 1.75, 0); band(k, 'paint', 1.34, 0.12, 1.14, 0.06, 0, 0.55, 0);
+    k.add('dark', G.rbox(0.8, 0.9, 0.05, 0.04), { p: [0, 1.15, 0.56] }); led(k, 'ledG', -0.25, 1.45, 0.6); led(k, 'ledG', -0.1, 1.45, 0.6); led(k, 'ledG', 0.05, 1.45, 0.6); k.add('screenOn', G.rbox(0.36, 0.2, 0.03, 0.02), { p: [0.15, 1.0, 0.6], uv: 'keep' });
+    for (var i = 0; i < 6; i++) { k.add('metal', G.rbox(0.05, 1.2, 0.6, 0.02), { p: [0.68, 1.1, -0.35 + i * 0.12], r: [0, R / 2, 0] }); k.add('metal', G.rbox(0.05, 1.2, 0.6, 0.02), { p: [-0.68, 1.1, -0.35 + i * 0.12], r: [0, R / 2, 0] }); }
+    pipe(k, [[0, 0.3, -0.55], [0, 0.15, -0.8], [0, 0.04, -1.0]], 0.045, 'rubber'); o.leds = true; return 2.3; };
+
+  B.airlock = function (k, o) {
+    k.add('dark', G.rbox(1.5, 0.3, 1.2, 0.08), { p: [0, 0.15, 0] });
+    k.add('hull', G.pod(0.82, 0.8, 0.3, 28), { p: [0, 1.15, 0], uv: 'scale', su: 2, sv: 1 });
+    k.add('dark', G.torus(0.84, 0.06, 8, 32), { p: [0.42, 1.15, 0], r: [0, R / 2, 0] }); k.add('dark', G.torus(0.84, 0.06, 8, 32), { p: [-0.42, 1.15, 0], r: [0, R / 2, 0] });
+    k.add('dark', G.cyl(0.48, 0.48, 0.12, 24), { p: [0, 1.1, 0.78], r: [R / 2, 0, 0] }); k.add('paint', G.torus(0.52, 0.06, 8, 28), { p: [0, 1.1, 0.83] }); k.add('chrome', G.rbox(0.3, 0.06, 0.06, 0.02), { p: [0.18, 1.1, 0.86] });
+    led(k, 'ledO', 0, 1.8, 0.62); led(k, 'ledG', 0.45, 1.6, 0.66); return 2.1; };
+
+  // Corredor: braços só para os lados que têm módulo vizinho (mask N,E,S,W)
+  B.corridor = function (k, o) { var m = o.mask || 0; if (!m) m = 10;
+    k.add('hull', G.rbox(1.25, 1.25, 1.25, 0.45, 3), { p: [0, 1.0, 0], d: 1.6 }); k.add('dark', G.rbox(1.3, 0.25, 1.3, 0.1), { p: [0, 0.25, 0] });
+    var dirs = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    for (var i = 0; i < 4; i++) { if (!(m & (1 << i))) continue; var dx = dirs[i][0], dz = dirs[i][1], ry = dx ? 0 : R / 2;
+      k.add('hull', G.cyl(0.55, 0.55, 1.0, 22, true), { p: [dx * 0.6, 1.0, dz * 0.6], r: [0, ry, R / 2], uv: 'scale', su: 2, sv: 0.5 });
+      k.add('dark', G.torus(0.58, 0.05, 8, 26), { p: [dx * 0.95, 1.0, dz * 0.95], r: [0, dx ? R / 2 : 0, 0] }); k.add('dark', G.rbox(dx ? 0.3 : 0.9, 0.5, dx ? 0.9 : 0.3, 0.08), { p: [dx * 0.7, 0.25, dz * 0.7] }); }
+    return 1.7; };
+
+  B.o2ext = function (k, o) { skid(k, 3.7, 3.7);
+    vTank(k, -0.75, -0.7, 0.72, 3.6, 'metal', 'paint', 0.22); vTank(k, 0.95, -1.0, 0.42, 2.4, 'hull', 'paint', 0.22); vTank(k, 0.95, -0.05, 0.42, 2.4, 'hull', 'paint', 0.22);
+    k.add('hull', G.rbox(1.6, 1.15, 1.1, 0.25), { p: [0.4, 0.85, 1.15] }); band(k, 'paint', 1.64, 0.2, 1.14, 0.1, 0.4, 1.25, 1.15);
+    k.add('dark', G.cyl(0.42, 0.42, 0.08, 24), { p: [-0.9, 0.95, 1.4], r: [R / 2, 0, 0] }); k.add('screenOn', G.rbox(0.4, 0.25, 0.03, 0.02), { p: [0.6, 0.95, 1.71], uv: 'keep' });
+    var fan = grp(); fan.position.set(-0.9, 0.95, 1.45); var fk = new G.Kit(); for (var i = 0; i < 6; i++) fk.add('metal', G.rbox(0.1, 0.36, 0.03, 0.01), { r: [0, 0, i * R / 3], p: [0, 0, 0] }); fk.build(fan); o.dyn.spin = fan; o.dyn.spinAxis = 'z'; k.extra.push(fan);
+    pipe(k, [[-0.75, 2.6, -0.1], [-0.2, 2.75, 0.1], [0.95, 2.45, -0.05]], 0.07); pipe(k, [[-0.1, 1.1, 1.0], [-0.4, 1.4, 0.2], [-0.55, 1.8, -0.1]], 0.08); pipe(k, [[0.95, 2.4, -1.0], [0.95, 2.65, -0.55], [0.95, 2.4, -0.05]], 0.05);
+    ladder(k, -1.5, -0.7, 0.3, 3.4, R / 2); o.vent = [-0.75, 4.0, -0.7]; return 4.1; };
+
+  B.o2tank = function (k, o) { k.add('dark', G.cyl(0.6, 0.7, 0.2, 20), { p: [0, 0.1, 0] });
+    for (var i = 0; i < 4; i++) { var a = i * R / 2 + R / 4; k.add('dark', G.rod([Math.cos(a) * 0.55, 0.15, Math.sin(a) * 0.55], [Math.cos(a) * 0.5, 0.95, Math.sin(a) * 0.5], 0.05, 8)); }
+    k.add('metal', G.sphere(0.8, 28, 20), { p: [0, 1.4, 0], uv: 'scale', su: 3, sv: 1.5 }); k.add('paint', G.torus(0.81, 0.07, 8, 36), { p: [0, 1.4, 0], r: [R / 2, 0, 0] });
+    k.add('dark', G.torus(0.81, 0.03, 6, 36), { p: [0, 1.4, 0], r: [0, 0, R / 2] }); k.add('dark', G.cyl(0.12, 0.15, 0.25, 12), { p: [0, 2.25, 0] }); k.add('chrome', G.cyl(0.05, 0.05, 0.2), { p: [0.15, 2.3, 0], r: [0, 0, R / 2] }); return 2.4; };
+
+  B.wtank = function (k, o) { k.add('dark', G.cyl(0.8, 0.85, 0.2, 24), { p: [0, 0.1, 0] }); vTank(k, 0, 0, 0.74, 2.7, 'hull', 'paint', 0.15);
+    k.add('dark', G.cyl(0.12, 0.12, 0.08, 14), { p: [0, 1.1, 0.74], r: [R / 2, 0, 0] }); k.add('screenOn', G.cyl(0.09, 0.09, 0.09, 14), { p: [0, 1.1, 0.75], r: [R / 2, 0, 0], uv: 'keep' });
+    pipe(k, [[0.6, 0.35, 0.4], [0.8, 0.12, 0.6], [1.0, 0.05, 0.9]], 0.05); return 3.0; };
+
+  B.drill = function (k, o) { k.add('dark', G.rbox(1.9, 0.25, 1.9, 0.08), { p: [0, 0.13, 0] }); G.truss(k, 'dark', 4.2, 1.35, 5, 0.035, 0, 0, 0.25);
+    k.add('paint', G.rbox(0.75, 0.6, 0.75, 0.15), { p: [0, 4.6, 0] }); k.add('dark', G.cyl(0.18, 0.18, 0.4, 12), { p: [0, 5.05, 0] }); led(k, 'ledO', 0.3, 4.95, 0.3);
+    k.add('hull', G.rbox(0.6, 0.8, 0.45, 0.12), { p: [0.75, 0.65, -0.65] }); k.add('screenOn', G.rbox(0.3, 0.2, 0.03, 0.02), { p: [0.75, 0.8, -0.41], uv: 'keep' });
+    var bit = grp(); var bk = new G.Kit(); bk.add('metal', G.cyl(0.11, 0.11, 4.1, 10), { p: [0, 2.3, 0], uv: 'keep' }); for (var i = 0; i < 6; i++) bk.add('dark', G.cyl(0.15, 0.15, 0.06, 10), { p: [0, 0.6 + i * 0.6, 0] }); bk.build(bit); o.dyn.spin = bit; o.dyn.spinAxis = 'y'; k.extra.push(bit);
+    for (i = 0; i < 7; i++) { var a = i * 0.9, r0 = 0.9 + (i % 3) * 0.12; k.add('ice', G.rockGeo(i + 3, 1, 0.6), { p: [Math.cos(a) * r0, 0.06, Math.sin(a) * r0], s: [0.12 + (i % 2) * 0.06, 0.08, 0.1], uv: 'keep' }); }
+    pipe(k, [[0.6, 0.6, -0.5], [0.4, 1.4, -0.3], [0.25, 3.9, 0]], 0.05, 'rubber'); o.ice = true; return 5.3; };
+
+  B.purifier = function (k, o) { skid(k, 3.8, 1.8);
+    vTank(k, -1.3, 0, 0.5, 2.1, 'metal', 'paint', 0.22); vTank(k, -0.2, 0, 0.5, 2.1, 'metal', 'paint', 0.22);
+    k.add('hull', G.rbox(1.2, 1.4, 1.4, 0.25), { p: [1.15, 0.95, 0] }); band(k, 'paint', 1.24, 0.2, 1.44, 0.1, 1.15, 1.35, 0); k.add('screenOn', G.rbox(0.45, 0.3, 0.03, 0.02), { p: [1.15, 1.0, 0.72], uv: 'keep' });
+    pipe(k, [[-1.3, 1.9, 0], [-0.75, 2.2, 0.1], [-0.2, 1.9, 0]], 0.06); pipe(k, [[-0.2, 0.9, 0.45], [0.3, 0.7, 0.55], [0.6, 0.8, 0.4]], 0.07); pipe(k, [[-1.3, 0.6, 0.48], [-0.8, 0.4, 0.75], [0.6, 0.45, 0.6]], 0.05, 'rubber');
+    led(k, 'ledG', 1.6, 1.55, 0.72); return 2.5; };
+
+  B.greenhouse = function (k, o, W, D) { // Estufa: abóbada de vidro com nervuras, quatro canteiros
+    k.add('hull', G.rbox(5.8, 0.55, 3.8, 0.2), { p: [0, 0.27, 0] }); band(k, 'paint', 5.84, 0.12, 3.84, 0.06, 0, 0.5, 0);
+    var Rg = 1.75, L = 4.6; k.add('glass', new T.CylinderGeometry(Rg, Rg, L, 32, 1, true, 0, R), { p: [0, 0.55, 0], r: [0, 0, R / 2], uv: 'keep' });
+    k.add('glass', G.sphere(Rg, 24, 12, 0, R, 0, R / 2), { p: [L / 2, 0.55, 0], r: [R / 2, 0, -R / 2], s: [1, 1, 0.7], uv: 'keep' }); k.add('glass', G.sphere(Rg, 24, 12, 0, R, 0, R / 2), { p: [-L / 2, 0.55, 0], r: [R / 2, 0, R / 2], s: [1, 1, 0.7], uv: 'keep' });
+    for (var i = 0; i <= 6; i++) { var x = -L / 2 + i * L / 6; k.add('metal', G.torus(Rg + 0.02, 0.055, 6, 28, R), { p: [x, 0.55, 0], r: [0, R / 2, 0] }); }
+    for (i = 1; i < 6; i++) { var a = i * R / 6; k.add('metal', G.rod([-L / 2, 0.55 + Math.sin(a) * Rg, Math.cos(a) * Rg], [L / 2, 0.55 + Math.sin(a) * Rg, Math.cos(a) * Rg], 0.03)); }
+    for (i = 0; i < 6; i++) { var x0 = -L / 2 + i * L / 6, x1 = x0 + L / 6; for (var j = 0; j < 6; j++) { var a0 = j * R / 6, a1 = (j + 1) * R / 6; k.add('metal', G.rod([x0, 0.55 + Math.sin(a0) * Rg, Math.cos(a0) * Rg], [x1, 0.55 + Math.sin(a1) * Rg, Math.cos(a1) * Rg], 0.018, 4)); } }
+    k.add('grow', G.rbox(4.2, 0.06, 0.18, 0.03), { p: [0, 2.15, 0], uv: 'keep' });
+    o.plots = []; for (i = 0; i < 4; i++) { var px = -1.65 + i * 1.1; k.add('dark', G.rbox(0.9, 0.3, 2.6, 0.06), { p: [px, 0.7, 0] }); k.add('soil', G.rbox(0.8, 0.06, 2.5, 0.03), { p: [px, 0.84, 0], uv: 'keep' }); var pg = grp(); pg.position.set(px, 0.85, 0); k.extra.push(pg); o.plots.push(pg); }
+    k.add('hull', G.rbox(0.8, 1.6, 1.3, 0.25), { p: [3.05, 1.0, 0] }); k.add('paint', G.rbox(0.1, 1.3, 0.8, 0.08), { p: [3.45, 0.95, 0] });
+    o.lights = [[0, 1.8, 0, 0xff6ad8]]; return 2.4; };
+
+  B.lab = function (k, o) { k.add('hull', G.rbox(3.5, 2.0, 3.2, 0.5, 4), { p: [0, 1.35, 0], d: 2.4 }); band(k, 'paint', 3.54, 0.25, 3.24, 0.12, 0, 0.55, 0); k.add('dark', G.rbox(3.2, 0.3, 2.9, 0.1), { p: [0, 0.2, 0] });
+    window_(k, -0.7, 1.55, 1.62, 0.9, 0.45); window_(k, 0.7, 1.55, 1.62, 0.9, 0.45); window_(k, 1.77, 1.5, 0.3, 0.9, 0.45, R / 2);
+    k.add('dark', G.cyl(1.0, 1.05, 0.3, 28), { p: [-0.5, 2.45, -0.3] }); k.add('glass', G.sphere(0.95, 28, 14, 0, 2 * R, 0, R / 2), { p: [-0.5, 2.6, -0.3], uv: 'keep' }); k.add('metal', G.cyl(0.18, 0.25, 0.9, 14), { p: [-0.5, 2.9, -0.3], r: [0.5, 0, 0.3] });
+    G.truss(k, 'dark', 1.6, 0.3, 3, 0.02, 1.2, -1.0, 2.35); k.add('metal', G.cyl(0.04, 0.04, 0.8, 6), { p: [1.2, 4.05, -1.0], r: [0, 0, R / 2] }); led(k, 'ledR', 1.2, 4.05, -1.0);
+    k.add('hull', G.lathe([[0.0001, 0], [0.45, 0.06], [0.5, 0.18], [0.47, 0.2]], 18), { p: [0.8, 2.5, 0.8], r: [-0.6, 0.7, 0], uv: 'keep' });
+    o.lights = [[0, 1.6, 2.2]]; return 3.7; };
+
+  B.workshop = function (k, o) { k.add('hull', G.rbox(3.6, 2.3, 3.3, 0.45, 4), { p: [0, 1.45, 0], d: 2.4 }); k.add('dark', G.rbox(3.3, 0.35, 3.0, 0.1), { p: [0, 0.2, 0] });
+    band(k, 'paint', 0.3, 2.34, 3.34, 0.45, -1.4, 1.45, 0); k.add('dark', G.rbox(2.0, 1.6, 0.1, 0.05), { p: [0.3, 1.15, 1.66] }); for (var i = 0; i < 8; i++) k.add('metal', G.rbox(1.95, 0.04, 0.12, 0.01), { p: [0.3, 0.45 + i * 0.2, 1.7] });
+    k.add('paint', G.rbox(2.3, 1.85, 0.08, 0.1), { p: [0.3, 1.2, 1.63] });
+    k.add('metal', G.pod(0.35, 1.3, 0.2, 18), { p: [-0.6, 2.95, -0.8], uv: 'scale', su: 2, sv: 1 }); k.add('metal', G.pod(0.35, 1.3, 0.2, 18), { p: [-0.6, 2.95, 0.0], uv: 'scale', su: 2, sv: 1 });
+    k.add('dark', G.cyl(0.14, 0.18, 1.4, 12), { p: [1.2, 3.2, -1.0] }); led(k, 'ledO', 1.2, 3.95, -1.0);
+    k.add('paint', G.rod([1.6, 2.55, 0.9], [2.0, 3.3, 1.1], 0.08)); k.add('paint', G.rod([2.0, 3.3, 1.1], [2.1, 2.5, 1.7], 0.07)); k.add('dark', G.sphere(0.12), { p: [2.0, 3.3, 1.1] });
+    o.lights = [[0.3, 2.3, 2.3]]; o.vent = [1.2, 4.0, -1.0]; return 3.6; };
+
+  B.storage = function (k, o) { k.add('hull', G.rbox(3.4, 1.8, 2.0, 0.45, 3), { p: [0, 1.15, -0.8], d: 2.4 }); band(k, 'paint', 3.44, 0.22, 2.04, 0.1, 0, 1.55, -0.8); k.add('dark', G.rbox(3.2, 0.3, 1.8, 0.1), { p: [0, 0.15, -0.8] });
+    k.add('dark', G.rbox(1.0, 1.3, 0.1, 0.05), { p: [0, 1.0, 0.22] });
+    var cr = [[-1.2, 0.85, 0.65, 'hull'], [-0.4, 0.95, 0.75, 'paint'], [0.55, 1.0, 0.7, 'hull'], [1.3, 0.85, 1.05, 'dark'], [-1.15, 0.7, 1.3, 'paint']];
+    cr.forEach(function (c) { k.add(c[3], G.rbox(0.7, 0.6, 0.6, 0.08), { p: [c[0], 0.3, c[2]] }); }); k.add('hull', G.rbox(0.6, 0.5, 0.5, 0.08), { p: [-1.15, 0.85, 0.65] });
+    for (var i = 0; i < 3; i++) k.add('metal', G.cyl(0.24, 0.24, 0.7, 16), { p: [1.35 - i * 0.2, 0.35, 0.2 + i * 0.05], uv: 'scale', su: 2, sv: 1 }); return 2.1; };
+
+  function dishGeo(Rd, depth) { var pts = [], i, n = 10; for (i = 0; i <= n; i++) { var r = i / n * Rd; pts.push([r, r * r / (Rd * Rd) * depth]); } for (i = n; i >= 0; i--) { r = i / n * Rd * 0.98; pts.push([r, r * r / (Rd * Rd) * depth - 0.07]); } return G.lathe(pts, 32); }
+  B.torre = function (k, o) { // Torre de luz: mastro alto com refletores voltados para baixo
+    k.add('dark', G.rbox(0.9, 0.2, 0.9, 0.05), { p: [0, 0.1, 0] }); k.add('concrete', G.rbox(0.5, 0.35, 0.5, 0.06), { p: [0, 0.35, 0] });
+    G.truss(k, 'dark', 5.0, 0.42, 6, 0.025, 0, 0, 0.5); k.add('metal', G.rbox(1.2, 0.12, 0.5, 0.04), { p: [0, 5.55, 0] });
+    for (var i = -1; i <= 1; i += 2) { k.add('dark', G.rbox(0.42, 0.26, 0.3, 0.05), { p: [i * 0.42, 5.4, 0.08], r: [0.5, 0, 0] }); k.add('winOn', G.rbox(0.34, 0.03, 0.22, 0.02), { p: [i * 0.42, 5.27, 0.12], r: [0.5, 0, 0], uv: 'keep' }); }
+    led(k, 'ledR', 0, 5.75, 0); o.lights.push([0, 5.1, 0.6, 0xfff1dc, 34, 2.4]); o.leds = true; return 5.9; };
+
+  B.poste = function (k, o) { // Poste de energia: mastro treliçado, travessa e isoladores; os cabos saem do topo
+    k.add('dark', G.rbox(0.7, 0.18, 0.7, 0.05), { p: [0, 0.09, 0] }); k.add('concrete', G.rbox(0.42, 0.3, 0.42, 0.06), { p: [0, 0.3, 0] });
+    k.add('metal', G.cyl(0.07, 0.1, 3.0, 10), { p: [0, 1.85, 0] }); band(k, 'paint', 0.24, 0.16, 0.24, 0.04, 0, 1.0, 0);
+    k.add('dark', G.rbox(1.3, 0.09, 0.12, 0.03), { p: [0, 3.15, 0] }); k.add('metal', G.rod([0, 2.75, 0], [0.55, 3.12, 0], 0.025)); k.add('metal', G.rod([0, 2.75, 0], [-0.55, 3.12, 0], 0.025));
+    for (var i = -1; i <= 1; i += 2) { k.add('glass', G.cyl(0.05, 0.07, 0.16, 8), { p: [i * 0.55, 3.27, 0] }); }
+    k.add('dark', G.rbox(0.22, 0.3, 0.14, 0.04), { p: [0, 1.6, 0.1] }); led(k, 'ledO', 0, 3.4, 0); o.leds = true; return 3.5; };
+
+  B.antenna = function (k, o) { k.add('dark', G.rbox(1.4, 0.25, 1.4, 0.08), { p: [0, 0.13, 0] }); G.truss(k, 'dark', 3.6, 0.95, 4, 0.03, 0, 0, 0.25);
+    var dish = grp(); dish.position.set(0, 4.05, 0); var dk = new G.Kit(); dk.add('hull', dishGeo(1.3, 0.42), { r: [0.9, 0, 0], uv: 'keep' }); dk.add('dark', G.cyl(0.14, 0.18, 0.3), { r: [0.9, 0, 0] });
+    for (var i = 0; i < 3; i++) { var a = i * 2.094; dk.add('metal', G.rod([Math.cos(a) * 1.0, 0.3, Math.sin(a) * 1.0], [0, 0.95, 0], 0.02)); } dk.add('dark', G.cyl(0.08, 0.05, 0.2, 10), { p: [0, 1.0, 0] });
+    dk.build(dish); dish.children.forEach(function (m) { m.geometry.rotateX(0); }); dish.rotation.order = 'YXZ'; o.dyn.dish = dish; k.extra.push(dish); led(k, 'ledR', 0, 4.85, 0); o.leds = true; return 5.2; };
+
+  B.jardim = function (k, o) { // Marco: Jardim Selado — cúpula geodésica
+    k.add('hull', G.cyl(3.85, 3.95, 0.8, 48), { p: [0, 0.4, 0], uv: 'scale', su: 8, sv: 0.3 }); k.add('paint', G.cyl(3.9, 3.9, 0.12, 48, true), { p: [0, 0.65, 0], uv: 'scale', su: 8, sv: 0.1 });
+    var Rd = 3.6, ico = new T.IcosahedronGeometry(Rd, 2), p = ico.attributes.position, tri = [], edges = {}, i;
+    var gl = []; for (i = 0; i < p.count; i += 3) { var cy = (p.getY(i) + p.getY(i + 1) + p.getY(i + 2)) / 3; if (cy < -0.1) continue; for (var j = 0; j < 3; j++) gl.push(p.getX(i + j), Math.max(0, p.getY(i + j)), p.getZ(i + j));
+      for (j = 0; j < 3; j++) { var a = i + j, b = i + (j + 1) % 3, ka = [p.getX(a), p.getY(a), p.getZ(a)].map(function (v) { return Math.round(v * 100); }).join(','), kb = [p.getX(b), p.getY(b), p.getZ(b)].map(function (v) { return Math.round(v * 100); }).join(','); var key = ka < kb ? ka + '|' + kb : kb + '|' + ka; if (!edges[key]) edges[key] = [[p.getX(a), Math.max(0, p.getY(a)), p.getZ(a)], [p.getX(b), Math.max(0, p.getY(b)), p.getZ(b)]]; } }
+    var dg = new T.BufferGeometry(); dg.setAttribute('position', new T.Float32BufferAttribute(gl, 3)); dg.computeVertexNormals(); k.add('glass', dg, { p: [0, 0.8, 0], uv: 'keep' });
+    for (var e in edges) { var E = edges[e]; k.add('hull', G.rod([E[0][0], E[0][1] + 0.8, E[0][2]], [E[1][0], E[1][1] + 0.8, E[1][2]], 0.045, 5)); }
+    k.add('soil', G.cyl(3.5, 3.5, 0.1, 40), { p: [0, 0.85, 0], uv: 'keep' });
+    var pg = grp(); pg.position.y = 0.9; k.extra.push(pg); o.garden = pg;
+    k.add('hull', G.pod(0.8, 1.4, 0.2, 22), { p: [0, 1.0, 4.0], r: [0, R / 2, 0], uv: 'scale', su: 2, sv: 1 }); k.add('paint', G.torus(0.84, 0.06, 8, 26), { p: [0, 1.0, 4.5] });
+    o.lights = [[0, 3.0, 0, 0xff8ae0], [0, 1.5, 4.8]]; return 5.0; };
+
+  B.farol = function (k, o) { // Marco: Farol Profundo — torre e grande antena
+    k.add('hull', G.rbox(3.2, 1.6, 3.2, 0.45, 3), { p: [0, 0.8, 0], d: 2.4 }); band(k, 'paint', 3.24, 0.25, 3.24, 0.12, 0, 1.2, 0); window_(k, 0, 0.95, 1.62, 1.2, 0.4);
+    G.truss(k, 'dark', 7.5, 1.6, 8, 0.05, 0, 0, 1.6);
+    for (var i = 0; i < 4; i++) { var a = i * R / 2 + R / 4; k.add('metal', G.rod([Math.cos(a) * 0.5, 6.5, Math.sin(a) * 0.5], [Math.cos(a) * 3.7, 0.1, Math.sin(a) * 3.7], 0.015, 4)); k.add('dark', G.cyl(0.15, 0.2, 0.2, 10), { p: [Math.cos(a) * 3.7, 0.1, Math.sin(a) * 3.7] }); }
+    var dish = grp(); dish.position.set(0, 9.4, 0); dish.rotation.order = 'YXZ'; var dk = new G.Kit(); dk.add('hull', dishGeo(2.6, 0.8), { r: [1.0, 0, 0], uv: 'keep' });
+    for (i = 0; i < 4; i++) { a = i * R / 2; dk.add('metal', G.rod([Math.cos(a) * 2.0, 0.45, Math.sin(a) * 2.0], [0, 1.9, -0.9], 0.03)); } dk.add('dark', G.cyl(0.16, 0.1, 0.4), { p: [0, 1.95, -0.95] }); dk.build(dish); o.dyn.dish = dish; k.extra.push(dish);
+    led(k, 'ledR', 0, 9.15, 0); k.add('screenOn', G.sphere(0.2, 12, 10), { p: [0, 11.2, 0], uv: 'keep' }); o.leds = true; o.lights = [[0, 2, 2.4], [0, 11, 0, 0x7ad0ff]]; return 11.4; };
+
+  // ---------- sociedade: casas, enfermaria, zona de pouso, Berço, escola ----------
+  B.casa = function (k, o) { // Casa: módulo pequeno com câmara própria; o tijolo dos bairros marcianos
+    k.add('hull', G.rbox(3.0, 1.9, 2.5, 0.6, 4), { p: [-0.3, 1.4, -0.1], d: 2.2 }); band(k, 'paint', 3.04, 0.2, 2.54, 0.1, -0.3, 0.75, -0.1); k.add('dark', G.rbox(2.7, 0.3, 2.2, 0.1), { p: [-0.3, 0.3, -0.1] });
+    for (var i = -1; i <= 1; i += 2) for (var j = -1; j <= 1; j += 2) k.add('dark', G.cyl(0.09, 0.11, 0.3), { p: [-0.3 + i * 1.15, 0.15, -0.1 + j * 0.9] });
+    k.add('hull', G.pod(0.62, 0.5, 0.2, 20), { p: [1.35, 1.05, -0.1], uv: 'scale', su: 2, sv: 1 }); k.add('paint', G.torus(0.64, 0.05, 8, 24), { p: [1.72, 1.05, -0.1], r: [0, R / 2, 0] }); k.add('dark', G.cyl(0.42, 0.42, 0.06, 18), { p: [1.84, 1.05, -0.1], r: [0, 0, R / 2] });
+    window_(k, -0.4, 1.6, 1.16, 0.95, 0.5); window_(k, -0.4, 1.6, -1.36, 0.95, 0.5); window_(k, -1.81, 1.55, -0.1, 0.7, 0.45, -R / 2);
+    k.add('solar', G.rbox(1.5, 0.05, 1.0, 0.02), { p: [-0.6, 2.42, -0.15], r: [0.2, 0, 0], d: 1.25 }); k.add('dark', G.cyl(0.16, 0.18, 0.22, 12), { p: [0.6, 2.42, -0.6] });
+    k.add('metal', G.rod([0.7, 2.3, 0.6], [0.7, 3.1, 0.6], 0.02)); led(k, 'ledG', 0.7, 3.13, 0.6); led(k, 'ledO', 1.5, 1.8, 0.45);
+    o.lights = [[2.2, 1.5, -0.1]]; return 2.9; };
+  B.cryo = function (k, o) { // Enfermaria criogênica: onde os colonos da Alvorada acordam
+    k.add('hull', G.rbox(3.5, 2.1, 3.3, 0.5, 4), { p: [0, 1.35, 0], d: 2.4 }); k.add('dark', G.rbox(3.2, 0.3, 3.0, 0.1), { p: [0, 0.2, 0] }); band(k, 'paint', 3.54, 0.3, 3.34, 0.14, 0, 2.0, 0);
+    k.add('paint', G.rbox(0.9, 0.28, 0.06, 0.03), { p: [0, 1.25, 1.66] }); k.add('paint', G.rbox(0.28, 0.9, 0.06, 0.03), { p: [0, 1.25, 1.66] });
+    for (var s = -1; s <= 1; s += 2) { k.add('dark', G.rbox(0.82, 0.52, 0.08, 0.05), { p: [s * 1.15, 1.35, 1.66] }); k.add('screenOn', G.rbox(0.7, 0.4, 0.1, 0.03), { p: [s * 1.15, 1.35, 1.67], uv: 'keep' }); k.add('screenOn', G.rbox(0.1, 0.4, 0.9, 0.03), { p: [s * 1.76, 1.4, -0.3], uv: 'keep' }); }
+    vTank(k, -1.0, -0.9, 0.34, 1.3, 'metal', 'paint', 2.4); vTank(k, -0.1, -0.9, 0.34, 1.3, 'metal', 'paint', 2.4); k.add('dark', G.rbox(0.9, 0.3, 0.8, 0.1), { p: [1.0, 2.55, 0.5] });
+    pipe(k, [[-1.0, 3.3, -0.9], [-0.55, 3.6, -0.9], [-0.1, 3.3, -0.9]], 0.05); led(k, 'ledG', 0.7, 1.9, 1.68);
+    o.lights = [[0, 1.6, 2.4, 0x8fe8ff]]; o.vent = [-0.55, 3.8, -0.9]; return 3.8; };
+  B.pad = function (k, o) { // Zona de Pouso: plataforma octogonal com marcações e faróis
+    k.add('concrete', G.cyl(3.85, 3.95, 0.3, 8), { p: [0, 0.15, 0], r: [0, R / 8, 0], d: 3 });
+    k.add('paint', G.torus(2.9, 0.07, 4, 48), { p: [0, 0.31, 0], r: [R / 2, 0, 0], uv: 'keep' }); k.add('paint', G.torus(1.2, 0.06, 4, 32), { p: [0, 0.31, 0], r: [R / 2, 0, 0], uv: 'keep' });
+    k.add('paint', G.rbox(5.6, 0.03, 0.14, 0.01), { p: [0, 0.31, 0], r: [0, R / 4, 0] }); k.add('paint', G.rbox(5.6, 0.03, 0.14, 0.01), { p: [0, 0.31, 0], r: [0, -R / 4, 0] });
+    for (var i = 0; i < 4; i++) { var a = i * R / 2 + R / 4, x = Math.cos(a) * 3.55, z = Math.sin(a) * 3.55; k.add('dark', G.cyl(0.07, 0.09, 0.7, 8), { p: [x, 0.6, z] }); led(k, i % 2 ? 'ledG' : 'ledO', x, 1.0, z); }
+    k.add('hull', G.rbox(0.7, 0.9, 0.5, 0.12), { p: [3.3, 0.7, 0.0] }); k.add('screenOn', G.rbox(0.03, 0.3, 0.3, 0.01), { p: [2.94, 0.85, 0], uv: 'keep' });
+    o.lights = [[0, 1.4, 0, 0x8fe8ff]]; return 1.2; };
+  B.berco = function (k, o) { // Berço: cúpula branca nervurada, com luz suave por dentro
+    k.add('dark', G.cyl(2.92, 2.97, 0.2, 40), { p: [0, 0.1, 0] }); k.add('hull', G.cyl(2.75, 2.85, 1.3, 40), { p: [0, 0.8, 0], uv: 'scale', su: 6, sv: 0.5 }); k.add('paint', G.cyl(2.8, 2.8, 0.14, 40, true), { p: [0, 1.3, 0], uv: 'scale', su: 6, sv: 0.1 });
+    k.add('hull', G.sphere(2.7, 40, 14, 0, 2 * R, 0, R / 2), { p: [0, 1.45, 0], s: [1, 0.72, 1], uv: 'scale', su: 6, sv: 2 });
+    for (var i = 0; i < 8; i++) { k.add('metal', G.torus(2.72, 0.05, 6, 24, R), { p: [0, 1.45, 0], r: [0, i * R / 8, 0], s: [1, 0.72, 1] }); var a = i * R / 4 + R / 8; k.add('screenOn', G.rbox(0.7, 0.32, 0.1, 0.04), { p: [Math.sin(a) * 2.8, 0.9, Math.cos(a) * 2.8], r: [0, a, 0], uv: 'keep' }); }
+    k.add('dark', G.cyl(0.95, 1.0, 0.16, 24), { p: [0, 3.32, 0] }); k.add('glass', G.sphere(0.9, 20, 8, 0, 2 * R, 0, R / 2), { p: [0, 3.36, 0], s: [1, 0.6, 1], uv: 'keep' }); k.add('screenOn', G.sphere(0.32, 12, 8), { p: [0, 3.45, 0], uv: 'keep' });
+    k.add('hull', G.pod(0.75, 1.0, 0.2, 22), { p: [0, 0.95, 2.9], r: [0, R / 2, 0], uv: 'scale', su: 2, sv: 1 }); k.add('paint', G.torus(0.78, 0.06, 8, 26), { p: [0, 0.95, 3.5] }); k.add('dark', G.cyl(0.5, 0.5, 0.06, 20), { p: [0, 0.95, 3.6], r: [R / 2, 0, 0] });
+    o.lights = [[0, 2.0, 3.9], [0, 3.9, 0, 0x8fe8ff]]; return 4.0; };
+  B.escola = function (k, o) { // Escola: módulo longo com janelas grandes e bandeira
+    k.add('hull', G.rbox(5.4, 2.2, 3.2, 0.5, 4), { p: [0, 1.45, 0], d: 2.6 }); k.add('dark', G.rbox(5.0, 0.3, 2.9, 0.1), { p: [0, 0.25, 0] }); band(k, 'paint', 5.44, 0.26, 3.24, 0.12, 0, 2.25, 0);
+    for (var i = 0; i < 4; i++) { window_(k, -1.8 + i * 1.2, 1.45, 1.61, 0.85, 0.75); window_(k, -1.8 + i * 1.2, 1.45, -1.61, 0.85, 0.75); }
+    k.add('dark', G.rbox(0.12, 1.6, 1.0, 0.06), { p: [2.72, 1.45, 0] }); k.add('paint', G.rbox(0.1, 1.85, 1.3, 0.1), { p: [2.68, 1.5, 0] }); led(k, 'ledO', 2.76, 2.5, 0);
+    k.add('dark', G.cyl(0.75, 0.8, 0.14, 24), { p: [-1.5, 2.6, 0] }); k.add('glass', G.sphere(0.7, 20, 8, 0, 2 * R, 0, R / 2), { p: [-1.5, 2.62, 0], uv: 'keep' });
+    k.add('metal', G.rod([2.0, 2.5, -1.2], [2.0, 4.7, -1.2], 0.025)); k.add('flag', new T.PlaneGeometry(0.75, 0.45), { p: [2.4, 4.42, -1.2], uv: 'keep' });
+    o.lights = [[3.3, 1.9, 0], [0, 1.9, 2.5]]; return 3.5; };
+  // A Alvorada: nave criogênica com doze cápsulas. Não é uma construção: pousa sobre a Zona de Pouso.
+  function ark() { // Alvorada: nave longa e aerodinâmica, cabine escura na frente, dois motores laterais em braços; pousa na horizontal
+    var g = grp(), k = new G.Kit(), i, s, Y = 1.95;
+    var hull = G.lathe([[0.001, -6.0], [1.05, -5.9], [1.55, -5.2], [1.85, -3.4], [1.92, -0.5], [1.7, 2.2], [1.15, 4.4], [0.45, 6.1], [0.001, 6.8]], 40); hull.rotateX(R / 2);
+    k.add('hull', hull, { p: [0, Y, 0], s: [1.32, 0.46, 1], uv: 'scale', su: 9, sv: 4 }); k.add('hull', G.rbox(3.2, 0.5, 7.5, 0.25, 4), { p: [0, Y + 0.35, -1.0], d: 2.4 });
+    k.add('dark', G.rbox(2.5, 0.22, 8.4, 0.11), { p: [0, Y - 1.06, -0.6] });
+    k.add('paint', G.rbox(0.5, 0.16, 6.4, 0.07), { p: [0, Y + 0.66, -1.6] }); k.add('dark', G.rbox(1.2, 0.18, 1.2, 0.06), { p: [0, Y + 0.68, -0.4] }); for (var pi = 0; pi < 4; pi++) k.add('dark', G.rbox(2.9, 0.03, 0.05, 0.01), { p: [0, Y + 0.61, -4.0 + pi * 1.4] });
+    k.add('visor', G.sphere(0.95, 26, 16, 0, R * 2, 0, R / 2), { p: [0, Y + 0.55, 3.0], s: [1.0, 0.55, 2.3], uv: 'keep' }); k.add('hull', G.torus(0.95, 0.06, 6, 28), { p: [0, Y + 0.55, 3.0], r: [R / 2, 0, 0], s: [1.0, 2.3, 1] });
+    for (s = -1; s <= 1; s += 2) {
+      k.add('paint', G.rbox(0.05, 0.22, 7.2, 0.02), { p: [s * 2.5, Y + 0.05, -0.6] }); k.add('dark', G.rbox(0.05, 0.08, 5.6, 0.02), { p: [s * 2.49, Y - 0.25, -0.4] });
+      for (i = 0; i < 5; i++) k.add('screenOn', G.rbox(0.05, 0.16, 0.34, 0.02), { p: [s * 2.47, Y + 0.32, 1.2 - i * 0.7], uv: 'keep' });
+      k.add('hull', G.rbox(2.4, 0.22, 2.6, 0.1), { p: [s * 2.6, Y - 0.05, -2.2], r: [0, 0, s * 0.08] }); k.add('paint', G.rbox(1.6, 0.26, 0.5, 0.08), { p: [s * 2.7, Y + 0.05, -1.2] });
+      var nx = s * 3.75, ny = Y + 0.22;
+      k.add('hull', G.capsule(0.62, 3.8, 18), { p: [nx, ny, -2.0], r: [R / 2, 0, 0], uv: 'scale', su: 3, sv: 2 });
+      k.add('dark', G.torus(0.6, 0.11, 8, 26), { p: [nx, ny, 0.05] }); k.add('dark', G.cyl(0.42, 0.42, 0.3, 20), { p: [nx, ny, 0.12], r: [R / 2, 0, 0] });
+      k.add('dark', G.cyl(0.56, 0.44, 0.55, 22), { p: [nx, ny, -4.25], r: [R / 2, 0, 0] }); k.add('screenOn', G.cyl(0.38, 0.38, 0.04, 20), { p: [nx, ny, -4.53], r: [R / 2, 0, 0], uv: 'keep' });
+      k.add('paint', G.rbox(0.05, 0.2, 3.0, 0.02), { p: [nx + s * 0.6, ny, -2.0] });
+      k.add('hull', G.rbox(0.1, 1.05, 1.5, 0.04), { p: [nx, ny + 0.9, -3.3], r: [-0.25, 0, s * 0.22] });
+      for (var z = -1; z <= 1; z += 2) { var lx = s * 1.55, lz = z > 0 ? 2.6 : -3.4; k.add('metal', G.rod([lx, Y - 0.9, lz], [lx * 1.18, 0.2, lz * 1.06], 0.09, 10)); k.add('chrome', G.rod([lx * 1.08, Y - 1.2, lz], [lx * 1.16, 0.45, lz * 1.05], 0.06, 8)); k.add('dark', G.cyl(0.36, 0.44, 0.13, 18), { p: [lx * 1.18, 0.07, lz * 1.06] }); }
+      led(k, s > 0 ? 'ledG' : 'ledR', nx + s * 0.62, ny, -0.3); }
+    k.add('metal', G.rod([0, Y + 1.3, -3.6], [0, Y + 2.2, -3.6], 0.03)); led(k, 'ledR', 0, Y + 2.25, -3.6);
+    k.build(g);
+    var rp = grp(); rp.position.set(0, Y - 1.1, -4.4); var rk = new G.Kit(); rk.add('metal', G.rbox(1.5, 0.07, 2.3, 0.03), { p: [0, 0, 1.15] }); for (i = 0; i < 6; i++) rk.add('dark', G.rbox(1.35, 0.03, 0.05, 0.01), { p: [0, 0.05, 0.3 + i * 0.33] }); rk.add('paint', G.rbox(0.07, 0.12, 2.3, 0.02), { p: [0.72, 0.03, 1.15] }); rk.add('paint', G.rbox(0.07, 0.12, 2.3, 0.02), { p: [-0.72, 0.03, 1.15] }); rk.build(rp); g.add(rp);
+    g.userData.ramp = rp; g.userData.h = Y + 2.3; return g; }
+
+  // ---------- plantas ----------
+  var plantGeo = {};
+  function plant(type) { if (plantGeo[type]) return plantGeo[type]; var k = new G.Kit(), i;
+    if (type === 'batata') { for (i = 0; i < 16; i++) { var a = i * 2.4, r = 0.05 + (i % 4) * 0.045, y = 0.08 + (i % 5) * 0.05; k.add(i % 3 ? 'leaf' : 'leaf2', G.sphere(0.07, 7, 5), { p: [Math.cos(a) * r, y, Math.sin(a) * r], r: [0.4 * Math.sin(a), a, 0.5], s: [1.3, 0.25, 0.8], uv: 'keep' }); }
+      k.add('leaf', G.cyl(0.012, 0.015, 0.2, 5), { p: [0, 0.1, 0], uv: 'keep' }); }
+    else if (type === 'alface') { for (i = 0; i < 12; i++) { a = i * 2.4; r = i < 5 ? 0.03 : 0.07; k.add(i < 5 ? 'leaf2' : 'leaf', G.sphere(0.08, 8, 6, 0, R * 2, 0, R / 2), { p: [Math.cos(a) * r, 0.04, Math.sin(a) * r], r: [i < 5 ? -0.2 : -0.9, a, 0], s: [0.8, 0.9, 1.1], uv: 'keep' }); } }
+    else { for (i = 0; i < 7; i++) { a = i * 2.4; k.add(i % 2 ? 'leaf' : 'leaf2', G.sphere(0.3, 8, 6), { p: [Math.cos(a) * 0.25, 1.1 + (i % 3) * 0.25, Math.sin(a) * 0.25], s: [1, 0.7, 1], uv: 'keep' }); } k.add('dark', G.cyl(0.05, 0.08, 1.2, 6), { p: [0, 0.6, 0], uv: 'keep' }); }
+    var g = grp(); k.build(g, true); var geo = {}; g.children.forEach(function (m) { geo[m.material.userData.key] = m.geometry; }); plantGeo[type] = geo; return geo; }
+  function bed(type) { var g = grp(), geo = plant(type); for (var i = 0; i < 6; i++) for (var key in geo) { var m = new T.Mesh(geo[key], M[key]); m.position.set((i % 2 ? 0.2 : -0.2), 0, -0.95 + Math.floor(i / 2) * 0.95); m.rotation.y = i * 1.3; m.castShadow = true; g.add(m); } return g; }
+  function garden() { var g = grp(), i; for (i = 0; i < 22; i++) { var a = i * 2.39996, r = 0.8 + Math.sqrt(i / 22) * 2.4, t = i % 4 === 0 ? 'arv' : i % 2 ? 'batata' : 'alface', geo = plant(t), s = t === 'arv' ? 0.8 + (i % 3) * 0.25 : 3;
+      for (var key in geo) { var m = new T.Mesh(geo[key], M[key]); m.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); m.scale.setScalar(s); m.rotation.y = i; m.castShadow = true; g.add(m); } } return g; }
+
+  // ---------- montagem final de uma construção ----------
+  // Níveis: cada melhoria acrescenta módulos (equipamentos, mastro com farol, anexo com janelas, anel de luz)
+  function levelKit(k, type, def, W, D, h, lv, o) { var hx = W / 2 - 0.35, hz = D / 2 - 0.35, i, s;
+    for (s = -1; s <= 1; s += 2) { k.add('dark', G.rbox(0.5, 0.45, 0.5, 0.08), { p: [s * hx, 0.23, -hz] }); k.add('metal', G.cyl(0.05, 0.05, 0.6, 8), { p: [s * hx, 0.75, -hz] }); k.add('paint', G.rbox(0.52, 0.06, 0.52, 0.02), { p: [s * hx, 0.47, -hz] }); }
+    if (lv >= 3) { k.add('metal', G.rod([hx, 0.1, hz], [hx, h + 1.4, hz], 0.04, 8)); k.add('dark', G.rbox(0.3, 0.2, 0.3, 0.05), { p: [hx, h + 1.45, hz] }); led(k, 'ledG', hx, h + 1.62, hz); o.lights = (o.lights || []).concat([[hx, h + 1.4, hz, 0xffd8a8]]);
+      for (s = -1; s <= 1; s += 2) { k.add('hull', G.rbox(Math.min(1.4, W * 0.35), 1.1, 0.9, 0.3, 3), { p: [s * (W / 2 - 0.2), 0.6, hz - 0.1], d: 2.4 }); k.add('winOn', G.rbox(0.5, 0.25, 0.04, 0.02), { p: [s * (W / 2 - 0.2), 0.75, hz + 0.36], uv: 'keep' }); } }
+    if (lv >= 4) { k.add('paint', G.torus(Math.max(W, D) * 0.52, 0.06, 6, 40), { p: [0, 0.12, 0], r: [R / 2, 0, 0] }); for (i = 0; i < 8; i++) { var a = i * R / 4; led(k, 'ledO', Math.cos(a) * Math.max(W, D) * 0.52, 0.2, Math.sin(a) * Math.max(W, D) * 0.52); }
+      k.add('hull', G.sphere(0.45, 16, 10, 0, R * 2, 0, R / 2), { p: [-hx, h + 0.0, -hz + 0.2], uv: 'keep' }); k.add('glass', G.sphere(0.4, 16, 10, 0, R * 2, 0, R / 2), { p: [-hx, h + 0.05, -hz + 0.2], uv: 'keep' }); }
+    return h + (lv >= 3 ? 1.6 : 0.2); }
+  function building(type, def, opts) { var g = grp(), k = new G.Kit(), o = { dyn: {}, lights: [] }; k.extra = []; for (var x in opts || {}) o[x] = opts[x];
+    var W = def.w * TS, D = def.h * TS, h = B[type](k, o, W, D), lv = o.lv || 1; if (lv > 1) h = levelKit(k, type, def, W, D, h, lv, o); k.build(g); if (lv > 1) g.scale.set(1 + 0.04 * (lv - 1), 1 + 0.12 * (lv - 1), 1 + 0.04 * (lv - 1)); k.extra.forEach(function (e) { g.add(e); }); if (o.garden) o.garden.add(garden());
+    g.userData.h = h; g.userData.o = o; g.traverse(function (m) { if (m.isMesh) { m.castShadow = m.castShadow && m.material !== M.glass; } }); return g; }
+
+  // ---------- depósitos e rochas ----------
+  var rockGeos = null; function rocks() { if (!rockGeos) { rockGeos = []; for (var i = 0; i < 6; i++) rockGeos.push(G.rockGeo(i * 7 + 1, 3)); } return rockGeos; }
+  var oreMat = null, regMat = null;
+  function deposit(res) { var g = grp(), i, rg = rocks();
+    if (!oreMat) { oreMat = G.rockMat(0xc4c2c6, true); regMat = G.rockMat(0xc9b6a6, false, true); }
+    if (res === 'metal') { for (i = 0; i < 4; i++) { var m = mesh(rg[i], oreMat, [Math.cos(i * 1.9) * 0.45, 0.15, Math.sin(i * 1.9) * 0.45], [0, i, 0], [0.55 - i * 0.07, 0.5 - i * 0.05, 0.5 - i * 0.06], g); } }
+    else { var mound = new T.Mesh(G.rockGeo(9, 3, 0.3), regMat); mound.scale.set(0.62, 0.42, 0.56); mound.position.y = 0.0; mound.castShadow = true; mound.receiveShadow = true; g.add(mound); // monte de cascalho solto, com pedras em volta
+      for (i = 0; i < 14; i++) { var ra = i * 2.39, rr = 0.35 + (i % 5) * 0.11; mesh(rg[i % 6], regMat, [Math.cos(ra) * rr, 0.02 + (i < 4 ? 0.18 : 0), Math.sin(ra) * rr], [i, i * 0.7, 0], 0.06 + (i % 4) * 0.03, g); } }
+    mesh(G.cyl(0.02, 0.02, 1.1, 5), M.dark, [0.75, 0.55, 0.55], null, null, g); mesh(new T.PlaneGeometry(0.32, 0.2), M.flag, [0.91, 1.0, 0.55], null, null, g);
+    return g; }
+
+  // ---------- astronautas ----------
+  // Traje no estilo das fichas: tecido branco, placas rígidas, detalhes na cor do ofício (laranja para Elias e Helena),
+  // viseira escura espelhada, mochila de suporte com tanques e mangueiras. Cada osso é UMA malha fundida.
+  var insMat = null, suitMat = null, lampMats = {}, PAL = null;
+  function pal() { if (!PAL) { var L = G.lin; PAL = { W: [L(0xd8d3c8), [0.92, 0]], A: [L(0xe9e6df), [0.42, 0.05]], D: [L(0x26272b), [0.5, 0.45]], R: [L(0x17130f), [0.88, 0]], C: [L(0xc9ccd2), [0.22, 1]], G: [L(0x6a6d73), [0.4, 0.8]] }; } return PAL; }
+  function lat(pts, seg) { return G.lathe(pts.slice().sort(function (a, b) { return a[1] - b[1]; }), seg || 14); }
+  function ringX(r, t) { return G.torus(r, t, 6, 18); }
+  function astronaut(id, inf) { inf = inf || {}; var P = pal(), hero = id === 'elias' || id === 'helena', hsh = 0, q; for (q = 0; q < id.length; q++) hsh = (hsh * 31 + id.charCodeAt(q)) % 997;
+    var wS = id === 'helena' ? 0.92 : id === 'elias' ? 1 : 0.9 + (hsh % 14) / 100, hS = id === 'helena' ? 0.96 : id === 'elias' ? 1 : 0.95 + (hsh % 9) / 100;
+    var accHex = hero ? 0xe0641c : new T.Color((DATA.jobs[inf.job] || ['', '#e0641c'])[1]).getHex(), AC = [G.lin(accHex), [0.5, 0.05]], lampHex = id === 'elias' ? 0x4ec8ff : id === 'helena' ? 0xffa040 : accHex;
+    if (!suitMat) suitMat = G.suitMat(); var lamp = lampMats[lampHex] || (lampMats[lampHex] = new T.MeshStandardMaterial({ color: 0x101010, emissive: lampHex, emissiveIntensity: 2.6 }));
+    var root = grp(), pose = grp(); root.add(pose); var rig = { root: root, pose: pose, lamp: lamp }, bones = [];
+    function bone(parent, x, y, z) { var g = grp(); g.position.set(x, y, z); parent.add(g); g.userData.k = new G.SuitKit(); bones.push(g); return g; }
+    function put(b, geo, c, p, r, s) { b.userData.k.add(geo, c[0], c[1], { p: p, r: r, s: s }); }
+    var W = P.W, A = P.A, D = P.D, Rb = P.R, C = P.C, i, s, X = R / 2;
+    // quadril
+    var hips = bone(pose, 0, 0.98, 0); rig.hips = hips;
+    put(hips, lat([[0.001, -0.13], [0.13, -0.12], [0.175, -0.04], [0.18, 0.04], [0.165, 0.1]], 18), W, null, null, [wS, 1, 0.74]);
+    put(hips, G.torus(0.172, 0.022, 8, 24), D, [0, 0.08, 0], [X, 0, 0], [wS, 0.76, 1.7]); put(hips, G.rbox(0.07, 0.05, 0.03, 0.01), C, [0, 0.08, 0.135]);
+    put(hips, G.rbox(0.09, 0.12, 0.06, 0.02), D, [0.17 * wS, 0, 0.07]); put(hips, G.rbox(0.09, 0.12, 0.06, 0.02), D, [-0.17 * wS, 0, 0.07]); put(hips, G.rbox(0.16, 0.11, 0.06, 0.02), D, [0, 0.0, -0.135]);
+    put(hips, G.rbox(0.1, 0.12, 0.035, 0.015), A, [0.09 * wS, -0.06, 0.118], [0.15, 0, 0]); put(hips, G.rbox(0.1, 0.12, 0.035, 0.015), A, [-0.09 * wS, -0.06, 0.118], [0.15, 0, 0]);
+    // tronco
+    var spine = bone(hips, 0, 0.1, 0); rig.spine = spine;
+    put(spine, lat([[0.16, 0], [0.198, 0.1], [0.218, 0.25], [0.214, 0.38], [0.18, 0.48], [0.135, 0.54], [0.115, 0.57]], 22), W, null, null, [wS, 1, 0.8]);
+    put(spine, G.rbox(0.5, 0.1, 0.21, 0.05), A, [0, 0.475, -0.005], null, [wS, 1, 1]); put(spine, G.rbox(0.33, 0.25, 0.07, 0.035), A, [0, 0.37, 0.125], null, [wS, 1, 1]); put(spine, G.rbox(0.26, 0.09, 0.055, 0.02), D, [0, 0.215, 0.12], [0.15, 0, 0], [wS, 1, 1]);
+    put(spine, G.rbox(0.15, 0.11, 0.045, 0.015), D, [0, 0.34, 0.175]); put(spine, G.cyl(0.012, 0.012, 0.02, 8), C, [0.05, 0.3, 0.2], [X, 0, 0]); put(spine, G.cyl(0.012, 0.012, 0.02, 8), C, [-0.05, 0.3, 0.2], [X, 0, 0]); put(spine, G.rbox(0.055, 0.03, 0.028, 0.008), C, [0, 0.238, 0.178]);
+    put(spine, G.torus(0.128, 0.026, 8, 24), C, [0, 0.565, 0], [X, 0, 0]); put(spine, G.cyl(0.105, 0.115, 0.05, 16), D, [0, 0.555, 0]);
+    put(spine, G.rbox(0.34, 0.47, 0.17, 0.08, 4), A, [0, 0.31, -0.205], null, [wS, 1, 1]); put(spine, G.rbox(0.28, 0.09, 0.15, 0.03), D, [0, 0.585, -0.205]); put(spine, G.rbox(0.24, 0.13, 0.04, 0.015), D, [0, 0.42, -0.305]); put(spine, G.rbox(0.3, 0.06, 0.17, 0.02), P.G, [0, 0.04, -0.21]);
+    for (i = 0; i < 4; i++) put(spine, G.rbox(0.2, 0.016, 0.02, 0.006), D, [0, 0.12 + i * 0.035, -0.312]);
+    for (s = -1; s <= 1; s += 2) { var sx = s * 0.255 * wS;
+      put(spine, G.rbox(0.05, 0.25, 0.075, 0.02), AC, [s * 0.115 * wS, 0.37, 0.13]); put(spine, G.rbox(0.03, 0.46, 0.018, 0.007), D, [s * 0.075 * wS, 0.31, 0.168], [0, 0, -s * 0.3]);
+      put(spine, G.rbox(0.045, 0.4, 0.16, 0.02), AC, [s * 0.185 * wS, 0.31, -0.205]); put(spine, G.capsule(0.042, 0.3, 10), C, [s * 0.225 * wS, 0.28, -0.19]);
+      put(spine, G.tube([[s * 0.11, 0.6, -0.16], [s * 0.19, 0.62, -0.02], [s * 0.15, 0.5, 0.1], [s * 0.09, 0.42, 0.165]], 0.014, 14), D);
+      put(spine, G.sphere(0.092, 16, 12), W, [sx, 0.46, 0]); put(spine, G.sphere(0.086, 16, 10, 0, R * 2, 0, R * 0.42), AC, [sx + s * 0.012, 0.47, 0], [0, 0, -s * 0.35], [1.0, 0.8, 1.0]); }
+    if (id === 'elias') put(spine, G.cyl(0.006, 0.006, 0.34, 4), D, [0.14, 0.78, -0.2]);
+    mesh(G.rbox(0.075, 0.04, 0.01, 0.004), lamp, [0, 0.355, 0.199], null, null, spine, true); mesh(G.sphere(0.018, 6, 5), lamp, [0.11, 0.6, -0.27], null, null, spine, true);
+    if (!insMat) insMat = new T.MeshStandardMaterial({ map: G.decal(function (x, w) { G.insignia(x, w, false); }, 128, 128), transparent: true, roughness: 0.5, polygonOffset: true, polygonOffsetFactor: -2 });
+    mesh(new T.PlaneGeometry(0.13, 0.13), insMat, [0, 0.27, -0.312], [0, R, 0], null, spine, true);
+    // capacete
+    var head = bone(spine, 0, 0.64, 0); rig.head = head;
+    put(head, G.sphere(0.198, 28, 20), A, [0, 0.04, 0]); put(head, G.torus(0.2, 0.018, 6, 30, R), AC, [0, 0.04, 0], [0, X, 0]);
+     put(head, G.rbox(0.16, 0.1, 0.05, 0.02), D, [0, -0.02, -0.16]); put(head, G.rbox(0.2, 0.04, 0.06, 0.02), D, [0, -0.11, 0.105]);
+    for (s = -1; s <= 1; s += 2) { put(head, G.cyl(0.045, 0.05, 0.045, 12), A, [s * 0.198, 0.03, -0.02], [0, 0, X]); mesh(G.cyl(0.018, 0.018, 0.03, 8), lamp, [s * 0.19, 0.1, 0.08], [X, 0, 0], null, head, true); }
+    if (id === 'elias') put(head, G.cyl(0.006, 0.006, 0.22, 4), D, [-0.17, 0.15, -0.04]);
+    mesh(G.sphere(0.203, 32, 20, R * 0.1, R * 0.8, R * 0.2, R * 0.52), M.visor, [0, 0.04, 0], null, null, head);
+    mesh(G.torus(0.204, 0.013, 6, 30, R * 0.82), M.visorRim, [0, 0.04 + 0.203 * Math.cos(R * 0.2), 0], [X, 0, R * 0.09], [Math.sin(R * 0.2), Math.sin(R * 0.2), 1], head);
+    // braços
+    rig.arms = []; rig.fore = [];
+    for (s = -1; s <= 1; s += 2) { var ua = bone(spine, s * 0.255 * wS, 0.47, 0);
+      put(ua, lat([[0.078, 0], [0.084, -0.08], [0.076, -0.22], [0.066, -0.29]], 16), W); put(ua, ringX(0.08, 0.016), AC, [0, -0.1, 0], [X, 0, 0]);
+      put(ua, ringX(0.068, 0.016), W, [0, -0.262, 0], [X, 0, 0]); put(ua, G.sphere(0.064, 12, 10), W, [0, -0.3, -0.006]);
+      var fa = bone(ua, 0, -0.3, 0); put(fa, lat([[0.066, 0], [0.072, -0.06], [0.066, -0.18], [0.056, -0.235]], 16), W); put(fa, ringX(0.068, 0.014), W, [0, -0.035, 0], [X, 0, 0]);
+      put(fa, ringX(0.07, 0.022), AC, [0, -0.15, 0], [X, 0, 0]); put(fa, G.torus(0.047, 0.012, 6, 16), C, [0, -0.238, 0], [X, 0, 0]);
+      put(fa, G.rbox(0.075, 0.08, 0.042, 0.018), Rb, [0, -0.285, 0.004]); put(fa, G.rbox(0.07, 0.055, 0.034, 0.014), Rb, [0, -0.345, 0.014], [0.25, 0, 0]); put(fa, G.capsule(0.014, 0.035, 6), Rb, [-s * 0.04, -0.28, 0.03], [0.5, 0, s * 0.5]); put(fa, G.rbox(0.07, 0.025, 0.02, 0.008), D, [0, -0.262, 0.026]);
+      if (s === -1) { put(fa, G.rbox(0.06, 0.08, 0.02, 0.008), D, [0, -0.12, 0.062]); mesh(G.rbox(0.045, 0.06, 0.008, 0.003), lamp, [0, -0.12, 0.074], null, null, fa, true); }
+      rig.arms.push(ua); rig.fore.push(fa); }
+    // pernas
+    rig.thigh = []; rig.shin = []; rig.foot = [];
+    for (s = -1; s <= 1; s += 2) { var th = bone(hips, s * 0.1 * wS, -0.05, 0);
+      put(th, lat([[0.104, 0], [0.11, -0.07], [0.098, -0.28], [0.082, -0.4], [0.078, -0.44]], 18), W); put(th, G.rbox(0.11, 0.15, 0.04, 0.03), A, [0, -0.2, 0.088]);
+      put(th, G.torus(0.094, 0.013, 6, 18), D, [0, -0.09, 0], [X, 0, 0]); put(th, ringX(0.084, 0.015), W, [0, -0.375, 0], [X, 0, 0]); put(th, ringX(0.081, 0.015), W, [0, -0.405, 0], [X, 0, 0]);
+      if (s === 1) { put(th, G.rbox(0.05, 0.13, 0.11, 0.02), D, [0.1, -0.24, 0]); put(th, G.rbox(0.052, 0.03, 0.112, 0.01), AC, [0.1, -0.19, 0]); }
+      var sn = bone(th, 0, -0.44, 0); put(sn, G.sphere(0.085, 14, 10), W, [0, 0, 0.01]); put(sn, G.rbox(0.1, 0.09, 0.05, 0.03), AC, [0, 0.0, 0.07]);
+      put(sn, lat([[0.082, 0], [0.09, -0.09], [0.08, -0.28], [0.074, -0.39], [0.078, -0.43]], 18), W); put(sn, G.rbox(0.1, 0.18, 0.04, 0.03), A, [0, -0.2, 0.068]);
+      put(sn, G.torus(0.078, 0.016, 6, 18), D, [0, -0.41, 0], [X, 0, 0]);
+      var ft = bone(sn, 0, -0.44, 0); put(ft, G.cyl(0.082, 0.09, 0.12, 16), W, [0, 0.0, 0]); put(ft, G.capsule(0.075, 0.13, 12), A, [0, -0.04, 0.05], [X, 0, 0], [1.05, 1, 0.8]);
+      put(ft, G.rbox(0.15, 0.04, 0.29, 0.02, 3), D, [0, -0.09, 0.05]); put(ft, G.rbox(0.13, 0.03, 0.06, 0.012), AC, [0, 0.04, 0.09]);
+      rig.thigh.push(th); rig.shin.push(sn); rig.foot.push(ft); }
+    bones.forEach(function (b) { b.add(b.userData.k.mesh(suitMat)); b.userData = {}; });
+    var cargo = mesh(G.rbox(0.36, 0.26, 0.26, 0.05), M.paint, [0, 0.25, 0.32], null, null, spine); cargo.visible = false; rig.cargo = cargo;
+    var pick = grp(); pick.position.set(0, -0.33, 0.02); rig.fore[0].add(pick); mesh(G.cyl(0.013, 0.013, 0.62, 6), M.dark, [0, 0, 0.18], [R / 2, 0, 0], null, pick); mesh(G.rbox(0.05, 0.05, 0.05, 0.01), M.metal, [0, 0, 0.47], null, null, pick); mesh(G.cone ? G.cone(0.02, 0.2, 6) : G.cyl(0.003, 0.025, 0.24, 6), M.metal, [0, 0.12, 0.47], null, null, pick); mesh(G.cyl(0.025, 0.003, 0.18, 6), M.metal, [0, -0.1, 0.47], null, null, pick); pick.visible = false; rig.pick = pick;
+    root.scale.setScalar(hS); rig.cur = {}; return rig; }
+
+  // Poses: alvo de ângulos para cada estado; a transição é suave.
+  var KEYS = ['hy', 'sx', 'sy', 'hx', 'a0x', 'a0z', 'a1x', 'a1z', 'f0', 'f1', 't0', 't1', 's0', 's1', 'k0', 'k1', 'lie'];
+  function animate(rig, st, t, dt, speed) { var tg = {}, k, ph = t * 8.5 * (speed || 1);
+    for (k = 0; k < KEYS.length; k++) tg[KEYS[k]] = 0; tg.hy = 0.98; tg.a0z = 0.1; tg.a1z = -0.1; tg.f0 = -0.15; tg.f1 = -0.15; var br = Math.sin(t * 1.8);
+    if (st === 'walk') { var s = Math.sin(ph); tg.t0 = -s * 0.55; tg.t1 = s * 0.55; tg.s0 = Math.max(0, Math.sin(ph + 1.9)) * 1.1 + 0.08; tg.s1 = Math.max(0, Math.sin(ph + 1.9 + R)) * 1.1 + 0.08; tg.k0 = -tg.t0 * 0.3 - tg.s0 * 0.4; tg.k1 = -tg.t1 * 0.3 - tg.s1 * 0.4;
+      tg.a0x = -s * 0.42; tg.a1x = s * 0.42; tg.f0 = -0.35 - Math.max(0, -s) * 0.3; tg.f1 = -0.35 - Math.max(0, s) * 0.3; tg.hy = 0.96 + Math.abs(Math.cos(ph)) * 0.035; tg.sy = s * 0.09; tg.sx = 0.06; }
+    else if (st === 'carry') { s = Math.sin(ph); tg.t0 = -s * 0.5; tg.t1 = s * 0.5; tg.s0 = Math.max(0, Math.sin(ph + 1.9)) * 1.0 + 0.08; tg.s1 = Math.max(0, Math.sin(ph + 1.9 + R)) * 1.0 + 0.08; tg.a0x = tg.a1x = -0.55; tg.f0 = tg.f1 = -1.1; tg.a0z = 0.05; tg.a1z = -0.05; tg.hy = 0.96 + Math.abs(Math.cos(ph)) * 0.03; tg.sx = -0.05; }
+    else if (st === 'work') { tg.a0x = -1.15 + Math.sin(t * 6) * 0.3; tg.a1x = -1.0 + Math.cos(t * 6.4) * 0.3; tg.f0 = -0.7 + Math.sin(t * 6 + 1) * 0.25; tg.f1 = -0.6; tg.sx = 0.18; tg.t0 = -0.12; tg.t1 = 0.14; tg.s0 = 0.2; tg.s1 = 0.05; tg.hy = 0.95; tg.hx = 0.2; }
+    else if (st === 'mine') { var w = Math.pow(0.5 + 0.5 * Math.sin(t * 4.2), 1.6); tg.a0x = tg.a1x = -0.75 - 2.0 * w; tg.a0z = 0.16; tg.a1z = -0.16; tg.f0 = tg.f1 = -0.25 - 0.3 * w; tg.sx = 0.38 - 0.3 * w; tg.hx = 0.1; tg.t0 = -0.3; tg.t1 = 0.25; tg.s0 = 0.35; tg.s1 = 0.15; tg.hy = 0.93; }
+    else if (st === 'crouch') { tg.t0 = tg.t1 = -1.3; tg.s0 = tg.s1 = 2.0; tg.k0 = tg.k1 = -0.7; tg.hy = 0.6; tg.sx = 0.45; tg.hx = 0.25; tg.a0x = -0.7 + Math.sin(t * 5) * 0.3; tg.a1x = -0.55 + Math.cos(t * 5.5) * 0.3; tg.f0 = tg.f1 = -0.5; }
+    else if (st === 'look') { tg.hx = -0.35; tg.sx = -0.06; tg.a0z = 0.06; tg.a1z = -0.06; tg.f0 = tg.f1 = -0.1; }
+    else if (st === 'lie') { tg.lie = 1; tg.a0z = 0.5; tg.a1z = -0.4; tg.t0 = 0.1; tg.t1 = -0.15; tg.s0 = 0.3; }
+    else { tg.sx = br * 0.015; tg.hx = br * 0.02; }
+    var c = rig.cur, r = Math.min(1, dt * 10); for (k in tg) c[k] = c[k] == null ? tg[k] : c[k] + (tg[k] - c[k]) * r;
+    rig.hips.position.y = c.hy; rig.spine.rotation.set(c.sx, c.sy, 0); rig.head.rotation.x = c.hx;
+    rig.arms[0].rotation.set(c.a0x, 0, -c.a0z); rig.arms[1].rotation.set(c.a1x, 0, -c.a1z); rig.fore[0].rotation.x = c.f0; rig.fore[1].rotation.x = c.f1;
+    rig.thigh[0].rotation.x = c.t0; rig.thigh[1].rotation.x = c.t1; rig.shin[0].rotation.x = c.s0; rig.shin[1].rotation.x = c.s1; rig.foot[0].rotation.x = c.k0; rig.foot[1].rotation.x = c.k1;
+    rig.pose.rotation.x = -c.lie * R / 2; rig.pose.position.y = c.lie * 0.22; rig.pose.position.z = c.lie * 0.9; }
+
+  return { building: building, ark: ark, astronaut: astronaut, animate: animate, deposit: deposit, bed: bed, rocks: rocks, B: B };
+})();
