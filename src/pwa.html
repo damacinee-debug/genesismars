@@ -1,0 +1,10 @@
+<script>
+/* Versão instalável: registra o service worker e mostra "Instalar jogo" no menu quando o navegador permite. */
+(function () {
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  var ev = null, nav = document.querySelector('#menu nav'), b = document.createElement('button'); b.id = 'mInst'; b.textContent = 'Instalar jogo'; b.hidden = true; if (nav) nav.appendChild(b);
+  addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); ev = e; b.hidden = false; });
+  b.addEventListener('click', function () { if (!ev) return; ev.prompt(); ev.userChoice.then(function () { ev = null; b.hidden = true; }); });
+  addEventListener('appinstalled', function () { b.hidden = true; });
+})();
+</script>

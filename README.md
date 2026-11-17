@@ -4,6 +4,16 @@ Jogo de estratégia e colônia no navegador, inspirado em Age of Empires. É 203
 
 ![A base à noite](docs/night.png)
 
+## Instalar
+
+O Genesis Mars é um app instalável (PWA). Com o GitHub Pages ligado, abra `https://damacinee-debug.github.io/genesismars/`:
+
+- **Windows, Mac, Linux (Chrome ou Edge):** clique em **Instalar jogo** no menu do jogo, ou no ícone de instalar na barra de endereço. Ele ganha atalho na área de trabalho e abre em tela cheia, como um programa.
+- **Android (Chrome):** menu ⋮ → **Instalar app**.
+- **iPhone e iPad (Safari):** Compartilhar → **Adicionar à Tela de Início**.
+
+Depois de instalado, o jogo abre mesmo sem internet. Para mandar uma atualização aos jogadores, mude a versão em `sw.js` (`genesis-mars-v5.0`) a cada publicação.
+
 ## Jogar
 
 Abra `index.html` num navegador moderno (Chrome, Edge ou Firefox). O jogo é um único arquivo e usa Three.js r128, carregado do cdnjs.
@@ -22,19 +32,22 @@ Para publicar no GitHub Pages: Settings → Pages → Branch `main`, pasta `/ (r
 | `src/ui.js` | Interface, cenas, áudio e controles |
 | `src/page.html` | Layout e CSS |
 | `src/art.js` | Retratos de Elias e Helena |
-| `build.js` | Junta tudo em `genesis-mars.html` |
+| `build.js` | Junta tudo numa página (`pwa` gera o `index.html` instalável) |
+| `src/pwa.html` | Registro do service worker e botão Instalar jogo |
+| `manifest.webmanifest`, `sw.js`, `icons/` | Instalação e modo offline |
+| `three.min.js` | Three.js r128 (MIT), servido junto para funcionar offline |
 | `test.js` | Jogador automático que joga até a vitória |
 | `t/view.js` | Tira capturas de tela com o Chrome sem janela (Playwright) |
 
 ## Comandos
 
 ```bash
+node build.js pwa    # gera index.html instalável (é o que vai para o GitHub Pages)
 node build.js        # gera genesis-mars.html (Three.js pelo CDN)
 node build.js local  # gera local.html com o Three.js embutido (precisa de uma cópia local do three.js r128)
 node test.js         # tem de terminar com "won true" e nenhuma morte
 ```
 
-Depois de gerar, copie `genesis-mars.html` por cima de `index.html`.
 
 ## Controles
 

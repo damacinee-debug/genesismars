@@ -1,0 +1,19 @@
+{
+  "name": "Genesis Mars",
+  "short_name": "Genesis Mars",
+  "description": "Estratégia e colônia em Marte: prepare a base em 7 sóis, desperte 12 colonos e faça nascer uma nova sociedade.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#0d0907",
+  "theme_color": "#0d0907",
+  "categories": ["games", "strategy"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
