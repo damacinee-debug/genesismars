@@ -285,7 +285,7 @@ var Sim = (function () {
       else if (b.type === 'drill') s.res.ice = Math.min(cp.ice, s.res.ice + d.out.ice * mul(b) * dtH);
       else if (b.type === 'purifier') { var cv = Math.min(s.res.ice, 6 * mul(b) * dtH, (cp.water - s.res.water) / 0.9); if (cv > 0) { s.res.ice -= cv; s.res.water += cv * 0.9; s.stats.waterMade += cv * 0.9;
           if (!s.flags.firstWater && s.stats.waterMade > 0.6) { s.flags.firstWater = true; chron(s, 'firstWater', {}); for (var c in s.chars) memo(s, s.chars[c], 'agua'); emit(s, { type: 'scene', id: 'firstWater', b: b.id }); } } }
-      else if (b.type === 'workshop') { if (s.res.reg >= 2 && s.res.metal >= 1 && s.res.comp < B.compStock) { b.wp = (b.wp || 0) + dtH * mul(b); if (b.wp >= 1) { b.wp -= 1; s.res.reg -= 2; s.res.metal -= 1; s.res.comp += 1; } } }
+      else if (b.type === 'workshop') { if (s.res.reg >= 2 && s.res.metal >= 1 && s.res.comp < B.compStock) { b.wp = (b.wp || 0) + dtH * 3 * mul(b); while (b.wp >= 1 && s.res.reg >= 2 && s.res.metal >= 1) { b.wp -= 1; s.res.reg -= 2; s.res.metal -= 1; s.res.comp += 1; } } }
       else if (b.type === 'antenna') s.flags.antenna = true;
       else if (b.type === 'habitat' && !s.flags.firstLight) { s.flags.firstLight = true; chron(s, 'firstLight', {}); emit(s, { type: 'scene', id: 'firstLight', b: b.id }); }
     }

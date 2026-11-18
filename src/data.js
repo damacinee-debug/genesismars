@@ -14,7 +14,7 @@ var DATA = {
     caps: { o2: 150, water: 80, food: 80, ice: 40, mat: 160, energy: 60 },
     landerUse: 2, netRadius: 9, revealR: 7, revealRGeo: 12,
     walk: 2.6,          // tiles por segundo (1x)
-    carry: 10, suitHours: 8, o2PerHour: 10 / 24, mealFood: 1.25, drinkWater: 1.2, compStock: 70,
+    carry: 10, suitHours: 8, o2PerHour: 10 / 24, mealFood: 1.25, drinkWater: 1.2, compStock: 150,
     sealedO2: 35, stableHours: 36, waterGoal: 30, o2Goal: 10,
     storm: false, stormT: 4 * 24 + 6, stormHours: 13, stormSolar: 0.2,   // tempestade fixa: amanhecer do sol 5
     criticalHours: 5,
@@ -71,7 +71,7 @@ var DATA = {
     wtank:   { name: 'Tanque de água', cat: 'Água', w: 1, h: 1, cost: { metal: 10, comp: 2 }, t: 10, store: { water: 90 }, desc: 'Aumenta a reserva de água.' },
     greenhouse:{ name: 'Estufa', cat: 'Agricultura', w: 3, h: 2, cost: { metal: 20, comp: 8, reg: 15 }, t: 30, use: 2.5, prio: 7, press: true, needPress: true, desc: 'Quatro canteiros. Produz alimento e um pouco de O₂.' },
     lab:     { name: 'Bancada de pesquisa', cat: 'Pesquisa', w: 2, h: 2, cost: { metal: 12, comp: 10 }, t: 20, use: 1.5, prio: 3, press: true, needPress: true, desc: 'Gera pesquisa quando alguém opera.' },
-    workshop:{ name: 'Oficina', cat: 'Produção', w: 2, h: 2, cost: { metal: 20, comp: 6, reg: 10 }, t: 24, use: 3, prio: 2, desc: 'Faz componentes com regolito e metal.' },
+    workshop:{ name: 'Oficina', cat: 'Produção', w: 2, h: 2, cost: { metal: 20, comp: 6, reg: 10 }, t: 24, use: 3, prio: 2, desc: 'Faz 3 componentes por hora com regolito e metal (cada um gasta 2 de regolito e 1 de metal).' },
     storage: { name: 'Armazém', cat: 'Armazenamento', w: 2, h: 2, cost: { metal: 10, reg: 10 }, t: 12, store: { mat: 160 }, desc: 'Mais espaço para materiais. Ponto de entrega.' },
     antenna: { name: 'Antena', cat: 'Comunicação', w: 1, h: 1, cost: { metal: 12, comp: 10 }, t: 20, use: 1, prio: 4, desc: 'Mensagens da Terra, telemetria da Alvorada e guia de pouso.' },
     pad:     { name: 'Zona de Pouso', cat: 'Comunicação', w: 4, h: 4, cost: { metal: 20, comp: 4, reg: 30 }, t: 40, use: 1, prio: 8, need: 'antenna', unique: true, desc: 'Onde a Alvorada pousa. Exige uma antena e precisa de energia para manter as cápsulas.' },
