@@ -96,16 +96,17 @@ var Sim = (function () {
   function pop(s) { var n = 0; for (var id in s.chars) if (s.chars[id].alive) n++; return n; }
   function isShelter(b) { return b.built && (b.type === 'lander' || (!!BD[b.type].beds && b.on)); }
   // Níveis 1–4: cada melhoria multiplica produção, geração e armazenamento, e soma leitos
-  var LVM = [1, 1.5, 2.1, 3];
+  var LVM = [1, 1.5, 2.1, 3, 4.2];
   function lvl(b) { return b.lv || 1; } function mul(b) { return LVM[lvl(b) - 1]; }
   function bedsOf(b) { var n = BD[b.type].beds || 0; return n ? n + (lvl(b) - 1) * Math.ceil(n / 2) : 0; }
   function useOf(b) { return (BD[b.type].use || 0) * (1 + 0.25 * (lvl(b) - 1)); }
-  function upCost(b) { var c = BD[b.type].cost, k = [0, 1.5, 2.5, 4][lvl(b)], o = {}; for (var r in c) o[r] = Math.ceil(c[r] * k); return o; }
+  function upCost(b) { var c = BD[b.type].cost, k = [0, 1.5, 2.5, 4, 6][lvl(b)], o = {}; for (var r in c) o[r] = Math.ceil(c[r] * k); return o; }
   function canUpgrade(s, b) { var d = BD[b.type], L = lvl(b); if (!b.built || b.up != null) return { ok: false, msg: b.up != null ? 'Melhoria em andamento' : 'Termine a obra primeiro' };
     if (b.type === 'lander' || d.landmark || b.type === 'corridor' || b.type === 'pad' || b.type === 'airlock') return { ok: false, msg: 'Esta construção não tem níveis' };
-    if (L >= 4) return { ok: false, msg: 'Nível máximo' };
+    if (L >= 5) return { ok: false, msg: 'Nível máximo' };
     if (L === 2 && Object.keys(s.tech).filter(function (k) { return s.tech[k]; }).length < 2) return { ok: false, msg: 'Nível 3 pede 2 pesquisas concluídas' };
     if (L === 3 && !s.won) return { ok: false, msg: 'Nível 4 pede a Era II (erga um Marco)' };
+    if (L === 4 && Object.keys(s.tech).filter(function (k) { return s.tech[k]; }).length < 4) return { ok: false, msg: 'Nível 5 pede 4 pesquisas concluídas' };
     var c = upCost(b), miss = []; for (var r in c) if (s.res[r] < c[r]) miss.push((c[r] - Math.floor(s.res[r])) + ' ' + ({ metal: 'metal', comp: 'componentes', reg: 'regolito' })[r]);
     if (miss.length) return { ok: false, msg: 'Faltam ' + miss.join(', ') }; return { ok: true, msg: 'Melhorar para o nível ' + (L + 1) }; }
   function upgrade(s, id) { var b = byId(s, id); if (!b) return { ok: false, msg: 'Nada selecionado' }; var r = canUpgrade(s, b); if (!r.ok) return r; var c = upCost(b); for (var k in c) s.res[k] -= c[k]; b.up = 0; emit(s, { type: 'sound', id: 'place' }); return { ok: true, msg: 'Melhoria marcada: os colonos vão trabalhar nela' }; }

@@ -8,6 +8,7 @@ const want = n => !only.length || only.includes(n);
   pg.on('pageerror', e => errs.push('PAGEERR ' + e.message + ' ' + (e.stack || '').split('\n')[1])); pg.on('console', m => { const t = m.text(); if (/GPU stall/.test(t)) return; if (['error', 'warning', 'log'].includes(m.type())) errs.push(m.type() + ' ' + t.slice(0, 500)); });
   await pg.addInitScript((q) => { try { localStorage.setItem('gm_set', JSON.stringify({ q })); } catch (e) {} window.__raf = []; window.__t = 0; window.requestAnimationFrame = cb => { window.__raf.push(cb); return 1; };
     window.step = (n, dt) => { for (let i = 0; i < n; i++) { const L = window.__raf; window.__raf = []; window.__t += (dt || 50); L.forEach(f => f(window.__t)); } }; }, Q);
+  if (only.some(n => n.startsWith('lv'))) await pg.addInitScript(() => { window.__LV = true; });
   let t0 = Date.now(); await pg.goto('file:///home/claude/gm/local.html'); await pg.evaluate(() => step(2)); console.log('load+2 frames ms', Date.now() - t0);
   const shot = async (name, n) => { t0 = Date.now(); await pg.evaluate((n) => step(n || 3), n); await pg.screenshot({ path: 't/' + name + '.png' }); console.log(name, Date.now() - t0, 'ms', await pg.evaluate(() => 'loading ' + World.loading)); };
   if (want('menu')) await shot('menu', 2);
@@ -19,7 +20,7 @@ const want = n => !only.length || only.includes(n);
     P('solar', 4, -3); P('solar', 6, -3); P('solar', 4, -6); P('battery', 3, 0); P('battery', 3, 1); P('airlock', -3, 2); P('habitat', -6, 1); P('corridor', -3, 3); P('greenhouse', -5, 4); P('cryo', -2, 4); P('o2ext', 3, 3); P('o2tank', 5, 3); P('wtank', 5, 4);
     P('lab', -8, -2); P('workshop', 0, 5); P('storage', 7, 2); P('antenna', 8, -3); P('pad', 9, -9); P('solar', 9, -1);
     P('casa', -1, 9); P('casa', 1, 9); P('casa', 3, 9); P('casa', -1, 11); P('casa', 1, 11); const u = P('casa', 3, 11); if (u) { u.built = false; u.prog = 0.5; }
-    s.ark.awake = 6; P('berco', -7, 9); P('escola', -8, 13); P('solar', 6, 6); P('battery', 6, 9); P('poste', 12, 4); P('poste', 20, 6); P('poste', 27, 9); P('o2ext', 29, 12); P('torre', 2, 7); s.b.filter(b => b.type === 'casa').slice(0, 3).forEach((b, i) => b.lv = i + 2); const gh = s.b.find(b => b.type === 'greenhouse'); if (gh) gh.lv = 3; s.b.find(b => b.type === 'workshop').lv = 4;
+    s.ark.awake = 6; P('berco', -7, 9); P('escola', -8, 13); P('solar', 6, 6); P('battery', 6, 9); P('poste', 12, 4); P('poste', 20, 6); P('poste', 27, 9); P('o2ext', 29, 12); P('torre', 2, 7); s.b.filter(b => b.type === 'casa').slice(0, 3).forEach((b, i) => b.lv = i + 2); const gh = s.b.find(b => b.type === 'greenhouse'); if (gh) gh.lv = 3; s.b.find(b => b.type === 'workshop').lv = 4; if (window.__LV) { s.res.metal = s.res.comp = s.res.reg = 9999; const Q = (ty, x, z, lv) => { const b = { id: s.nid++, type: ty, x: C + x, z: C + z, prog: 1, built: true, hp: 100, on: true, why: '', dust: 0, off: false, lv: lv }; if (ty === 'greenhouse') b.plots = [{ crop: 'batata', g: 0.9 }, { crop: 'alface', g: 0.7 }, null, null]; s.b.push(b); }; for (let i = 0; i < 5; i++) { Q('solar', -36 + i * 5, -31, i + 1); Q('casa', -36 + i * 5, -36, i + 1); Q('greenhouse', -38 + i * 7, -43, i + 1); Q('habitat', -38 + i * 7, -50, i + 1); } for (let x = -42; x < 0; x++) for (let z = -56; z < -26; z++) s.rt.fog[(C + z) * Sim.N + C + x] = 1; }
     const pad = s.b.find(b => b.type === 'pad'); s.ark.st = 2; s.ark.pad = pad.id; s.t = 8 * 24 + 10; s.lastHour = Math.floor(s.t); s.auto = false;
     s.ark.pods.slice(0, 8).forEach((p, i) => { p.st = 'awake'; UI.state(); }); window._s = s; });
   await pg.evaluate(() => { const s = window._s, C = Sim.N / 2; // acorda 8 colonos "à mão" e espalha pelo bairro e pelas obras
@@ -37,6 +38,9 @@ const want = n => !only.length || only.includes(n);
   if (want('ark')) { await cam({ x: 11, z: -7, dist: 30, yaw: 2.2, pitch: 0.28 }, D0 + 16.8); await shot('ark', 8); }
   if (want('berco')) { await cam({ x: -5.5, z: 11.5, dist: 22, yaw: -0.5, pitch: 0.4 }, D0 + 9); await shot('berco', 8); }
   if (want('ground')) { await cam({ x: 15, z: -2, dist: 9, yaw: 0.5, pitch: 0.55 }, D0 + 11); await shot('ground', 10); }
+  if (want('lv1')) { await cam({ x: -24, z: -34, dist: 30, yaw: 0.35, pitch: 0.42 }, D0 + 11); await shot('lv1', 10); }
+  if (want('lv2')) { await cam({ x: -22, z: -46, dist: 34, yaw: 0.35, pitch: 0.42 }, D0 + 11); await shot('lv2', 10); }
+  if (want('lv3')) { await cam({ x: -14, z: -41, dist: 26, yaw: -0.5, pitch: 0.38 }, D0 + 11); await shot('lv3', 10); }
   if (want('poles')) { await cam({ x: 17, z: 8, dist: 22, yaw: -0.6, pitch: 0.32 }, D0 + 15); await shot('poles', 10); }
   if (want('search')) { await pg.evaluate(() => { const q = document.getElementById('bq'); q.value = 'perf'; q.dispatchEvent(new Event('input')); step(1); }); await pg.screenshot({ path: 't/search.png' }); }
   if (want('far')) { await cam({ x: 0, z: 4, dist: 110, yaw: 0.6, pitch: 0.5 }, D0 + 13); await shot('far', 20); }
