@@ -33,7 +33,7 @@ var DATA = {
       traits: [['Mãos firmes', 'Engenheira: constrói e repara 10% mais rápido.'], ['Humor seco', 'Conversar com ela alivia mais o estresse.'], ['Peso do controle', 'Estresse sobe quando algo quebra.']] }
   },
   skillNames: { eng: 'Engenharia', bot: 'Botânica', geo: 'Geologia', pil: 'Pilotagem', med: 'Medicina', sci: 'Ciência' },
-  jobs: { eng: ['Construtor', '#e8792b'], bot: ['Agricultora', '#5fae4a'], geo: ['Minerador', '#c9a23a'], pil: ['Explorador', '#2aa5b0'], med: ['Médica', '#d94f4f'], sci: ['Cientista', '#5a8be0'] },
+  jobs: { eng: ['Construtor', '#e8792b'], bot: ['Agricultora', '#5fae4a'], geo: ['Minerador', '#c9a23a'], pil: ['Explorador', '#2aa5b0'], med: ['Médica', '#d94f4f'], sci: ['Cientista', '#5a8be0'], cn: ['Xuanyuan', '#d8262c'], de: ['Kepler', '#e0b020'] },
   jobKeys: ['eng', 'geo', 'bot', 'eng', 'sci', 'med'],
 
   // Os doze da Alvorada: despertam conforme houver leito livre. A ordem pode ser mudada pelo jogador.
@@ -65,6 +65,9 @@ var DATA = {
     garagem: { name: 'Garagem', cat: 'Defesa', w: 3, h: 3, cost: { metal: 35, comp: 15, reg: 10 }, t: 34, use: 2, need: 'arsenal', desc: 'Fabrica e recarrega veículos: Explorador leve, Rover de exploração e Veículo de resgate.' },
     estrada: { name: 'Estrada', cat: 'Infraestrutura', w: 1, h: 1, cost: { reg: 2 }, t: 1.5, floor: true, desc: 'Caminho compactado: quem anda por ela vai 40% mais rápido. Evolui sozinha com as Eras (trilha, placas de concreto, pista iluminada, via de luz). Continue clicando para traçar.' },
     bastiao: { name: 'Bastião de tiro', cat: 'Defesa', w: 1, h: 1, cost: { reg: 10, metal: 8 }, t: 10, wall: true, need: 'quartel', desc: 'Plataforma elevada para a linha de muros. Um guarda posicionado nela (botão direito com o guarda selecionado) atira 50% mais longe e recebe 60% menos dano.' },
+    torreta: { name: 'Torreta pesada', cat: 'Defesa', w: 1, h: 1, cost: { metal: 22, comp: 12 }, t: 18, use: 1.2, need: 'era3', range: 12, dps: 15, desc: 'Canhão automático de dois tubos: 12 m de alcance, muito dano. Gasta munição. Era III.' },
+    fabrica: { name: 'Fábrica pesada', cat: 'Defesa', w: 3, h: 3, cost: { metal: 60, comp: 30, reg: 30 }, t: 45, use: 4, need: 'era3', desc: 'Fabrica o Rover armado (Era III) e, na Era IV, o Tanque pressurizado e a Artilharia móvel.' },
+    domo:    { name: 'Domo de escudo', cat: 'Defesa', w: 2, h: 2, cost: { metal: 40, comp: 40 }, t: 40, use: 6, need: 'era4', shield: 14, desc: 'Projeta um escudo de energia: construções num raio de 14 m sofrem metade do dano. Era IV.' },
     muro:    { name: 'Muro de regolito', cat: 'Defesa', w: 1, h: 1, cost: { reg: 6 }, t: 3, wall: true, need: 'era2', desc: 'Bloco de regolito compactado. Segura os ataques; continue clicando para erguer uma linha. Melhore para concreto armado, blindagem e, no nível 5, muro de energia.' },
     vigia:   { name: 'Torre de vigia', cat: 'Defesa', w: 1, h: 1, cost: { metal: 12, comp: 6 }, t: 14, use: 0.6, need: 'arsenal', range: 10, dps: 7, desc: 'Atira sozinha em tudo que se aproximar (10 m) e enxerga longe. Gasta munição.' },
     torre:   { name: 'Torre de luz', cat: 'Energia', w: 1, h: 1, cost: { metal: 8, comp: 2 }, t: 10, use: 0.5, prio: 2, desc: 'Ilumina uma área grande à noite, para enxergar e trabalhar na base.' },
@@ -147,6 +150,14 @@ var DATA = {
     awake6: 'Sol {sol}. Seis despertos. A base virou um lugar com gente demais para caber numa mesa só.',
     firstHouse: 'Sol {sol}. A primeira casa de Marte ficou pronta. Tinha dois leitos e uma porta que alguém podia chamar de sua.',
     bairro: 'Sol {sol}. Três casas vizinhas, e alguém deu nome ao lugar: {what}. O primeiro bairro marciano.',
+    era3: 'Sol {sol}. Duas naves cruzaram o céu na mesma noite. Não estamos mais sozinhos em Marte, e nem somos os únicos humanos.',
+    pouso_cn: 'Sol {sol}. A Missão Xuanyuan pousou a nordeste. Bandeiras vermelhas no horizonte.',
+    pouso_de: 'Sol {sol}. O Consórcio Kepler pousou a sudoeste, com pouca gente e muito equipamento.',
+    tratado: 'Sol {sol}. Um tratado foi assinado com {who}. Marte ficou um pouco menos perigoso.',
+    guerra: 'Sol {sol}. {who} atacou a colônia. Humanos contra humanos, num planeta onde ninguém sobrevive sozinho.',
+    despertar: 'Sol {sol}. A estrutura despertou. A luz dela chega até a base, e tudo o que estava no gelo veio junto.',
+    nucleo: 'Sol {sol}. O núcleo da estrutura se apagou. O silêncio voltou ao gelo.',
+    fim: 'Sol {sol}. {what}',
     sinal: 'Sol {sol}. A antena captou um sinal regular vindo de baixo do gelo. Não é natural, e não é nosso.',
     ataque: 'Sol {sol}. Algo saiu do escuro e atacou a base. Pela primeira vez, Marte respondeu.',
     guarda: 'Sol {sol}. {who} pegou em armas. A colônia agora tem uma Guarda.',
@@ -183,11 +194,24 @@ var DATA = {
   vehicles: {
     scout:  { name: 'Explorador leve', short: 'Explorador', era: 2, speed: 3.4, hp: 70, reveal: 10, cost: { metal: 25, comp: 10 }, hours: 4, desc: 'Batedor: o mais rápido, revela o mapa por onde passa.' },
     rover:  { name: 'Rover de exploração', short: 'Rover', era: 2, speed: 2.4, hp: 160, reveal: 7, carry: 10, cost: { metal: 40, comp: 15 }, hours: 6, desc: 'Coleta sozinho e carrega 10 vezes mais que um colono.' },
+    rover_a: { name: 'Rover armado', short: 'Rover armado', era: 3, speed: 2.3, hp: 220, reveal: 7, range: 8, dps: 14, cost: { metal: 50, comp: 22 }, hours: 6, plant: 'fabrica', desc: 'Rover com metralhadora leve no teto. Era III.' },
+    tank:   { name: 'Tanque pressurizado', short: 'Tanque', era: 4, speed: 1.6, hp: 600, reveal: 8, range: 11, dps: 30, cost: { metal: 90, comp: 45 }, hours: 10, plant: 'fabrica', desc: 'Blindado de lagartas com canhão. O que segura um Colosso. Era IV.' },
+    arty:   { name: 'Artilharia móvel', short: 'Artilharia', era: 4, speed: 1.3, hp: 260, reveal: 6, range: 20, dps: 20, area: true, cost: { metal: 70, comp: 40 }, hours: 9, plant: 'fabrica', desc: 'Alcance muito longo e dano em área, frágil de perto. Era IV.' },
     rescue: { name: 'Veículo de resgate', short: 'Resgate', era: 2, speed: 2.8, hp: 140, reveal: 6, cost: { metal: 35, comp: 14 }, hours: 5, desc: 'Busca feridos e quem está sem oxigênio e leva para dentro.' }
   },
   aliens: {
     crawler: { name: 'Rastejador', hp: 34, dps: 5, speed: 1.5, range: 0.9 },
-    spitter: { name: 'Cuspidor', hp: 26, dps: 4, speed: 1.2, range: 5 }
+    spitter: { name: 'Cuspidor', hp: 26, dps: 4, speed: 1.2, range: 5 },
+    colossus: { name: 'Colosso', hp: 420, dps: 16, speed: 0.8, range: 1.8, big: true },
+    soldier: { name: 'Soldado', hp: 60, dps: 6, speed: 1.3, range: 7, human: true }
+  },
+
+  // ---------- Era III: os outros ----------
+  factions: {
+    cn: { name: 'Missão Xuanyuan', short: 'China', color: '#d8262c', dx: 74, dz: -52, delay: 6, trade: [{ give: { reg: 30 }, get: { comp: 12 }, label: 'Trocar 30 regolito por 12 componentes' }, { give: { water: 25 }, get: { metal: 30 }, label: 'Trocar 25 água por 30 metal' }],
+      text: 'Chegaram com mais gente e constroem rápido. Querem território e água.' },
+    de: { name: 'Consórcio Kepler', short: 'Alemanha', color: '#e0b020', dx: -80, dz: 58, delay: 30, trade: [{ give: { comp: 20 }, get: { ammo: 70 }, label: 'Trocar 20 componentes por 70 de munição' }, { give: { food: 25 }, get: { research: 18 }, label: 'Trocar 25 alimento por 18 de pesquisa' }],
+      text: 'Chegaram menores e com tecnologia melhor. Preferem negociar, mas se defendem bem.' }
   },
 
   // Verbetes da Crônica: os recursos do jogo e o que eles são de verdade
@@ -239,6 +263,12 @@ var DATA = {
     { id: 'garagem', text: 'Construa a Garagem e fabrique um Rover' },
     { id: 'posto2', text: 'Construa um Posto avançado na direção do sinal' },
     { id: 'estrutura', text: 'Leve alguém até a estrutura enterrada (marcada no mapa)' },
+    { id: 'contato', text: 'Era III: a China e a Alemanha estão pousando. Abra Diplomacia no topo' },
+    { id: 'troca', text: 'Faça uma troca ou mande um presente para um dos vizinhos' },
+    { id: 'tratado', text: 'Assine um tratado (confiança 60+) ou repila um ataque humano' },
+    { id: 'fabrica', text: 'Construa a Fábrica pesada e um Rover armado' },
+    { id: 'despertar', text: 'Era IV: a estrutura despertou. Construa o Domo de escudo e fabrique um Tanque' },
+    { id: 'nucleo', text: 'Destrua o núcleo da estrutura: leve tanques, artilharia e a Guarda até lá' },
   ],
 
   dialogues: [
@@ -258,6 +288,10 @@ var DATA = {
 
   // Eventos com escolha. cond e fx são resolvidos por nome em Sim.EV.
   events: [
+    { id: 'cnWater', title: 'A Xuanyuan pede água', text: 'O perfurador chinês quebrou. Eles pedem 30 de água para atravessar a semana.', choices: [{ label: 'Mandar a água', hint: 'Custa 30 água. A China confia muito mais em vocês.' }, { label: 'Recusar', hint: 'A confiança cai.' }] },
+    { id: 'deResearch', title: 'Kepler propõe pesquisa conjunta', text: 'Os alemães querem estudar a estrutura juntos. Pedem 15 componentes para montar o laboratório.', choices: [{ label: 'Aceitar', hint: 'Custa 15 componentes. Ganha 25 de pesquisa e confiança.' }, { label: 'Recusar', hint: 'Nada muda, mas eles notam.' }] },
+    { id: 'border', title: 'Fronteira contestada', text: 'Um posto vizinho apareceu perto do seu território. Eles dizem que a área é deles.', choices: [{ label: 'Ceder a área', hint: 'Confiança sobe. Você recua um pouco.' }, { label: 'Manter posição', hint: 'Confiança cai muito. Pode virar conflito.' }] },
+    { id: 'help', title: 'Pedido de socorro', text: 'Os aliens atacaram a base vizinha. Pedem que você mande guardas ou munição.', choices: [{ label: 'Mandar 60 de munição', hint: 'A confiança deles sobe muito.' }, { label: 'Não arriscar', hint: 'A confiança cai.' }] },
     { id: 'leak', title: 'Vazamento no habitat', text: 'Um chiado fino atrás do painel de serviço. A pressão cai devagar. O₂ está escapando.',
       choices: [
         { label: 'Helena repara agora', hint: 'Definitivo. Helena fica exausta e tensa.' },

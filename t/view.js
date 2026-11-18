@@ -8,6 +8,7 @@ const want = n => !only.length || only.includes(n);
   pg.on('pageerror', e => errs.push('PAGEERR ' + e.message + ' ' + (e.stack || '').split('\n')[1])); pg.on('console', m => { const t = m.text(); if (/GPU stall/.test(t)) return; if (['error', 'warning', 'log'].includes(m.type())) errs.push(m.type() + ' ' + t.slice(0, 500)); });
   await pg.addInitScript((q) => { try { localStorage.setItem('gm_set', JSON.stringify({ q })); } catch (e) {} window.__raf = []; window.__t = 0; window.requestAnimationFrame = cb => { window.__raf.push(cb); return 1; };
     window.step = (n, dt) => { for (let i = 0; i < n; i++) { const L = window.__raf; window.__raf = []; window.__t += (dt || 50); L.forEach(f => f(window.__t)); } }; }, Q);
+  if (only.some(n => n === 'e4')) await pg.addInitScript(() => { window.__E4 = true; });
   if (only.some(n => n === 'war' || n === 'war2')) await pg.addInitScript(() => { window.__WAR = true; });
   if (only.some(n => n.startsWith('lv'))) await pg.addInitScript(() => { window.__LV = true; });
   let t0 = Date.now(); await pg.goto('file:///home/claude/gm/local.html'); await pg.evaluate(() => step(2)); console.log('load+2 frames ms', Date.now() - t0);
@@ -21,7 +22,11 @@ const want = n => !only.length || only.includes(n);
     P('solar', 4, -3); P('solar', 6, -3); P('solar', 4, -6); P('battery', 3, 0); P('battery', 3, 1); P('airlock', -3, 2); P('habitat', -6, 1); P('corridor', -3, 3); P('greenhouse', -5, 4); P('cryo', -2, 4); P('o2ext', 3, 3); P('o2tank', 5, 3); P('wtank', 5, 4);
     P('lab', -8, -2); P('workshop', 0, 5); P('storage', 7, 2); P('antenna', 8, -3); P('pad', 9, -9); P('solar', 9, -1);
     P('casa', -1, 9); P('casa', 1, 9); P('casa', 3, 9); P('casa', -1, 11); P('casa', 1, 11); const u = P('casa', 3, 11); if (u) { u.built = false; u.prog = 0.5; }
-    s.ark.awake = 6; P('berco', -7, 9); P('escola', -8, 13); P('solar', 6, 6); P('battery', 6, 9); P('poste', 12, 4); P('poste', 20, 6); P('poste', 27, 9); P('o2ext', 29, 12); P('torre', 2, 7); s.b.filter(b => b.type === 'casa').slice(0, 3).forEach((b, i) => b.lv = i + 2); const gh = s.b.find(b => b.type === 'greenhouse'); if (gh) gh.lv = 3; s.b.find(b => b.type === 'workshop').lv = 4; if (window.__WAR) { s.won = true; s.era = 2; s.al.st = 1; s.al.site = { x: C - 18, z: C - 74 }; s.res.ammo = 120; s.arms.rifle = 2; s.arms.smg = 1;
+    s.ark.awake = 6; P('berco', -7, 9); P('escola', -8, 13); P('solar', 6, 6); P('battery', 6, 9); P('poste', 12, 4); P('poste', 20, 6); P('poste', 27, 9); P('o2ext', 29, 12); P('torre', 2, 7); s.b.filter(b => b.type === 'casa').slice(0, 3).forEach((b, i) => b.lv = i + 2); const gh = s.b.find(b => b.type === 'greenhouse'); if (gh) gh.lv = 3; s.b.find(b => b.type === 'workshop').lv = 4; if (window.__E4) { const q = Sim.quick(4); Object.assign(s, q); for (let i = 0; i < 400; i++) Sim.tick(s, 0.25); s.rt.out.length = 0; s.pending = null;
+      for (const k in s.fac) if (s.fac[k].st !== 1) { s.fac[k].t0 = -999; } for (let i = 0; i < 40; i++) Sim.tick(s, 0.25); s.rt.out.length = 0; s.pending = null;
+      Sim.spawnVehicle(s, 'tank', C - 6, C - 24).face = 3.1; Sim.spawnVehicle(s, 'arty', C - 1, C - 23).face = 3.0; Sim.spawnVehicle(s, 'rover_a', C + 4, C - 22).face = 2.9;
+      for (let i = 0; i < 2; i++) s.foes.push({ id: s.fid++, type: 'colossus', x: C - 8 + i * 9, z: C - 32, sx: C, sz: C - 40, hp: 300, cd: 0, face: 0, mv: true }); for (let i = 0; i < 4; i++) s.foes.push({ id: s.fid++, type: 'soldier', fac: 'cn', x: C + 8 + i * 1.5, z: C - 28, sx: C, sz: C - 40, hp: 50, cd: 0, face: -0.3, mv: false }); }
+    if (window.__WAR) { s.won = true; s.era = 2; s.al.st = 1; s.al.site = { x: C - 18, z: C - 74 }; s.res.ammo = 120; s.arms.rifle = 2; s.arms.smg = 1;
       ['quartel', 'arsenal', 'garagem'].forEach((ty, i) => P(ty, 10 + i * 5, -10)); P('vigia', 6, -16); P('vigia', 16, -16); for (let x = 2; x < 22; x++) { if (x === 11) P('bastiao', x, -18); else P('muro', x, -18); }
       s.b.filter(b => b.type === 'muro').slice(0, 15).forEach((b, i) => b.lv = 1 + (i % 5)); for (let z = -8; z < 6; z++) P('estrada', 9, z); for (let x = 0; x < 9; x++) P('estrada', x, 5);
       const v1 = Sim.spawnVehicle(s, 'rover', C + 14, C - 4), v2 = Sim.spawnVehicle(s, 'scout', C + 18, C - 3), v3 = Sim.spawnVehicle(s, 'rescue', C + 21, C - 5); v1.face = 0.6; v2.face = 1.2; v3.face = -0.4;
@@ -46,6 +51,9 @@ const want = n => !only.length || only.includes(n);
   if (want('ground')) { await cam({ x: 15, z: -2, dist: 9, yaw: 0.5, pitch: 0.55 }, D0 + 11); await shot('ground', 10); }
   if (want('edge')) { await pg.evaluate(() => { const s = window._s; s.rt.fog.fill(1); s.rt.fogDirty = true; }); await cam({ x: 40, z: 10, dist: 55, yaw: -0.9, pitch: 0.55 }, D0 + 11); await shot('edge', 14); }
   if (want('map')) { await pg.evaluate(() => { const s = window._s; s.rt.fog.fill(1); s.rt.fogDirty = true; }); await cam({ x: 0, z: 8, dist: 120, yaw: 0.3, pitch: 1.2 }, D0 + 11); await shot('map', 14); }
+  if (want('e4')) { await pg.evaluate(() => { const s = window._s; W.rebuild(s); }); await cam({ x: 0, z: -26, dist: 34, yaw: 0.25, pitch: 0.45 }, D0 + 11); await shot('e4', 12); }
+  if (want('fac')) { await cam({ x: 74, z: -52, dist: 60, yaw: 0.5, pitch: 0.55 }, D0 + 11); await shot('fac', 14); }
+  if (want('core')) { await cam({ x: -18, z: -74, dist: 30, yaw: 0.6, pitch: 0.35 }, D0 + 11); await shot('core', 12); }
   if (want('war')) { await pg.evaluate(() => { const s = window._s, C = Sim.N / 2; ['c1', 'c2'].forEach((k, i) => { const c = s.chars[k]; if (!c) return; Sim.arm(s, k); c.x = C + 9 + i * 3; c.z = C - 15.5; c.inside = null; c.act = null; c.fighting = true; c.firing = true; c.face = Math.PI; }); s.rt.fx = s.foes.slice(0, 3).map((f, i) => ({ k: 'shot', x: C + 9 + (i % 2) * 3, z: C - 15.5, tx: f.x, tz: f.z, w: 'rifle' })); });
     await cam({ x: 12, z: -14, dist: 26, yaw: 0.5, pitch: 0.5 }, D0 + 11); await shot('war', 10); }
   if (want('war2')) { await cam({ x: 15, z: -6, dist: 20, yaw: -0.6, pitch: 0.42 }, D0 + 11); await shot('war2', 10); }

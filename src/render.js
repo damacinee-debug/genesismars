@@ -116,10 +116,12 @@ var World = (function () {
           'vec3 cDust=s2l(vec3(.70,.47,.32)),cRust=s2l(vec3(.55,.29,.17)),cDark=s2l(vec3(.30,.18,.12)),cOchre=s2l(vec3(.72,.53,.35)),cBas=s2l(vec3(.22,.16,.13));',
           'vec3 c=mix(cRust,cDust,smoothstep(.3,.72,n1));c=mix(c,cOchre,smoothstep(.55,.85,n2)*.4);c=mix(c,cDark,smoothstep(.45,.78,fbm(q*.23+11.,vec2(1e4),4.))*.45);c=mix(c,cBas*1.3,smoothstep(.62,.8,fbm(q*.6+29.,vec2(1e4),4.))*.3);',
           'float tM1=fbm(q*1.2+4.,vec2(1e4),4.);c*=.86+.28*tM1;c*=1.+(n3-.5)*.22*AA(5.);',
-          'float strata=.5+.5*sin(vWP.y*4.5+n2*5.);float rk=smoothstep(.10,.32,slope+(n2-.5)*.14);c=mix(c,mix(cBas,cRust*.7,strata),rk);',
+          'float strata=.5+.5*sin(vWP.y*4.5+n2*5.);float str2=.5+.5*sin(vWP.y*13.+n3*3.);float rk=smoothstep(.10,.32,slope+(n2-.5)*.14);vec3 rkc=mix(cBas,cRust*.75,strata);rkc=mix(rkc,cOchre*.8,str2*.25);rkc=mix(rkc,cBas*.6,smoothstep(.55,.8,fbm(q*1.1+17.,vec2(1e4),3.))*.5);c=mix(c,rkc,rk);',
+          'float bas=smoothstep(.56,.74,fbm(q*.045+23.,vec2(1e4),4.))*(1.-rk);vec3 cSand=s2l(vec3(.30,.22,.19));',
           // dunas e ondulações de vento: dão volume e sombra (bump), filtradas pela distância
           'vec2 wd=vec2(.83,.55);float dn=dot(q,wd);float dune=sin(dn*.55+n2*6.)*.5+.5;float rp=sin(dn*3.4+fbm(q*.7,vec2(1e4),3.)*9.)*AA(3.4);float rp2=sin(dn*8.+n3*6.)*AA(8.);',
           'float flt=(1.-rk)*(1.-base*.7);c*=1.-(1.-dune)*.07*flt;c*=1.+rp*.05*flt;c=mix(c,cDust*1.1,smoothstep(.4,1.,rp)*.14*flt);',
+          'c=mix(c,cSand*(.85+.3*dune)*(1.+rp*.12),bas*.8*(1.-base));float crest=smoothstep(.55,.95,dune)*flt*(1.-bas);c=mix(c,cDust*1.18,crest*.18);',
           // seixos pintados (os de perto também existem em 3D), bordas irregulares e sombra de contato
           'vec2 wq=q*2.6+vec2(fbm(q*1.3+5.,vec2(1e4),2.),fbm(q*1.3+9.,vec2(1e4),2.))*1.6;vec3 v=vor(wq,vec2(1e4));float pr=.10+.16*fract(v.y*53.1);',
           'float sh=v.x/pr+(fbm(wq*3.+v.y*20.,vec2(1e4),2.)-.5)*.5;float pk=step(v.y,.05+rk*.35)*(1.-smoothstep(.75,1.,sh))*AA(8.);float ao=step(v.y,.05+rk*.35)*smoothstep(1.6,1.,sh)*(1.-pk)*AA(8.);',
@@ -129,7 +131,7 @@ var World = (function () {
           'c=mix(c,c*.78+cDark*.08,base*.55);c=mix(c,cDark*1.05,trod*.32);',
           'float iceM=smoothstep(.3,.62,ice+(n2-.5)*.45+(n3-.5)*.5);vec3 fv=vor(q*2.2,vec2(1e4));float frc=(1.-smoothstep(.0,.06,fv.z-fv.x))*AA(6.);c=mix(c,s2l(vec3(.84,.88,.93))*(.8+.3*n3)*(1.-frc*.35),iceM*.9);',
           'vec3 hz=mix(vec3(dot(c,vec3(.3,.59,.11))),c,.35)*vec3(.78,.7,.66);c=mix(c,hz*.5,outA*.92);float edge=smoothstep(.25,.45,pl)*(1.-smoothstep(.5,.66,pl));c=mix(c,cDust*1.15,edge*.35*(.6+.4*sin(q.x*.9+q.y*.7)));',
-          'diffuseColor.rgb=c;gH=((dune*.35+rp*.06+rp2*.01)*flt+n3*.05*AA(5.)+pk*clamp(1.-sh*sh,0.,1.)*pr*1.1+(g1-.5)*.012*AA(18.)+(tM1-.5)*.08)*mix(1.,.3,base)+n2*.05;gR=mix(.96,.5,iceM)-pk*.05;'].join('\n'))
+          'diffuseColor.rgb=c;gH=((dune*.35+rp*(.06+bas*.06)+rp2*.01)*flt+n3*.05*AA(5.)+pk*clamp(1.-sh*sh,0.,1.)*pr*1.1+(g1-.5)*.012*AA(18.)+(tM1-.5)*.08)*mix(1.,.3,base)+n2*.05;gR=mix(.96,.5,iceM)-pk*.05;'].join('\n'))
         .replace('#include <roughnessmap_fragment>', 'float roughnessFactor=gR;')
         .replace('#include <normal_fragment_maps>', 'normal=bumpN(-vViewPosition,normal,gH);')
         .replace('#include <tonemapping_fragment>', '{float l=dot(gl_FragColor.rgb,vec3(.3,.59,.11));vec3 fo=mix(vec3(l),gl_FragColor.rgb,.4)*.26;gl_FragColor.rgb=mix(fo,gl_FragColor.rgb,smoothstep(0.,1.,gVis));}\n#include <tonemapping_fragment>'); };
@@ -193,11 +195,11 @@ var World = (function () {
     if (ch || force) fogTex.needsUpdate = true;
     if (s.rt.playDirty || force) { s.rt.playDirty = false; var P = s.rt.play; for (i = 0; i < N * N; i++) playData[i * 4] = P[i]; playTex.needsUpdate = true; } }
 
-  function ensureRig(k, c) { var rig = c && c.veh ? MD.vehicle(c.veh) : MD.astronaut(k, Sim.cinfo(k)); rig.root.userData.kind = 'c'; rig.root.userData.id = k; rig.ph = h2(k.length * 3.3 + k.charCodeAt(k.length - 1), 1.7) * 6;
+  function ensureRig(k, c) { var rig = c && c.veh ? MD.vehicle(c.veh) : MD.astronaut(k, Sim.cinfo(k)); if (rig.veh) { var vs = c.veh === 'scout' ? [2.4, 3.4] : c.veh === 'tank' || c.veh === 'arty' ? [4.4, 7] : [3.4, 6.2], ao = contactAO(vs[0], vs[1]); ao.position.y = 0.06; rig.root.add(ao); } rig.root.userData.kind = 'c'; rig.root.userData.id = k; rig.ph = h2(k.length * 3.3 + k.charCodeAt(k.length - 1), 1.7) * 6;
     var pk = new T.Mesh(new T.CylinderGeometry(0.6, 0.6, 2.2, 8), new T.MeshBasicMaterial({ visible: false })); pk.position.y = 1.1; rig.root.add(pk);
     rig.ring = decal(0x6dffb0); rig.ring.material.uniforms.uRing.value = 1; rig.ring.scale.set(rig.veh ? 5.5 : 1.9, rig.veh ? 5.5 : 1.9, 1); if (rig.veh) { pk.scale.set(2.5, 1.2, 2.5); }
     rig.root.traverse(function (m) { if (m.isMesh) { m.castShadow = m !== pk && !m.material.transparent; m.receiveShadow = true; } }); scene.add(rig.root); pickables.push(rig.root); cRig[k] = rig; return rig; }
-  W.rebuild = function (s) { var k; for (k in bMesh) removeB(k); for (k in cRig) { scene.remove(cRig[k].root); scene.remove(cRig[k].ring); } for (k in dMesh) scene.remove(dMesh[k]); bMesh = {}; cRig = {}; dMesh = {}; pickables = []; for (var fk in foeM) scene.remove(foeM[fk].root); foeM = {}; if (relicM) { scene.remove(relicM); relicM = null; } if (roadM) { scene.remove(roadM); roadM = null; } roadSig = ''; if (arkMesh) { scene.remove(arkMesh); arkMesh = null; }
+  W.rebuild = function (s) { var k; for (k in bMesh) removeB(k); for (k in cRig) { scene.remove(cRig[k].root); scene.remove(cRig[k].ring); } for (k in dMesh) scene.remove(dMesh[k]); bMesh = {}; cRig = {}; dMesh = {}; pickables = []; for (var fk in foeM) scene.remove(foeM[fk].root); foeM = {}; for (var bk in fbM) scene.remove(fbM[bk]); fbM = {}; if (relicM) { scene.remove(relicM); relicM = null; } if (roadM) { scene.remove(roadM); roadM = null; } roadSig = ''; if (arkMesh) { scene.remove(arkMesh); arkMesh = null; }
     W.cam.x = N / 2; W.cam.z = N / 2 + 1.5; cam.updateMatrixWorld(); 
     if (mapSeed !== s.seed || !chunks.length) { mapSeed = s.seed; buildTerrain(s); } else { for (var i = 0; i < N * N; i++) trod[i] = 0; occSig = ''; }
     updateData(s, true); stream(s, 80); W.lastEnvForce = true; };
@@ -211,6 +213,7 @@ var World = (function () {
     var o = { lv: opts.lv, g: g, mask: opts.mask, on: null, built: null, plots: [], solar: null, h: g.userData.h, base: g.position.y };
     if (b.type === 'solar') { var sm2 = g.userData.o.dyn.panel; sm2.traverse(function (m) { if (m.isMesh && m.material === G.mats.solar) { m.material = G.mats.solar.clone(); m.material.onBeforeCompile = G.mats.solar.onBeforeCompile; m.material.customProgramCacheKey = G.mats.solar.customProgramCacheKey; o.solar = m.material; } }); }
     var bc = new T.Mesh(new T.SphereGeometry(0.16, 10, 8), new T.MeshBasicMaterial({ color: 0xff3a2a })); bc.position.y = o.h + 0.5; bc.visible = false; g.add(bc); o.beacon = bc;
+    if (!d.floor && !d.wall) { var ao = contactAO(d.w * TS * 1.25, d.h * TS * 1.25); ao.position.y = 0.09; g.add(ao); }
     bMesh[b.id] = o; return o; }
   function removeB(id) { var o = bMesh[id]; if (!o) return; scene.remove(o.g); if (o.holo) scene.remove(o.holo); var i = pickables.indexOf(o.g); if (i >= 0) pickables.splice(i, 1); delete bMesh[id]; }
   function setBuilt(o, built) { if (o.built === built) return; o.built = built; var g = o.g;
@@ -266,6 +269,7 @@ var World = (function () {
       if (u.dyn.ramp) u.dyn.ramp.rotation.x = -Math.PI / 2 + (0.52 + Math.PI / 2) * (W.landerRamp == null ? 1 : W.landerRamp);
       if (!b.built) continue;
       if (u.dyn.spin && b.on && !b.idle) u.dyn.spin.rotation[u.dyn.spinAxis] += dt * (u.dyn.spinAxis === 'y' ? 9 : 7);
+      if (u.dyn.shield) { u.dyn.shield.visible = b.built && b.on; u.dyn.shield.material.opacity = 0.05 + 0.03 * Math.sin(time * 2); }
       if (u.dyn.turret && s.foes.length) { var cbt = Sim.center(b), bf = null, bdd = 12; s.foes.forEach(function (f) { var dd = Math.hypot(f.x - cbt.x, f.z - cbt.z); if (dd < bdd) { bdd = dd; bf = f; } }); if (bf) u.dyn.turret.rotation.y = Math.atan2(bf.x - cbt.x, bf.z - cbt.z); }
       if (u.dyn.dish) { u.dyn.dish.rotation.y += dt * 0.08 * (b.on ? 1 : 0); }
       if (u.dyn.panel) { var tgy = Math.atan2(sunDir.x, sunDir.z), el = Math.asin(clamp(sunDir.y, -1, 1)), pn = u.dyn.panel; pn.rotation.order = 'YXZ'; var ty = b.on || sunDir.y > 0 ? tgy : pn.rotation.y; pn.rotation.y += (ty - pn.rotation.y) * Math.min(1, dt * 0.6); var tx2 = sunDir.y > 0.02 ? -(Math.PI / 2 - el) * 0.75 : 0; pn.rotation.x += (tx2 - pn.rotation.x) * Math.min(1, dt * 0.6);
@@ -290,6 +294,7 @@ var World = (function () {
         var ry = m.rotation.y, VL = c.veh === 'rover' ? 2.35 : c.veh === 'scout' ? 1.3 : 1.9, VW = c.veh === 'rover' ? 1.35 : c.veh === 'scout' ? 0.75 : 1.15, fx_ = Math.sin(ry), fz_ = Math.cos(ry), rx_ = Math.cos(ry), rz_ = -Math.sin(ry);
         var hF = Hr(c.x + fx_ * VL / TS, c.z + fz_ * VL / TS), hB = Hr(c.x - fx_ * VL / TS, c.z - fz_ * VL / TS), hR = Hr(c.x + rx_ * VW / TS, c.z + rz_ * VW / TS), hL = Hr(c.x - rx_ * VW / TS, c.z - rz_ * VW / TS);
         var hc = Math.max((hF + hB) / 2, (hR + hL) / 2, gy); m.position.y = hc + 0.03; rig.body.rotation.x = -Math.atan2(hF - hB, 2 * VL); rig.body.rotation.z = Math.atan2(hR - hL, 2 * VW);
+        if (rig.turret && c.fighting) { var nf2 = null, bd2 = 30; s.foes.forEach(function (f) { var dd = Math.hypot(f.x - c.x, f.z - c.z); if (dd < bd2) { bd2 = dd; nf2 = f; } }); if (nf2) rig.turret.rotation.y = Math.atan2(nf2.x - c.x, nf2.z - c.z) - m.rotation.y; }
         if (mv > 0.001 && Math.random() < dt * 14) dust.emit(m.position.x - Math.sin(m.rotation.y) * 2.4, gy + 0.3, m.position.z - Math.cos(m.rotation.y) * 2.4, (Math.random() - 0.5) * 1.5, 0.5 + Math.random() * 0.6, (Math.random() - 0.5) * 1.5, 0.9, 2.2, 0.62, 0.4, 0.26, 0.4, 1.2, 1.2, 0.1); continue; }
       if (c.guard && !rig.gun) { rig.gun = MD.rifle(c.guard); rig.gun.rotation.x = Math.PI / 2; rig.gun.position.set(0, -0.3, 0.06); rig.fore[0].add(rig.gun); } if (rig.gun) { rig.gun.visible = !!c.guard; if (!c.guard) { rig.fore[0].remove(rig.gun); rig.gun = null; } }
       var a2 = c.act, st = 'idle'; if (c.critical > 0) st = 'lie'; else if (a2 && a2.phase === 'go') st = c.carry ? 'carry' : 'walk'; else if (a2 && a2.phase === 'work') { st = { gather: 'mine', plant: 'crouch', harvest: 'crouch', build: 'work', repair: 'work', clean: 'work', inspect: 'work', unload: 'work', contemplate: 'look', rescue: 'crouch' }[a2.type] || 'idle'; }
@@ -356,13 +361,17 @@ var World = (function () {
     var g = new T.BufferGeometry().setFromPoints([new T.Vector3(x0, y0, z0), new T.Vector3(x1, y1, z1)]), l = new T.Line(g, trMat[key].clone()); l.userData.life = life; l.userData.max = life; scene.add(l); tracers.push(l); }
   function warFx(s, dt, time) { var k, i;
     // criaturas
-    var alive = {}; s.foes.forEach(function (f) { alive[f.id] = 1; var a = foeM[f.id]; if (!a) { a = foeM[f.id] = MD.alien(f.type); scene.add(a.root); a.ph = Math.random() * 9; }
+    var alive = {}; s.foes.forEach(function (f) { if (f.type === 'core') return; alive[f.id] = 1; var a = foeM[f.id];
+      if (!a && f.type === 'soldier') { var rg = MD.astronaut('s' + f.id, { id: 's' + f.id, name: '', short: '', job: f.fac, hero: false }); rg.gun = MD.rifle('rifle'); rg.gun.rotation.x = Math.PI / 2; rg.gun.position.set(0, -0.3, 0.06); rg.fore[0].add(rg.gun); a = foeM[f.id] = { root: rg.root, rig: rg, human: true, ph: Math.random() * 9 }; scene.add(rg.root); }
+      if (!a) { a = foeM[f.id] = MD.alien(f.type); scene.add(a.root); a.ph = Math.random() * 9; }
+      if (a.human) { var gy0 = Hr(f.x, f.z); a.root.position.set(f.x * TS, gy0, f.z * TS); if (f.face != null) a.root.rotation.y = f.face; MD.animate(a.rig, f.mv || f.flee ? 'walk' : 'aim', time + a.ph, dt, 1); return; }
       var gy = Hr(f.x, f.z); a.root.position.set(f.x * TS, gy, f.z * TS); if (f.face != null) { var df = f.face - a.root.rotation.y; while (df > Math.PI) df -= 6.283; while (df < -Math.PI) df += 6.283; a.root.rotation.y += df * Math.min(1, dt * 6); }
       MD.animAlien(a, time + a.ph, !!f.mv || !!f.flee, !f.mv && !f.flee); if (Math.random() < dt * 2) glow.emit(a.root.position.x, gy + 0.7, a.root.position.z, 0, 0.3, 0, 0.25, 0.8, 0.2, 0.9, 0.9, 0.6, 0.5, 1, 0); });
     for (k in foeM) if (!alive[k]) { scene.remove(foeM[k].root); delete foeM[k]; }
     // efeitos que a simulação pediu
     var F = s.rt.fx || []; for (i = 0; i < F.length; i++) { var e = F[i], ex = e.x * TS, ez = e.z * TS, ey = Hr(e.x, e.z);
-      if (e.k === 'shot') { var ty = Hr(e.tx, e.tz) + 0.55, sy = ey + (e.w === 'tower' ? 3.75 : 1.35); tracer(ex, sy, ez, e.tx * TS + (Math.random() - 0.5) * 0.3, ty, e.tz * TS + (Math.random() - 0.5) * 0.3, e.w === 'energy' ? 0x66e0ff : 0xffd27a, 0.07);
+      if (e.k === 'shot') { var ty = Hr(e.tx, e.tz) + 0.55, sy = ey + (e.w === 'tower' ? 3.75 : 1.35); if (e.w === 'tank' || e.w === 'arty') sy = ey + 2.2; else if (e.w === 'turret') sy = ey + 1.9; else if (e.w === 'rover_a') sy = ey + 2.9; tracer(ex, sy, ez, e.tx * TS + (Math.random() - 0.5) * 0.3, ty, e.tz * TS + (Math.random() - 0.5) * 0.3, e.w === 'energy' ? 0x66e0ff : e.w === 'enemy' ? 0xff5a4a : 0xffd27a, e.w === 'tank' || e.w === 'arty' ? 0.18 : 0.07);
+        if (e.w === 'tank' || e.w === 'arty') for (var qq = 0; qq < 18; qq++) { glow.emit(e.tx * TS, ty, e.tz * TS, (Math.random() - 0.5) * 5, Math.random() * 4, (Math.random() - 0.5) * 5, 0.35, 0.5, 1, 0.6, 0.2, 1, 0, 1.5, 3); dust.emit(e.tx * TS, ty, e.tz * TS, (Math.random() - 0.5) * 3, Math.random() * 2.5, (Math.random() - 0.5) * 3, 1.2, 2, 0.4, 0.3, 0.25, 0.6, 1.4, 1.2, 0.3); }
         glow.emit(ex, sy, ez, 0, 0, 0, 0.35, 0.06, 1, 0.8, 0.4, 1, 0, 1, 0); for (var q = 0; q < 2; q++) glow.emit(e.tx * TS, ty, e.tz * TS, (Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2, 0.12, 0.25, 0.5, 1, 0.9, 1, 0, 2, 3); }
       else if (e.k === 'spit') { tracer(ex, ey + 1.2, ez, e.tx * TS, Hr(e.tx, e.tz) + 0.8, e.tz * TS, 0xc070ff, 0.25); }
       else if (e.k === 'die') { for (q = 0; q < 26; q++) glow.emit(ex, ey + 0.5, ez, (Math.random() - 0.5) * 4, Math.random() * 3, (Math.random() - 0.5) * 4, 0.2, 0.9, 0.2, 1, 0.9, 1, 0, 1.5, 4); for (q = 0; q < 10; q++) dust.emit(ex, ey + 0.2, ez, (Math.random() - 0.5) * 2, Math.random() * 1.2, (Math.random() - 0.5) * 2, 0.8, 1.6, 0.25, 0.2, 0.22, 0.6, 1, 1.4, 0.4); }
@@ -371,7 +380,19 @@ var World = (function () {
     for (i = tracers.length - 1; i >= 0; i--) { var l = tracers[i]; l.userData.life -= dt; l.material.opacity = Math.max(0, l.userData.life / l.userData.max); if (l.userData.life <= 0) { scene.remove(l); l.geometry.dispose(); l.material.dispose(); tracers.splice(i, 1); } }
     // a estrutura
     if (s.al && s.al.site && !relicM) { relicM = MD.relic(); relicM.position.set(s.al.site.x * TS, Hr(s.al.site.x, s.al.site.z), s.al.site.z * TS); scene.add(relicM); relicM.traverse(function (m) { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); }
-    if (relicM) { relicM.rotation.y += dt * 0.02; if (Math.random() < dt * 6) glow.emit(relicM.position.x + (Math.random() - 0.5) * 4, relicM.position.y + Math.random() * 6, relicM.position.z + (Math.random() - 0.5) * 4, 0, 0.6, 0, 0.3, 2.5, 0.2, 0.95, 0.9, 0.8, 0.4, 1, -0.1); } }
+    facBases(s, dt, time);
+    if (relicM) { var core = s.foes.filter(function (f) { return f.type === 'core'; })[0]; relicM.scale.setScalar(core ? 1.25 + Math.sin(time * 3) * 0.03 : s.ended ? 1.0 : 1); if (core && Math.random() < dt * 30) glow.emit(relicM.position.x + (Math.random() - 0.5) * 6, relicM.position.y + Math.random() * 9, relicM.position.z + (Math.random() - 0.5) * 6, 0, 1.2, 0, 0.5, 2.0, 0.7, 0.35, 1, 0.9, 0.5, 1, -0.1); relicM.rotation.y += dt * 0.02; if (Math.random() < dt * 6) glow.emit(relicM.position.x + (Math.random() - 0.5) * 4, relicM.position.y + Math.random() * 6, relicM.position.z + (Math.random() - 0.5) * 4, 0, 0.6, 0, 0.3, 2.5, 0.2, 0.95, 0.9, 0.8, 0.4, 1, -0.1); } }
+  // ---------- bases da China e da Alemanha ----------
+  var fbM = {}, flagMat = {};
+  function facBases(s, dt, time) { if (!s.fb || !s.fb.length) return;
+    s.fb.forEach(function (b) { if (fbM[b.id]) return; var g;
+      if (b.type === 'ship') { g = MD.ark(); g.position.set(b.x * TS, Hr(b.x, b.z), b.z * TS); g.rotation.y = b.fac === 'cn' ? 0.8 : -2.2; }
+      else { var d = BD[b.type]; g = MD.building(b.type, d, { lv: b.fac === 'de' ? 3 : 2 }); var cx = b.x + d.w / 2, cz = b.z + d.h / 2; g.position.set(cx * TS, Hr(cx, cz) - 0.04, cz * TS); }
+      if (b.type === 'ship' || b.type === 'quartel' || b.type === 'antenna') { var F = DATA.factions[b.fac]; if (!flagMat[b.fac]) flagMat[b.fac] = new T.MeshStandardMaterial({ color: F.color, roughness: 0.6, side: T.DoubleSide, emissive: F.color, emissiveIntensity: 0.15 });
+        var pole = new T.Mesh(new T.CylinderGeometry(0.04, 0.04, 5, 6), G.mats.metal); pole.position.set(2.6, 2.5, 2.6); g.add(pole); var fl = new T.Mesh(new T.PlaneGeometry(1.6, 1.0), flagMat[b.fac]); fl.position.set(3.4, 4.5, 2.6); g.add(fl); g.userData.flag = fl; }
+      g.traverse(function (m) { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); setWear(g, 0.15); scene.add(g); fbM[b.id] = g; });
+    for (var k in fbM) { var fl2 = fbM[k].userData.flag; if (fl2) fl2.rotation.y = Math.sin(time * 1.3 + +k) * 0.25; } }
+
   // ---------- estradas: uma malha só, com o visual da Era ----------
   var roadM = null, roadSig = '';
   function roads(s) { var R0 = s.rt.road; if (!R0) return; var sig = s.era + ':', i, list = [];
@@ -388,6 +409,12 @@ var World = (function () {
       if (era >= 4) { if (!nN) k.add('screenOn', G.rbox(TS, 0.1, 0.04, 0.01), { p: [cx, y + 0.02, cz - TS * 0.49], uv: 'keep' }); if (!nS) k.add('screenOn', G.rbox(TS, 0.1, 0.04, 0.01), { p: [cx, y + 0.02, cz + TS * 0.49], uv: 'keep' }); if (!nE) k.add('screenOn', G.rbox(0.04, 0.1, TS, 0.01), { p: [cx + TS * 0.49, y + 0.02, cz], uv: 'keep' }); if (!nW) k.add('screenOn', G.rbox(0.04, 0.1, TS, 0.01), { p: [cx - TS * 0.49, y + 0.02, cz], uv: 'keep' }); } });
     roadM = new T.Group(); k.build(roadM, true); roadM.traverse(function (m) { if (m.isMesh) { m.receiveShadow = true; m.castShadow = false; } }); scene.add(roadM); }
 
+  // sombra de contato (oclusão no pé das construções): um degradê escuro e suave no chão
+  var aoTex = null;
+  function contactAO(w, d) { if (!aoTex) { var cv = document.createElement('canvas'); cv.width = cv.height = 128; var x = cv.getContext('2d'), im = x.createImageData(128, 128);
+      for (var j = 0; j < 128; j++) for (var i = 0; i < 128; i++) { var u = Math.abs(i / 63.5 - 1), v = Math.abs(j / 63.5 - 1), r = Math.pow(Math.pow(u, 6) + Math.pow(v, 6), 1 / 6), a = Math.max(0, 1 - Math.max(0, r - 0.55) / 0.45); a = a * a * (3 - 2 * a); var k = (j * 128 + i) * 4; im.data[k] = im.data[k + 1] = im.data[k + 2] = 0; im.data[k + 3] = Math.round(a * 255); }
+      x.putImageData(im, 0, 0); aoTex = new T.CanvasTexture(cv); }
+    var m = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshBasicMaterial({ color: 0x000000, map: aoTex, transparent: true, opacity: 0.5, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.rotation.x = -Math.PI / 2; m.renderOrder = 1; m.castShadow = m.receiveShadow = false; return m; }
   // desgaste: atributo por vértice lido pelo shader de pó (constrói novo, envelhece pouco)
   function setWear(g, w) { g.traverse(function (m) { if (!m.isMesh || !m.geometry || !m.geometry.attributes.position) return; var n = m.geometry.attributes.position.count, a = m.geometry.attributes.aWear;
       if (!a || a.count !== n) { a = new T.BufferAttribute(new Float32Array(n), 1); m.geometry.setAttribute('aWear', a); } a.array.fill(w); a.needsUpdate = true; }); }

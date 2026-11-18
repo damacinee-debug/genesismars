@@ -201,6 +201,8 @@ var Sim = (function () {
     if (d.need === 'antenna' && !ofType(s, 'antenna', true).length) return { ok: false, reason: 'Precisa de uma antena pronta para guiar o pouso' };
     if (d.need === 'awake6' && s.ark.awake < 6) return { ok: false, reason: 'Precisa de 6 colonos despertos para operar' };
     if (d.need === 'era2' && !s.won) return { ok: false, reason: 'Liberado na Era II: erga um Marco primeiro' };
+    if (d.need === 'era3' && s.era < 3) return { ok: false, reason: 'Liberado na Era III' };
+    if (d.need === 'era4' && s.era < 4) return { ok: false, reason: 'Liberado na Era IV' };
     if (d.need === 'quartel' && !ofType(s, 'quartel', true).length) return { ok: false, reason: 'Construa o Quartel primeiro' };
     if (d.need === 'arsenal' && !ofType(s, 'arsenal', true).length) return { ok: false, reason: 'Construa o Arsenal primeiro' };
     if (d.need === 'berco' && !ofType(s, 'berco', true).length) return { ok: false, reason: 'Construa o Berço primeiro' };
@@ -297,7 +299,7 @@ var Sim = (function () {
     var i, b, d, o2Before = s.res.o2;
     for (i = 0; i < s.b.length; i++) { b = s.b[i]; d = BD[b.type];
       if (b.type === 'greenhouse' && b.built) plots(s, b, dtH);
-      if ((b.type === 'arsenal' || b.type === 'garagem') && b.built) factory(s, b, dtH);
+      if ((b.type === 'arsenal' || b.type === 'garagem' || b.type === 'fabrica') && b.built) factory(s, b, dtH);
       if (b.leak && b.built) s.res.o2 = Math.max(0, s.res.o2 - 2 * dtH);
       if (!b.on) continue;
       if (b.type === 'o2ext') { var g = Math.min(cp.o2 - s.res.o2, d.out.o2 * mul(b) * dtH); if (g > 0) { s.res.o2 += g; s.stats.o2Made += g; if (!s.flags.firstO2 && s.stats.o2Made > 1) { s.flags.firstO2 = true; chron(s, 'firstO2', {}); } } }
@@ -466,7 +468,7 @@ var Sim = (function () {
 
   function charTick(s, c, dtS, dtH) {
     if (!c.alive) return;
-    if (c.veh) { vehNeeds(s, c, dtH); if (!c.alive) return; } else if (fightOrFlee(s, c, dtS)) return;
+    if (c.veh) { vehNeeds(s, c, dtH); if (!c.alive) return; if (D.vehicles[c.veh].dps && fightOrFlee(s, c, dtS)) return; } else if (fightOrFlee(s, c, dtS)) return;
     if (c.critical > 0) { c.critical -= dtH; if (c.critical <= 0) die(s, c); return; }
     if (!c.veh) needs(s, c, dtH); if (c.critical > 0 || !c.alive) return;
     var a = c.act, n = c.needs;
@@ -575,6 +577,10 @@ var Sim = (function () {
       case 'rare': s.flags.rare = true; if (idx === 0) { addRes(s, 'metal', 30); addRes(s, 'comp', 10); axis(s, 'planeta', 25); note = 'A veia de mineral raro foi extraída até o fim.'; } else { s.res.research += 6; axis(s, 'planeta', -25); note = 'A formação antiga foi preservada. Só as amostras saíram de lá.'; } break;
       case 'ration': s.flags.ration = true; if (idx === 0) { s.bond = clamp(s.bond + 10, 0, 100); axis(s, 'comunidade', -25); note = 'A comida que restava foi dividida em partes iguais.'; } else { s.bond = clamp(s.bond - 10, 0, 100); e.needs.hunger = Math.max(0, e.needs.hunger - 30); h.needs.stress = clamp(h.needs.stress + 12, 0, 100); axis(s, 'comunidade', 25); note = 'A comida foi priorizada para quem trabalha fora.'; } break;
       case 'frozen': var dr = ofType(s, 'drill', true)[0]; if (idx === 0) { s.res.energy = Math.max(0, s.res.energy - 20); } else if (dr) dr.frozen = s.t + 6; break;
+      case 'cnWater': if (idx === 0 && s.res.water >= 30) { s.res.water -= 30; trust(s, 'cn', 22); note = 'A colônia mandou água para a Xuanyuan quando o perfurador deles quebrou.'; } else trust(s, 'cn', -14); break;
+      case 'deResearch': if (idx === 0 && s.res.comp >= 15) { s.res.comp -= 15; s.res.research += 25; trust(s, 'de', 15); note = 'Kepler e SpaceZ estudaram a estrutura juntos.'; } else trust(s, 'de', -5); break;
+      case 'border': if (idx === 0) trust(s, s.evFac, 14); else trust(s, s.evFac, -22); break;
+      case 'help': if (idx === 0 && s.res.ammo >= 60) { s.res.ammo -= 60; trust(s, s.evFac, 20); note = 'A colônia mandou munição para os vizinhos sob ataque.'; } else trust(s, s.evFac, -12); break;
       case 'sealed': s.flags.sealed = true; s.res.o2 += B.sealedO2; chron(s, 'sealed', {}); alertK(s, 'crit', 'Reserva lacrada aberta: resolva a produção de O₂ agora', 'sealed', null, null, 0); break;
     }
     if (note && !s.flags['n_' + ev + idx]) { s.flags['n_' + ev + idx] = 1; chron(s, 'choice', { what: note }); } emit(s, { type: 'sound', id: 'drop' }); }
@@ -593,19 +599,20 @@ var Sim = (function () {
   }
 
   // ---------------- ERA II: SINAIS, ATAQUES, GUARDA E VEÍCULOS ----------------
-  function warInit(s) { s.arms = s.arms || {}; s.al = s.al || { st: 0, t0: 0, wave: 0, next: 0, nights: 0, attack: false, found: false, site: null, kills: 0 }; s.foes = s.foes || []; s.fid = s.fid || 1; s.nv = s.nv || 0; if (s.res.ammo == null) s.res.ammo = 0; }
+  function warInit(s) { s.arms = s.arms || {}; s.al = s.al || { st: 0, t0: 0, wave: 0, next: 0, nights: 0, attack: false, found: false, site: null, kills: 0 }; s.foes = s.foes || []; s.fid = s.fid || 1; s.nv = s.nv || 0; if (s.res.ammo == null) s.res.ammo = 0; s.fac = s.fac || {}; s.fb = s.fb || []; }
   function fx(s, o) { if (s.rt.fx && s.rt.fx.length < 300) s.rt.fx.push(o); }
   function nightAt(t) { var d = Math.floor(t / 24) * 24 + 21; return d > t ? d : d + 24; }
-  function foesNear(s, x, z, r) { var best = null, bd = r; for (var i = 0; i < s.foes.length; i++) { var f = s.foes[i]; if (f.hp <= 0 || f.flee) continue; var d = Math.hypot(f.x - x, f.z - z); if (d < bd) { bd = d; best = f; } } return best ? { f: best, d: bd } : null; }
+  function foesNear(s, x, z, r) { var best = null, bd = r; for (var i = 0; i < s.foes.length; i++) { var f = s.foes[i]; if (f.hp <= 0 || f.flee) continue; var d = Math.hypot(f.x - x, f.z - z) - (f.type === 'core' ? 4 : 0); if (d < bd) { bd = d; best = f; } } return best ? { f: best, d: bd } : null; }
   function spawnWave(s) { var A = s.al, C = N / 2, n = Math.min(14, 2 + Math.floor(A.wave * 1.6)), sp = A.wave >= 2 ? Math.floor(n / 3) : 0, base = Math.atan2(A.site.z - C, A.site.x - C) + (rnd(s) - 0.5) * 1.6, r = 10, x, z;
     while (r < N / 2 - 4) { x = Math.floor(C + Math.cos(base) * r); z = Math.floor(C + Math.sin(base) * r); if (s.rt.play[z * N + x] < 40) break; r += 1; } r += 4;
     var ox = C + Math.cos(base) * r, oz = C + Math.sin(base) * r;
+    if (s.era >= 4) { var nc = 1 + Math.floor(A.wave / 3); for (var ci = 0; ci < nc; ci++) s.foes.push({ id: s.fid++, type: 'colossus', x: ox + (rnd(s) - 0.5) * 6, z: oz + (rnd(s) - 0.5) * 6, sx: ox, sz: oz, hp: D.aliens.colossus.hp * (1 + A.wave * 0.05), cd: 0 }); n = Math.min(20, n + 4); }
     for (var i = 0; i < n; i++) s.foes.push({ id: s.fid++, type: i < sp ? 'spitter' : 'crawler', x: ox + (rnd(s) - 0.5) * 5, z: oz + (rnd(s) - 0.5) * 5, sx: ox, sz: oz, hp: D.aliens[i < sp ? 'spitter' : 'crawler'].hp * (1 + A.wave * 0.08), cd: 0 });
     A.wave++; A.attack = true; if (A.wave === 1) chron(s, 'ataque', {}); alertK(s, 'crit', 'Ataque! ' + n + ' criaturas vindo do escuro. Os colonos se abrigam; a Guarda vai ao combate', 'wave' + A.wave, ox, oz, 0); emit(s, { type: 'sound', id: 'alarm' }); emit(s, { type: 'raid', on: true }); }
   function postOf(s, c) { if (c.post == null) return null; var b = byId(s, c.post); if (!b || !b.built || b.hp <= 0) { c.post = null; return null; } return b; }
   function hitChar(s, c, dmg) { var pb = postOf(s, c); if (pb && Math.hypot(pb.x + 0.5 - c.x, pb.z + 0.5 - c.z) < 1.2) dmg *= 0.4; c.needs.health = Math.max(0, c.needs.health - dmg); if (c.veh && c.needs.health <= 0) { c.alive = false; alertK(s, 'crit', cname(c.id) + ' foi destruído', 'vd' + c.id, c.x, c.z, 0); } }
-  function hitBuilding(s, b, dmg) { if (!b.built) dmg *= 1.5; b.hp = Math.max(0, b.hp - dmg); if (b.hp <= 0 && BD[b.type].wall) { s.b.splice(s.b.indexOf(b), 1); rebuildOcc(s); fx(s, { k: 'boom', x: b.x + 0.5, z: b.z + 0.5 }); } else if (b.hp < 40) alertK(s, 'warn', BD[b.type].name + ' sob ataque', 'atk' + b.id, b.x, b.z, 8); }
-  function foeTick(s, f, dtS) { var A = D.aliens[f.type], C = N / 2, i;
+  function hitBuilding(s, b, dmg) { if (!b.built) dmg *= 1.5; var cbh = center(b); for (var di = 0; di < s.b.length; di++) { var dm = s.b[di]; if (dm.type === 'domo' && dm.built && dm.on) { var cd0 = center(dm); if (Math.hypot(cd0.x - cbh.x, cd0.z - cbh.z) < BD.domo.shield) { dmg *= 0.5; break; } } } b.hp = Math.max(0, b.hp - dmg); if (b.hp <= 0 && BD[b.type].wall) { s.b.splice(s.b.indexOf(b), 1); rebuildOcc(s); fx(s, { k: 'boom', x: b.x + 0.5, z: b.z + 0.5 }); } else if (b.hp < 40) alertK(s, 'warn', BD[b.type].name + ' sob ataque', 'atk' + b.id, b.x, b.z, 8); }
+  function foeTick(s, f, dtS) { if (f.type === 'core') return coreTick(s, f, dtS); var A = D.aliens[f.type], C = N / 2, i;
     if (f.flee) { var dx = f.sx - f.x, dz = f.sz - f.z, d = Math.hypot(dx, dz); if (d < 1) { f.gone = true; return; } f.x += dx / d * A.speed * 1.3 * dtS; f.z += dz / d * A.speed * 1.3 * dtS; return; }
     if (!f.tg || f.rt < s.t) { f.rt = s.t + 0.08; f.tg = null; var bd = 13;
       for (var id in s.chars) { var c = s.chars[id]; if (!c.alive || c.inside != null || c.critical > 0) continue; var d0 = Math.hypot(c.x - f.x, c.z - f.z); if (d0 < bd) { bd = d0; f.tg = { k: 'c', id: id }; } }
@@ -618,16 +625,16 @@ var Sim = (function () {
       if (oc > 0 && (!tb || oc !== tb.id)) { var blk = byId(s, oc); if (blk) { if (f.cd <= 0) { f.cd = 0.5; hitBuilding(s, blk, A.dps * 0.5 * (BD[blk.type].wall ? 0.35 / mul(blk) : 0.7)); fx(s, { k: 'claw', x: f.x, z: f.z }); } return; } }
       f.x = nx; f.z = nz; f.mv = true; return; }
     f.mv = false; if (f.cd > 0) return; f.cd = 0.5;
-    if (f.type === 'spitter') fx(s, { k: 'spit', x: f.x, z: f.z, tx: tx, tz: tz });
+    if (f.type === 'spitter') fx(s, { k: 'spit', x: f.x, z: f.z, tx: tx, tz: tz }); else if (f.type === 'soldier') fx(s, { k: 'shot', x: f.x, z: f.z, tx: tx, tz: tz, w: 'enemy' });
     if (tc) hitChar(s, tc, A.dps * 0.5); else hitBuilding(s, tb, A.dps * 0.5 * (BD[tb.type].wall ? 0.35 / mul(tb) : 0.7)); }
   function shoot(s, x, z, f, dps, dtS, who) { var dmg = dps * dtS; if (s.res.ammo <= 0) dmg *= 0.15; else s.res.ammo = Math.max(0, s.res.ammo - 0.3 * dtS); f.hp -= dmg;
-    who.sh = (who.sh || 0) - dtS; if (who.sh <= 0) { who.sh = 0.18 + Math.random() * 0.12; fx(s, { k: 'shot', x: x, z: z, tx: f.x, tz: f.z, w: who.guard || 'tower' }); } }
+    who.sh = (who.sh || 0) - dtS; if (who.sh <= 0) { who.sh = (who.veh === 'tank' || who.veh === 'arty' ? 0.9 : 0.18) + Math.random() * 0.12; fx(s, { k: 'shot', x: x, z: z, tx: f.x, tz: f.z, w: who.veh || who.guard || (who.type === 'torreta' ? 'turret' : 'tower') }); } }
   function fightOrFlee(s, c, dtS) { if (!s.foes.length || c.critical > 0) return false;
-    if (c.guard) { if (c.needs.health < 25) return false; var nf = foesNear(s, c.x, c.z, c.post != null ? 22 : 16); if (!nf) return false; var W = D.weapons[c.guard];
+    var VW = c.veh ? D.vehicles[c.veh] : null; if (c.guard || (VW && VW.dps)) { if (c.needs.health < 25 && !VW) return false; var nf = foesNear(s, c.x, c.z, c.post != null ? 22 : VW ? Math.max(16, VW.range + 6) : 16); if (!nf) return false; var W = VW || D.weapons[c.guard];
       if (c.act && !c.act.fight) { requeue(c); clearAct(c); } c.act = null; c.sleeping = false; c.inside = null; c.hold = null; c.fighting = true; c.face = Math.atan2(nf.f.x - c.x, nf.f.z - c.z);
       var pb = postOf(s, c), rng = W.range * (pb ? 1.5 : 1); if (pb) { var pd = Math.hypot(pb.x + 0.5 - c.x, pb.z + 0.5 - c.z); if (pd > 0.4) { var pv = Math.min(pd, B.walk * 1.2 * dtS); c.x += (pb.x + 0.5 - c.x) / pd * pv; c.z += (pb.z + 0.5 - c.z) / pd * pv; c.firing = false; return true; } if (nf.d > rng) { c.firing = false; return true; } }
-      if (!pb && nf.d > W.range * 0.9) { var v = B.walk * 1.1 * dtS, nx = c.x + (nf.f.x - c.x) / nf.d * v, nz = c.z + (nf.f.z - c.z) / nf.d * v; if (freeTile(s, Math.floor(nx), Math.floor(nz))) { c.x = nx; c.z = nz; } else if (freeTile(s, Math.floor(nx), Math.floor(c.z))) c.x = nx; else if (freeTile(s, Math.floor(c.x), Math.floor(nz))) c.z = nz; c.firing = false; }
-      else { shoot(s, c.x, c.z, nf.f, W.dps * (1 + 0.04 * (c.skills.pil || 0)), dtS, c); c.firing = true; }
+      if (!pb && nf.d > W.range * 0.9) { var v = B.walk * (VW ? VW.speed : 1.1) * dtS, nx = c.x + (nf.f.x - c.x) / nf.d * v, nz = c.z + (nf.f.z - c.z) / nf.d * v; if (freeTile(s, Math.floor(nx), Math.floor(nz))) { c.x = nx; c.z = nz; } else if (freeTile(s, Math.floor(nx), Math.floor(c.z))) c.x = nx; else if (freeTile(s, Math.floor(c.x), Math.floor(nz))) c.z = nz; c.firing = false; }
+      else { shoot(s, c.x, c.z, nf.f, W.dps * (1 + 0.04 * (c.skills.pil || 0)), dtS, c); if (W.area) for (var ai = 0; ai < s.foes.length; ai++) { var af = s.foes[ai]; if (af !== nf.f && Math.hypot(af.x - nf.f.x, af.z - nf.f.z) < 2.2) af.hp -= W.dps * 0.5 * dtS; } c.firing = true; }
       return true; }
     c.fighting = false; c.firing = false;
     if (c.inside == null && !c.veh) { var near = foesNear(s, c.x, c.z, 9); if (near && !(c.act && c.act.type === 'warm' && c.act.flee)) { var sh = shelter(s, c); if (sh) { requeue(c); clearAct(c); c.queue = []; c.hold = null; if (start(s, c, { type: 'warm', kind: 'b', id: sh.id })) c.act.flee = true; alertK(s, 'warn', 'Colonos correndo para se abrigar', 'flee', c.x, c.z, 12); } } }
@@ -636,17 +643,90 @@ var Sim = (function () {
   function war(s, dtS, dtH) { var A = s.al, i;
     if (s.won && A.st === 0) { if (!A.t0) A.t0 = s.t; if (s.t - A.t0 >= 6) { A.st = 1; A.site = { x: N / 2 - 18, z: N / 2 - 74 }; for (var dz = -4; dz <= 4; dz++) for (var dx = -4; dx <= 4; dx++) { var kk = (A.site.z + dz) * N + A.site.x + dx; if (kk >= 0 && kk < N * N) s.rt.fog[kk] = 1; } s.rt.fogDirty = true;
         A.next = nightAt(s.t + 18); chron(s, 'sinal', {}); alertK(s, 'crit', 'A antena captou um sinal regular vindo de baixo do gelo, ao norte. Prepare a defesa', 'sinal', A.site.x, A.site.z, 0); emit(s, { type: 'sound', id: 'discover' }); emit(s, { type: 'scene', id: 'signal' }); } }
-    if (A.st >= 1 && !A.attack && s.t >= A.next) spawnWave(s);
-    if (A.attack && !isNight(s)) for (i = 0; i < s.foes.length; i++) s.foes[i].flee = true;
+    if (A.st >= 1 && !A.attack && !s.ended && s.t >= A.next) spawnWave(s);
+    if (A.attack && !isNight(s)) for (i = 0; i < s.foes.length; i++) if (s.foes[i].type !== 'core') s.foes[i].flee = true;
+    eras(s, dtS, dtH);
     for (i = 0; i < s.foes.length; i++) foeTick(s, s.foes[i], dtS);
     // torres de vigia
-    for (i = 0; i < s.b.length; i++) { var b = s.b[i]; if (b.type !== 'vigia' || !b.built || !b.on) continue; var cb = center(b), nf = foesNear(s, cb.x, cb.z, BD.vigia.range); if (nf) shoot(s, cb.x, cb.z, nf.f, BD.vigia.dps * mul(b), dtS, b); }
+    for (i = 0; i < s.b.length; i++) { var b = s.b[i]; if ((b.type !== 'vigia' && b.type !== 'torreta') || !b.built || !b.on) continue; var cb = center(b), nf = foesNear(s, cb.x, cb.z, BD[b.type].range); if (nf) shoot(s, cb.x, cb.z, nf.f, BD[b.type].dps * mul(b), dtS, b); }
     for (i = s.foes.length - 1; i >= 0; i--) { var f = s.foes[i]; if (f.hp <= 0) { A.kills++; fx(s, { k: 'die', x: f.x, z: f.z }); s.foes.splice(i, 1); } else if (f.gone) s.foes.splice(i, 1); }
-    if (A.attack && !s.foes.length) { A.attack = false; A.nights++; A.next = nightAt(s.t + 4); alertK(s, 'info', 'O ataque acabou. Confira os estragos e repare', 'endw' + A.wave, null, null, 0); emit(s, { type: 'raid', on: false }); if (A.nights === 3) chron(s, 'noites', {}); }
+    if (A.attack && !s.foes.some(function (f) { return f.type !== 'core'; })) { A.attack = false; A.nights++; A.next = nightAt(s.t + 4); alertK(s, 'info', 'O ataque acabou. Confira os estragos e repare', 'endw' + A.wave, null, null, 0); emit(s, { type: 'raid', on: false }); if (A.nights === 3) chron(s, 'noites', {}); }
     // estrutura: alguém chega perto
     if (A.st === 1 && !A.found && A.site) for (var id in s.chars) { var c = s.chars[id]; if (c.alive && Math.hypot(c.x - A.site.x, c.z - A.site.z) < 4) { A.found = true; chron(s, 'estrutura', { who: cname(id) }); alertK(s, 'crit', cname(id) + ' chegou à estrutura. Ela pulsa, e algo no céu responde', 'found', A.site.x, A.site.z, 0); emit(s, { type: 'sound', id: 'discover' }); break; } }
     // veículos recarregam perto da Garagem
     for (var vid in s.chars) { var v = s.chars[vid]; if (!v.veh || !v.alive) continue; for (i = 0; i < s.b.length; i++) { var g = s.b[i]; if (g.type === 'garagem' && g.built && g.on) { var cg = center(g); if (Math.hypot(cg.x - v.x, cg.z - v.z) < 4) { v.bat = Math.min(100, v.bat + 30 * dtH); v.needs.health = Math.min(100, v.needs.health + 15 * dtH); } } } } }
+  // ---------------- ERAS III–V: os outros, o despertar e o fim ----------------
+  function facBase(s, k) { var F = D.factions[k], C = N / 2; return { x: C + F.dx, z: C + F.dz }; }
+  function fbAdd(s, k, type, ox, oz) { var bs = facBase(s, k); s.fb.push({ id: s.nid++, fac: k, type: type, x: Math.round(bs.x + ox), z: Math.round(bs.z + oz), hp: 100 }); }
+  var FB_LAYOUT = [['ship', 0, 0], ['habitat', 6, -4], ['solar', -6, -4], ['solar', -6, 0], ['antenna', 0, -7], ['quartel', 6, 3], ['casa', -3, 6], ['casa', 0, 6], ['vigia', 9, -7], ['vigia', -9, 8], ['casa', 3, 9], ['solar', -9, -4], ['battery', -9, 0], ['greenhouse', 10, 7], ['casa', -6, 9], ['workshop', 12, -1], ['vigia', 12, 10], ['casa', 6, 12], ['habitat', -12, 4], ['solar', -12, -8], ['torreta', 0, -12], ['casa', -9, 12], ['garagem', 14, -8], ['casa', 0, 14], ['torreta', -14, 12]];
+  function facLand(s, k) { var f = s.fac[k], bs = facBase(s, k); f.st = 1; f.landT = s.t; f.n = 0; for (var i = 0; i < (k === 'cn' ? 10 : 7); i++) { var L = FB_LAYOUT[i]; fbAdd(s, k, L[0], L[1], L[2]); f.n++; }
+    for (var dz = -16; dz <= 16; dz++) for (var dx = -16; dx <= 16; dx++) { var kk = (bs.z + dz) * N + bs.x + dx; if (kk >= 0 && kk < N * N && dx * dx + dz * dz < 256) s.rt.fog[kk] = 1; } s.rt.fogDirty = true;
+    chron(s, 'pouso_' + k, {}); alertK(s, 'crit', D.factions[k].name + ' (' + D.factions[k].short + ') pousou. Abra Diplomacia', 'land' + k, bs.x, bs.z, 0); emit(s, { type: 'sound', id: 'discover' }); emit(s, { type: 'fac' }); }
+  function trust(s, k, d) { var f = s.fac[k]; f.trust = clamp(f.trust + d, 0, 100); emit(s, { type: 'fac' }); }
+  function eras(s, dtS, dtH) { var A = s.al, C = N / 2, k;
+    if (s.era === 2 && A.found && !s.flags.era3) { s.flags.era3 = 1; s.flags.era3T = s.t; s.era = 3; s.fac = { cn: { st: 0, t0: s.t, trust: 50, war: false, treaty: false, ally: false, raids: 0, rep: 0, pop: 30 }, de: { st: 0, t0: s.t, trust: 55, war: false, treaty: false, ally: false, raids: 0, rep: 0, pop: 14 } };
+      chron(s, 'era3', {}); emit(s, { type: 'scene', id: 'era3' }); alertK(s, 'crit', 'Era III: duas naves cruzam o céu. China e Alemanha estão chegando', 'era3', null, null, 0); }
+    if (s.era >= 3) for (k in s.fac) { var f = s.fac[k], F = D.factions[k];
+      if (f.st === 0 && s.t - f.t0 >= F.delay) facLand(s, k);
+      if (f.st !== 1) continue;
+      if (f.n < FB_LAYOUT.length && s.t - f.landT > (f.n - 6) * (k === 'cn' ? 10 : 15)) { var L = FB_LAYOUT[f.n]; fbAdd(s, k, L[0], L[1], L[2]); f.n++; f.pop += k === 'cn' ? 3 : 1; emit(s, { type: 'fac' }); }
+      f.trust += (45 - f.trust) * 0.004 * dtH; // a confiança volta devagar para o meio
+      // pedidos e atritos
+      if (!s.pending && !f.war) {
+        if (k === 'cn' && cdOK(s, 'cnWater', 40) && s.t - f.landT > 10 && rnd(s) < 0.02 * dtH) { s.cd.cnWater = s.t; s.pending = 'cnWater'; s.evFac = 'cn'; emit(s, { type: 'event', id: 'cnWater' }); }
+        else if (k === 'de' && cdOK(s, 'deResearch', 50) && s.t - f.landT > 8 && rnd(s) < 0.02 * dtH) { s.cd.deResearch = s.t; s.pending = 'deResearch'; s.evFac = 'de'; emit(s, { type: 'event', id: 'deResearch' }); }
+        else if (cdOK(s, 'border' + k, 60) && s.zones.some(function (z) { var bs = facBase(s, k); return Math.hypot(z.x - bs.x, z.z - bs.z) < 48 && z.k > 1; }) && rnd(s) < 0.03 * dtH) { s.cd['border' + k] = s.t; s.pending = 'border'; s.evFac = k; emit(s, { type: 'event', id: 'border' }); }
+        else if (s.era >= 4 && cdOK(s, 'help' + k, 48) && rnd(s) < 0.015 * dtH) { s.cd['help' + k] = s.t; s.pending = 'help'; s.evFac = k; emit(s, { type: 'event', id: 'help' }); } }
+      // ataques humanos à noite
+      var hostile = f.war || (f.trust < 18 && !f.treaty);
+      if (hostile && isNight(s) && hour(s) >= 22 && cdOK(s, 'raid' + k, 30) && !s.foes.some(function (q) { return q.fac === k; })) { s.cd['raid' + k] = s.t; f.raids++; if (!f.war) { f.war = true; chron(s, 'guerra', { who: F.name }); }
+        var bs2 = facBase(s, k), ang = Math.atan2(bs2.z - C, bs2.x - C), r = 10, x, z; while (r < N / 2 - 4) { x = Math.floor(C + Math.cos(ang) * r); z = Math.floor(C + Math.sin(ang) * r); if (s.rt.play[z * N + x] < 40) break; r++; } r += 3;
+        var n = 3 + f.raids; for (var i = 0; i < n; i++) s.foes.push({ id: s.fid++, type: 'soldier', fac: k, x: C + Math.cos(ang) * r + (rnd(s) - 0.5) * 4, z: C + Math.sin(ang) * r + (rnd(s) - 0.5) * 4, sx: C + Math.cos(ang) * (r + 6), sz: C + Math.sin(ang) * (r + 6), hp: D.aliens.soldier.hp, cd: 0 });
+        A.attack = true; alertK(s, 'crit', 'Ataque humano! Soldados da ' + F.name + ' vindo de ' + (k === 'cn' ? 'nordeste' : 'sudoeste'), 'hraid' + k + f.raids, null, null, 0); emit(s, { type: 'sound', id: 'alarm' }); emit(s, { type: 'raid', on: true }); }
+      if (f.war && f.raids > f.rep && !s.foes.some(function (q) { return q.fac === k; }) && !isNight(s)) { f.rep = f.raids; s.flags.repelled = 1; if (f.rep >= 2) { f.war = false; f.trust = 32; alertK(s, 'info', 'A ' + F.name + ' pediu trégua depois de dois ataques fracassados', 'truce' + k, null, null, 0); emit(s, { type: 'fac' }); } } }
+    // Era IV: a estrutura desperta
+    if (s.era === 3 && ofType(s, 'fabrica', true).length && s.t - s.flags.era3T >= 36 && !s.flags.era4) { s.flags.era4 = 1; s.era = 4; addZone(s, A.site.x, A.site.z, 20);
+      s.foes.push({ id: s.fid++, type: 'core', x: A.site.x, z: A.site.z, sx: A.site.x, sz: A.site.z, hp: 14000, max: 14000, cd: 0 }); A.next = Math.min(A.next, nightAt(s.t));
+      chron(s, 'despertar', {}); emit(s, { type: 'scene', id: 'awaken' }); alertK(s, 'crit', 'Era IV: a estrutura despertou. Vêm Colossos. Prepare tanques e o Domo de escudo', 'era4', A.site.x, A.site.z, 0); emit(s, { type: 'sound', id: 'alarm' }); }
+    // aliados ajudam nas ondas
+    if (A.attack) for (k in s.fac) if (s.fac[k].ally) for (var j = 0; j < s.foes.length; j++) { var fo = s.foes[j]; if (fo.type !== 'core' && !fo.fac) fo.hp -= 3 * dtS; } }
+  function coreTick(s, f, dtS) { f.cd -= dtS; f.pz = (f.pz || 0) - dtS; if (f.pz <= 0) { f.pz = 2.5; for (var id in s.chars) { var c = s.chars[id]; if (c.alive && Math.hypot(c.x - f.x, c.z - f.z) < 12) { hitChar(s, c, c.veh ? 10 : 5); fx(s, { k: 'spit', x: f.x, z: f.z, tx: c.x, tz: c.z }); } } } if (f.hp < f.max && f.cd <= 0) { f.cd = 14; var n = f.hp < f.max * 0.5 ? 4 : 2; for (var i = 0; i < n; i++) s.foes.push({ id: s.fid++, type: rnd(s) < 0.3 ? 'spitter' : 'crawler', x: f.x + (rnd(s) - 0.5) * 6, z: f.z + (rnd(s) - 0.5) * 6, sx: f.x, sz: f.z, hp: 34, cd: 0, guard: 1 }); fx(s, { k: 'die', x: f.x, z: f.z }); }
+    if (f.hp <= 0 && !s.ended) ending(s); }
+  function ending(s) { var al = 0, war = 0; for (var k in s.fac) { if (s.fac[k].treaty || s.fac[k].ally) al++; if (s.fac[k].war) war++; }
+    s.ended = war ? 'dividido' : al >= 2 ? 'unido' : 'independente'; s.era = 5; chron(s, 'nucleo', {});
+    var txt = { unido: 'Marte unido. SpaceZ, Xuanyuan e Kepler assinaram a Carta de Marte: um planeta, três bandeiras, nenhuma guerra.', independente: 'Marte independente. A colônia sobreviveu ao que veio do gelo sem depender de ninguém. Os vizinhos observam, com respeito.', dividido: 'Marte dividido. O núcleo se apagou, mas a guerra entre humanos continua. A próxima ameaça talvez seja a gente.' }[s.ended];
+    chron(s, 'fim', { what: txt }); emit(s, { type: 'scene', id: 'ending', end: s.ended }); s.foes = s.foes.filter(function (q) { return q.type !== 'core'; }); }
+  function dip(s, k, act, arg) { var f = s.fac[k], F = D.factions[k]; if (!f || f.st !== 1) return { ok: false, msg: 'Ainda não pousaram' };
+    function pay(c) { for (var r in c) if ((s.res[r] || 0) < c[r]) return false; for (r in c) s.res[r] -= c[r]; return true; }
+    if (act === 'gift') { if (!cdOK(s, 'gift' + k, 12)) return { ok: false, msg: 'Espere um pouco antes de outro presente' }; if (!pay({ water: 20, food: 20 })) return { ok: false, msg: 'Precisa de 20 água e 20 alimento' }; s.cd['gift' + k] = s.t; trust(s, k, f.war ? 6 : 12); s.flags.troca = 1; return { ok: true, msg: 'Presente entregue. A ' + F.name + ' agradece' }; }
+    if (act === 'trade') { var T0 = F.trade[arg]; if (f.war) return { ok: false, msg: 'Não negociam em guerra' }; if (!pay(T0.give)) return { ok: false, msg: 'Faltam recursos para a troca' }; for (var r in T0.get) addRes(s, r, T0.get[r]); trust(s, k, 3); s.flags.troca = 1; return { ok: true, msg: 'Troca feita' }; }
+    if (act === 'treaty') { if (f.war) return { ok: false, msg: 'Primeiro, a paz' }; if (f.trust < 60) return { ok: false, msg: 'Precisa de confiança 60 ou mais' }; f.treaty = true; s.flags.tratado = 1; chron(s, 'tratado', { who: F.name }); emit(s, { type: 'fac' }); return { ok: true, msg: 'Tratado de não agressão assinado' }; }
+    if (act === 'ally') { if (s.era < 4) return { ok: false, msg: 'Alianças só na Era IV' }; if (!f.treaty || f.trust < 75) return { ok: false, msg: 'Precisa de tratado e confiança 75' }; f.ally = true; emit(s, { type: 'fac' }); return { ok: true, msg: 'Aliança: eles vão ajudar contra os ataques' }; }
+    if (act === 'peace') { if (!f.war) return { ok: false, msg: 'Não estão em guerra' }; if (!pay({ metal: 40, comp: 20 })) return { ok: false, msg: 'A paz custa 40 metal e 20 componentes' }; f.war = false; f.trust = 30; emit(s, { type: 'fac' }); return { ok: true, msg: 'Paz assinada' }; }
+    if (act === 'war') { f.war = true; f.treaty = false; f.ally = false; f.trust = 0; chron(s, 'guerra', { who: F.name }); emit(s, { type: 'fac' }); return { ok: true, msg: 'Guerra declarada à ' + F.name }; }
+    return { ok: false, msg: '?' }; }
+
+  // Começar direto numa Era: monta uma base pronta (para quem quer ver as fases avançadas sem jogar desde o pouso)
+  function quick(era) { var s = newGame(D.lore.year), C = N / 2, i; s.rt.fog.fill(1); s.rt.fogDirty = true;
+    s.flags.telemetry = s.flags.inspected = s.flags.unloaded = s.flags.iceFound = s.flags.firstPanel = s.flags.firstWater = s.flags.firstSprout = s.flags.antenna = true; s.res.metal = s.res.comp = s.res.reg = 2000; s.res.water = s.res.food = s.res.o2 = 400; s.res.seeds = 60; s.res.research = 40;
+    function qb(type, dx, dz, R0) { for (var r = 0; r < (R0 || 12); r++) for (var a = 0; a < 32; a++) { var x = Math.round(C + dx + Math.cos(a * 0.7) * r), z = Math.round(C + dz + Math.sin(a * 0.7) * r); if (canPlace(s, type, x, z).ok) { var b = place(s, type, x, z).b; finishBuilding(s, b, s.chars.elias); return b; } } return null; }
+    [[6, -3], [8, -3], [6, -1], [8, -1], [10, -3], [10, -1], [12, -3], [12, -1]].forEach(function (p) { qb('solar', p[0], p[1], 3); }); for (i = 0; i < 4; i++) qb('battery', 14, -3 + i, 4);
+    var al = qb('airlock', -3, 3); qb('habitat', -6, 3, 6); qb('workshop', 3, 7); qb('storage', 6, 4); var ic = s.rt.map.iceC[0]; qb('drill', ic.x - C, ic.z - C, 4); qb('purifier', -8, -4); qb('o2ext', -2, -7); qb('o2ext', 1, -8); qb('wtank', -10, -2); qb('o2tank', 0, -10);
+    qb('greenhouse', -8, 8, 10); qb('greenhouse', -12, 6, 10); qb('lab', -4, 11, 10); qb('antenna', 12, 5); var pad = qb('pad', 15, -10, 10); qb('cryo', -2, 13, 12);
+    for (i = 0; i < 7; i++) qb('casa', 2 + (i % 4) * 3, 12 + Math.floor(i / 4) * 3, 6); qb('berco', -10, 15, 10); qb('escola', -14, 16, 12); qb('jardim', 18, 12, 14);
+    for (i = 0; i < 6; i++) qb('estrada', 0, -1 + i, 1); for (i = 0; i < 8; i++) qb('estrada', 1 + i, 9, 1);
+    s.ark.st = 2; s.ark.pad = pad && pad.id; s.ark.pods.forEach(function (p, j) { p.st = 'awake'; var c = mkChar(s, p.id, C - 2 + (j % 4), C + 15 + Math.floor(j / 4)); }); s.ark.awake = 12; assignHomes(s);
+    ['limpeza', 'celulas', 'reciclagem', 'trajes'].forEach(function (k) { s.tech[k] = true; });
+    s.t = 8 * 24 + 7; s.won = true; s.era = 2; s.flags.firstHouse = true;
+    if (era >= 3) { s.al.st = 1; s.al.site = { x: C - 18, z: C - 74 }; s.al.nights = 3; s.al.wave = 3; s.al.next = nightAt(s.t + 30); s.al.found = true;
+      qb('quartel', 10, 8, 12); qb('arsenal', 14, 8, 12); qb('garagem', -16, -4, 14); for (i = 0; i < 12; i++) qb(i === 6 ? 'bastiao' : 'muro', -6 + i, -16, 2); qb('vigia', -4, -14, 4); qb('vigia', 5, -14, 4); qb('posto', -8, -34, 10); qb('posto', -14, -56, 10);
+      s.arms.rifle = 4; s.arms.smg = 2; ['c1', 'c2', 'c3', 'c4'].forEach(function (k) { arm(s, k); }); s.res.ammo = 200; spawnVeh(s, 'rover', C - 12, C - 6); spawnVeh(s, 'rescue', C - 15, C - 8); s.flags.guarda = 1; }
+    if (era >= 4) { s.flags.era3 = 1; s.flags.era3T = s.t - 40; s.era = 3; s.fac = { cn: { st: 0, t0: s.t - 99, trust: 55, war: false, treaty: false, ally: false, raids: 0, rep: 0, pop: 30 }, de: { st: 0, t0: s.t - 99, trust: 62, war: false, treaty: false, ally: false, raids: 0, rep: 0, pop: 14 } };
+      qb('fabrica', 20, -2, 14); qb('torreta', -1, -14, 4); spawnVeh(s, 'rover_a', C - 10, C - 10); s.flags.troca = 1; }
+    if (era === 3) { s.flags.era3 = 1; s.flags.era3T = s.t; s.era = 3; s.fac = { cn: { st: 0, t0: s.t - 5, trust: 50, war: false, treaty: false, ally: false, raids: 0, rep: 0, pop: 30 }, de: { st: 0, t0: s.t - 20, trust: 55, war: false, treaty: false, ally: false, raids: 0, rep: 0, pop: 14 } }; }
+    s.res.metal = 400; s.res.comp = 250; s.res.reg = 300; s.rt.out.length = 0; s.chron = s.chron.slice(-6); return s; }
+  function spawnVeh(s, ty, x, z) { var id = 'v' + (++s.nv); regVeh(id, ty); var c = mkChar(s, id, x, z); c.veh = ty; c.bat = 100; c.needs = { health: 100, o2: 100, hunger: 0, thirst: 0, energy: 100, temp: 90, stress: 0, morale: 80, rad: 0 }; return c; }
+
   function factory(s, b, dtH) { if (!b.on) return;
     if (b.type === 'arsenal' && s.res.ammo < 200 && s.res.metal >= 1 && s.res.comp >= 0.5) { b.ap = (b.ap || 0) + dtH * 6 * mul(b); while (b.ap >= 3 && s.res.metal >= 1 && s.res.comp >= 0.5) { b.ap -= 3; s.res.metal -= 1; s.res.comp -= 0.5; s.res.ammo += 3; } }
     if (!b.fab) return; b.fab.t += dtH * mul(b); var need = b.fab.w ? 3 : D.vehicles[b.fab.v].hours;
@@ -655,6 +735,7 @@ var Sim = (function () {
       emit(s, { type: 'sound', id: 'built' }); b.fab = null; } }
   function orderItem(s, bid, kind, key) { var b = byId(s, bid); if (!b || !b.built) return { ok: false, msg: 'Termine a obra primeiro' }; if (b.fab) return { ok: false, msg: 'Já está fabricando' };
     var it = kind === 'w' ? D.weapons[key] : D.vehicles[key]; if (!it) return { ok: false, msg: '?' }; if (it.era > s.era) return { ok: false, msg: 'Liberado na Era ' + D.eras[it.era - 1].n };
+    if (kind === 'v' && (it.plant || 'garagem') !== b.type) return { ok: false, msg: 'Fabricado na ' + BD[it.plant || 'garagem'].name };
     for (var r in it.cost) if (s.res[r] < it.cost[r]) return { ok: false, msg: 'Faltam materiais: ' + costText(it.cost) }; for (r in it.cost) s.res[r] -= it.cost[r];
     b.fab = kind === 'w' ? { w: key, t: 0 } : { v: key, t: 0 }; return { ok: true, msg: 'Encomendado: ' + it.name }; }
   function arm(s, cid, w) { var c = s.chars[cid]; if (!c || !c.alive || c.veh) return { ok: false, msg: 'Selecione um colono' }; if (!ofType(s, 'quartel', true).length) return { ok: false, msg: 'Construa o Quartel primeiro' };
@@ -709,9 +790,10 @@ var Sim = (function () {
 
   function objectives(s) { var f = s.flags, has = function (t, n) { return ofType(s, t, true).length >= (n || 1); };
     var done = { inspect: f.inspected, unload: f.unloaded, solar: has('solar', 2), battery: has('battery'), gather: f.gathered, airlock: has('airlock'), habitat: has('habitat'), workshop: has('workshop'), ice: f.iceFound, drill: has('drill'), water: f.firstWater, o2: has('o2ext'), greenhouse: has('greenhouse'), plant: f.potato || f.firstHarvest, storm: f.stormSurvived, landmark: s.won,
-      antenna: has('antenna'), pad: has('pad'), cryo: has('cryo'), arrival: s.ark.st === 2, wake: s.ark.awake >= 6, bairro: f.bairro, berco: has('berco'), born: f.firstBorn, escola: has('escola'), sinal: s.al.st >= 1, quartel: has('quartel'), arsenal: has('arsenal'), guarda: guards(s) >= 2, muro: has('muro', 8) && has('vigia'), noites: s.al.nights >= 3, garagem: Object.keys(s.chars).some(function (k) { return s.chars[k].veh === 'rover'; }), posto2: has('posto'), estrutura: s.al.found, casas: has('casa', 6) || (s.ark.st === 2 && !sleepers(s).length) };
+      antenna: has('antenna'), pad: has('pad'), cryo: has('cryo'), arrival: s.ark.st === 2, wake: s.ark.awake >= 6, bairro: f.bairro, berco: has('berco'), born: f.firstBorn, escola: has('escola'), sinal: s.al.st >= 1, quartel: has('quartel'), arsenal: has('arsenal'), guarda: guards(s) >= 2, muro: has('muro', 8) && has('vigia'), noites: s.al.nights >= 3, garagem: Object.keys(s.chars).some(function (k) { return s.chars[k].veh === 'rover'; }), posto2: has('posto'), estrutura: s.al.found, contato: s.fac.cn && s.fac.cn.st === 1 && s.fac.de && s.fac.de.st === 1, troca: !!s.flags.troca, tratado: !!(s.flags.tratado || s.flags.repelled), fabrica: has('fabrica') && Object.keys(s.chars).some(function (q) { return s.chars[q].veh === 'rover_a' && s.chars[q].alive; }), despertar: s.era >= 4 && has('domo') && Object.keys(s.chars).some(function (q) { return s.chars[q].veh === 'tank' && s.chars[q].alive; }), nucleo: !!s.ended, casas: has('casa', 6) || (s.ark.st === 2 && !sleepers(s).length) };
     var nc = ofType(s, 'casa', true).length;
-    return D.tutorial.map(function (t) { var tx = t.text; if (t.id === 'casas') tx = 'Construa casas para os 12 colonos: ' + nc + ' de 6 prontas (2 leitos cada)'; return { id: t.id, text: tx, done: !!done[t.id] }; }); }
+    var ix = function (id) { for (var q = 0; q < D.tutorial.length; q++) if (D.tutorial[q].id === id) return q; return 0; }, skip = s.era >= 4 ? ix('despertar') : s.era >= 3 ? ix('contato') : s.won ? ix('sinal') : 0;
+    return D.tutorial.map(function (t, q) { var tx = t.text; if (t.id === 'casas') tx = 'Construa casas para os 12 colonos: ' + nc + ' de 6 prontas (2 leitos cada)'; return { id: t.id, text: tx, done: !!done[t.id] || q < skip }; }); }
   function signal(s) { var v = 0, on = 0, plants = 0, lit = false, id; v = Math.min(34, pop(s) * 5);
     s.b.forEach(function (b) { if (b.on && b.type !== 'lander') on++; if (b.type === 'habitat' && b.on) lit = true; if (b.plots) b.plots.forEach(function (p) { if (p && p.crop) plants++; }); });
     v += Math.min(40, on * 3.5) + Math.min(20, plants * 5) + (s.flags.antenna ? 8 : 0) + (lit ? 8 : 0) + (s.won ? 8 : 0); return Math.min(100, Math.round(v)); }
@@ -724,6 +806,6 @@ var Sim = (function () {
 
   return { newGame: newGame, tick: tick, canPlace: canPlace, place: place, demolish: demolish, order: order, plant: plant, buyTech: buyTech, choose: choose,
     serialize: serialize, deserialize: deserialize, requirements: requirements, readiness: readiness, cinfo: cinfo, pop: pop, beds: beds, freeBeds: freeBeds, wakeNext: wakeNext, sleepers: sleepers, reqOK: reqOK, objectives: objectives, signal: signal, caps: caps, byId: byId, depById: depById,
-    playable: playable, addZone: addZone, zoneR: zoneR, spawnVehicle: function (s, ty, x, z) { var id = 'v' + (++s.nv); regVeh(id, ty); var c = mkChar(s, id, x, z); c.veh = ty; c.bat = 100; c.needs = { health: 100, o2: 100, hunger: 0, thirst: 0, energy: 100, temp: 90, stress: 0, morale: 80, rad: 0 }; return c; }, orderItem: orderItem, arm: arm, guards: guards, upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
+    playable: playable, addZone: addZone, zoneR: zoneR, spawnVehicle: spawnVeh, quick: quick, dip: dip, facBase: facBase, orderItem: orderItem, arm: arm, guards: guards, upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
 })();
 if (typeof module !== 'undefined') module.exports = Sim;
