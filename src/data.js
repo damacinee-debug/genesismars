@@ -6,7 +6,8 @@ var DATA = {
   lore: { game: 'Genesis Mars', year: 2032, company: 'SpaceZ', ship: 'Gênesis', ark: 'Alvorada', chapter: 'Capítulo I — A Contagem', chapter2: 'Capítulo II — Os Despertos' },
 
   bal: {
-    N: 112,             // mapa N x N tiles (múltiplo de 8: o terreno é carregado em blocos de 8)
+    N: 256,             // mapa N x N tiles (múltiplo de 8: o terreno é carregado em blocos de 8)
+    zone0: 46, outpostR: 30, // raio da bacia inicial e de cada Posto avançado (em tiles)
     solSec: 480,        // segundos reais por sol na velocidade 1x
     sunrise: 6, sunset: 18,
     start: { o2: 120, water: 60, food: 30, metal: 30, comp: 10, reg: 0, seeds: 0, ice: 0, research: 0, energy: 60 },
@@ -58,6 +59,7 @@ var DATA = {
     lander:  { name: 'Módulo de pouso', cat: null, w: 3, h: 3, desc: 'A nave Gênesis. Abrigo provisório e reserva inicial.', use: 2, prio: 10, press: true, beds: 2 },
     solar:   { name: 'Painel solar', cat: 'Energia', w: 2, h: 2, cost: { metal: 8, comp: 3 }, t: 12, gen: 14, desc: 'Gera energia de dia. A poeira reduz a eficiência.' },
     poste:   { name: 'Poste de energia', cat: 'Energia', w: 1, h: 1, cost: { metal: 4 }, t: 6, link: 30, desc: 'Leva a energia longe: alcança 30 m. Depois de colocar um, a ferramenta continua ativa para você ir puxando a linha até onde precisar.' },
+    posto:   { name: 'Posto avançado', cat: 'Infraestrutura', w: 2, h: 2, cost: { metal: 30, comp: 12, reg: 20 }, t: 30, gen: 4, cap: 40, need: 'era2', desc: 'Empurra a fronteira: abre uma nova área de cerca de 60 m em volta dele. Tem painel e bateria próprios. Liberado na Era II.' },
     torre:   { name: 'Torre de luz', cat: 'Energia', w: 1, h: 1, cost: { metal: 8, comp: 2 }, t: 10, use: 0.5, prio: 2, desc: 'Ilumina uma área grande à noite, para enxergar e trabalhar na base.' },
     battery: { name: 'Bateria', cat: 'Energia', w: 1, h: 1, cost: { metal: 10, comp: 5 }, t: 14, cap: 130, desc: 'Guarda energia para a noite.' },
     airlock: { name: 'Câmara de descompressão', cat: 'Infraestrutura', w: 1, h: 1, cost: { metal: 12, comp: 4 }, t: 16, press: true, desc: 'Entrada e saída da área pressurizada. Comece o complexo por ela.' },
@@ -138,6 +140,7 @@ var DATA = {
     awake6: 'Sol {sol}. Seis despertos. A base virou um lugar com gente demais para caber numa mesa só.',
     firstHouse: 'Sol {sol}. A primeira casa de Marte ficou pronta. Tinha dois leitos e uma porta que alguém podia chamar de sua.',
     bairro: 'Sol {sol}. Três casas vizinhas, e alguém deu nome ao lugar: {what}. O primeiro bairro marciano.',
+    posto: 'Sol {sol}. Um Posto avançado acendeu na fronteira, e Marte ficou um pouco maior.',
     bairroN: 'Sol {sol}. Nasceu mais um bairro: {what}.',
     berco: 'Sol {sol}. O Berço foi ligado. Ninguém disse em voz alta o que aquilo significava.',
     firstBorn: 'Sol {sol}. {who} nasceu no Berço: a primeira pessoa de Marte. Nunca verá a Terra, e não sentirá falta.',

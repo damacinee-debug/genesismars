@@ -18,14 +18,15 @@ var Sim = (function () {
       var a = hsh(i, j, k), b = hsh(i + 1, j, k), c = hsh(i, j + 1, k), d = hsh(i + 1, j + 1, k); return a + (b - a) * fx + (c - a) * fz + (a - b - c + d) * fx * fz; }
     var C = N / 2, V = N + 1, h = new Float32Array(V * V), rock = new Uint8Array(N * N), steep = new Uint8Array(N * N), ice = new Uint8Array(N * N);
     var craters = [], i, x, z;
-    for (i = 0; i < 16; i++) { var a = hsh(i, 9, 3) * 6.283, r = 17 + hsh(i, 4, 5) * (i < 6 ? 14 : N / 2 - 26); craters.push({ x: C + Math.cos(a) * r, z: C + Math.sin(a) * r, r: 3.5 + hsh(i, 2, 7) * 3.5, d: 1.2 + hsh(i, 8, 1) }); }
-    var iceC = [{ x: C - 11, z: C - 10, r: 3.2 }, { x: C + 19, z: C + 15, r: 3.6 }, { x: C - 31, z: C + 27, r: 4.6 }, { x: C + 35, z: C - 29, r: 4.2 }, { x: C + 5, z: C - 41, r: 3.8 }];
+    for (i = 0; i < 48; i++) { var a = hsh(i, 9, 3) * 6.283, r = 17 + hsh(i, 4, 5) * (i < 6 ? 14 : N / 2 - 26); craters.push({ x: C + Math.cos(a) * r, z: C + Math.sin(a) * r, r: 3.5 + hsh(i, 2, 7) * 3.5, d: 1.2 + hsh(i, 8, 1) }); }
+    var iceC = [{ x: C - 11, z: C - 10, r: 3.2 }, { x: C + 19, z: C + 15, r: 3.6 }, { x: C - 31, z: C + 27, r: 4.6 }, { x: C + 35, z: C - 29, r: 4.2 }, { x: C + 5, z: C - 41, r: 3.8 }, { x: C - 68, z: C - 40, r: 7 }, { x: C + 72, z: C + 52, r: 6 }, { x: C - 20, z: C + 84, r: 8 }, { x: C + 90, z: C - 70, r: 6.5 }, { x: C - 95, z: C + 30, r: 5.5 }];
     for (z = 0; z < V; z++) for (x = 0; x < V; x++) {
       var d = Math.hypot(x - C, z - C);
       var f = vn(x / 15, z / 15, 0) + vn(x / 6, z / 6, 1) * 0.4 + vn(x / 2.4, z / 2.4, 2) * 0.1;
-      var y = (f - 0.75) * 4.2 * smooth(7, 22, d) + smooth(24, 38, d) * vn(x / 9, z / 9, 4) * 3.2 + smooth(36, 46, d) * smooth(0.56, 0.68, vn(x / 13, z / 13, 9)) * 3.6;
+      var y = (f - 0.75) * 4.2 * smooth(7, 22, d) + smooth(24, 38, d) * vn(x / 9, z / 9, 4) * 3.2 + smooth(36, 46, d) * smooth(0.56, 0.68, vn(x / 13, z / 13, 9)) * 3.6 + smooth(46, 80, d) * (vn(x / 34, z / 34, 14) - 0.4) * 7 + smooth(60, 100, d) * smooth(0.6, 0.72, vn(x / 22, z / 22, 15)) * 6;
       // pequeno cânion a leste
       var cx = x - (C + 24 + Math.sin(z / 7) * 3); if (Math.abs(cx) < 3 && z > 8 && z < N - 8) y -= (1 - Math.abs(cx) / 3) * 2.6;
+      var cz2 = z - (C - 58 + Math.sin(x / 11) * 6); if (Math.abs(cz2) < 4.5 && x > C - 110 && x < C + 40) y -= (1 - Math.abs(cz2) / 4.5) * 4; // Vale Grande, ao norte
       for (i = 0; i < craters.length; i++) { var c = craters[i], dd = Math.hypot(x - c.x, z - c.z) / c.r; if (dd < 1) y -= c.d * (1 - dd * dd); if (dd < 1.35) y += 0.4 * c.d * Math.max(0, 1 - Math.abs(dd - 1) / 0.35); }
       for (i = 0; i < iceC.length; i++) { var q = Math.hypot(x - iceC[i].x, z - iceC[i].z); y *= smooth(2, 7, q) * 0.8 + 0.2; }
       h[z * V + x] = y;
@@ -47,7 +48,7 @@ var Sim = (function () {
   // ---------------- ESTADO ----------------
   function newGame(seed) {
     seed = seed || 2032;
-    var s = { v: 2, seed: seed, rs: seed * 7919, t: 7, speedNote: 0, era: 1, won: false, lost: false,
+    var s = { v: 3, seed: seed, zones: [{ x: N / 2, z: N / 2, r: B.zone0, k: 1 }], rs: seed * 7919, t: 7, speedNote: 0, era: 1, won: false, lost: false,
       res: JSON.parse(JSON.stringify(B.start)), b: [], nid: 1, deps: [], chars: {},
       storm: { st: 0, start: 0, end: 0 }, stormK: 0, flags: {}, stats: { o2Made: 0, waterMade: 0, trips: 0, harvests: 0 },
       tech: {}, trad: {}, axes: { origem: 0, comunidade: 0, planeta: 0 }, bond: 45, chron: [], cd: {}, said: {}, pending: null,
@@ -59,7 +60,7 @@ var Sim = (function () {
     s.b.push({ id: s.nid++, type: 'lander', x: C - 1, z: C - 1, prog: 1, built: true, hp: 100, on: true, why: '', dust: 0 });
     // depósitos: alguns perto, o resto espalhado
     var spots = [['metal', 7.5, 0.6], ['reg', 7, 2.4], ['metal', 9.5, 4.0], ['reg', 9, 5.4]], i;
-    for (i = 0; i < 56; i++) spots.push([i % 2 ? 'reg' : 'metal', 13 + rnd(s) * (i < 14 ? 18 : N / 2 - 18), rnd(s) * 6.283]);
+    for (i = 0; i < 150; i++) spots.push([i % 2 ? 'reg' : 'metal', 13 + rnd(s) * (i < 30 ? 26 : N / 2 - 18), rnd(s) * 6.283]);
     for (i = 0; i < spots.length; i++) { var sp = spots[i], tries = 0;
       while (tries++ < 30) { var x = Math.floor(C + Math.cos(sp[2]) * sp[1] + (tries - 1) * (rnd(s) - 0.5)), z = Math.floor(C + Math.sin(sp[2]) * sp[1] + (tries - 1) * (rnd(s) - 0.5));
         if (x < 2 || z < 2 || x > N - 3 || z > N - 3) continue; var k = z * N + x; if (s.rt.map.rock[k] || s.rt.map.ice[k] || s.rt.occ[k]) continue;
@@ -70,15 +71,24 @@ var Sim = (function () {
     return s;
   }
   function attach(s) { // dados de execução, recriados ao carregar
-    s.rt = { map: genMap(s.seed), occ: new Int16Array(N * N), fog: new Uint8Array(N * N), out: [], fogDirty: true };
+    s.rt = { map: genMap(s.seed), occ: new Int16Array(N * N), fog: new Uint8Array(N * N), play: new Uint8Array(N * N), out: [], fogDirty: true }; computePlay(s);
     if (s.fogStr) for (var i = 0; i < N * N; i++) s.rt.fog[i] = s.fogStr.charCodeAt(i) === 49 ? 1 : 0;
     rebuildOcc(s);
   }
+  // Área jogável: união de bolsões de borda irregular (sem quadrado). Cresce com cada Posto avançado.
+  function zoneR(z, ang) { return z.r * (1 + 0.15 * Math.sin(3 * ang + z.k * 1.7) + 0.08 * Math.sin(7 * ang + z.k * 4.1) + 0.045 * Math.sin(13 * ang + z.k * 2.3) + 0.025 * Math.sin(23 * ang + z.k)); }
+  function computePlay(s) { var P = s.rt.play, x, z, i; P.fill(0);
+    for (i = 0; i < s.zones.length; i++) { var zn = s.zones[i], R0 = zn.r * 1.35, x0 = Math.max(0, Math.floor(zn.x - R0)), x1 = Math.min(N - 1, Math.ceil(zn.x + R0)), z0 = Math.max(0, Math.floor(zn.z - R0)), z1 = Math.min(N - 1, Math.ceil(zn.z + R0));
+      for (z = z0; z <= z1; z++) for (x = x0; x <= x1; x++) { var dx = x + 0.5 - zn.x, dz = z + 0.5 - zn.z, d = Math.hypot(dx, dz), v = Math.max(0, Math.min(1, (zoneR(zn, Math.atan2(dz, dx)) - d) / 5 + 0.5)) * 255, k = z * N + x; if (v > P[k]) P[k] = v; } }
+    for (z = 0; z < N; z++) for (x = 0; x < N; x++) if (x < 3 || z < 3 || x > N - 4 || z > N - 4) P[z * N + x] = 0;
+    s.rt.playDirty = true; }
+  function playable(s, x, z) { x = Math.floor(x); z = Math.floor(z); return x >= 0 && z >= 0 && x < N && z < N && s.rt.play[z * N + x] >= 110; }
+  function addZone(s, x, z, r) { s.zones.push({ x: x, z: z, r: r, k: s.zones.length + 1 }); computePlay(s); emit(s, { type: 'zone' }); }
   function rebuildOcc(s) { var o = s.rt.occ; o.fill(0); var i, x, z;
     for (i = 0; i < s.b.length; i++) { var b = s.b[i], d = BD[b.type]; for (z = 0; z < d.h; z++) for (x = 0; x < d.w; x++) o[(b.z + z) * N + b.x + x] = b.id; }
     for (i = 0; i < s.deps.length; i++) o[s.deps[i].z * N + s.deps[i].x] = -1; }
   function serialize(s) { var rt = s.rt, f = ''; for (var i = 0; i < N * N; i++) f += rt.fog[i] ? '1' : '0'; s.fogStr = f; delete s.rt; var j = JSON.stringify(s); s.rt = rt; s.fogStr = null; return j; }
-  function deserialize(j) { var s = JSON.parse(j); if (s.v !== 2) throw new Error('versão antiga'); attach(s); s.fogStr = null; return s; }
+  function deserialize(j) { var s = JSON.parse(j); if (s.v !== 3) throw new Error('versão antiga'); attach(s); s.fogStr = null; return s; }
 
   function emit(s, o) { s.rt.out.push(o); }
   function alertK(s, lvl, msg, key, x, z, every) { key = key || msg; if (s.cd['a:' + key] != null && s.t - s.cd['a:' + key] < (every || 8)) return; s.cd['a:' + key] = s.t; emit(s, { type: 'alert', lvl: lvl, msg: msg, x: x, z: z }); }
@@ -138,10 +148,10 @@ var Sim = (function () {
     if (ch) s.rt.fogDirty = true; }
 
   // ---------------- CAMINHO (A*) ----------------
-  function freeTile(s, x, z) { return x >= 0 && z >= 0 && x < N && z < N && !s.rt.map.rock[z * N + x] && !s.rt.occ[z * N + x]; }
+  function freeTile(s, x, z) { return x >= 0 && z >= 0 && x < N && z < N && !s.rt.map.rock[z * N + x] && !s.rt.occ[z * N + x] && s.rt.play[z * N + x] >= 110; }
   function ring(s, x0, z0, w, h) { for (var r = 1; r <= 3; r++) { var g = []; for (var z = z0 - r; z < z0 + h + r; z++) for (var x = x0 - r; x < x0 + w + r; x++) { if (x >= x0 && x < x0 + w && z >= z0 && z < z0 + h) continue; if (freeTile(s, x, z)) g.push(z * N + x); } if (g.length) return g; } return []; }
   function findPath(s, sx, sz, goals, tx, tz, soft) {
-    function ok(x, z) { return freeTile(s, x, z) || (soft && x >= 0 && z >= 0 && x < N && z < N && !s.rt.map.rock[z * N + x] && s.rt.occ[z * N + x] > 0); }
+    function ok(x, z) { return freeTile(s, x, z) || (soft && x >= 0 && z >= 0 && x < N && z < N && !s.rt.map.rock[z * N + x] && s.rt.occ[z * N + x] > 0 && s.rt.play[z * N + x] >= 110); }
     var start = sz * N + sx, gs = {}, i; for (i = 0; i < goals.length; i++) gs[goals[i]] = 1; if (!goals.length) return null; if (gs[start]) return [];
     var g = new Float32Array(N * N).fill(1e9), from = new Int32Array(N * N).fill(-1), closed = new Uint8Array(N * N), heap = [];
     function push(f, k) { heap.push([f, k]); var i = heap.length - 1; while (i > 0) { var p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; var t = heap[p]; heap[p] = heap[i]; heap[i] = t; i = p; } }
@@ -188,10 +198,12 @@ var Sim = (function () {
     if (d.unique && ofType(s, type).length) return { ok: false, reason: 'Só pode existir uma construção deste tipo' };
     if (d.need === 'antenna' && !ofType(s, 'antenna', true).length) return { ok: false, reason: 'Precisa de uma antena pronta para guiar o pouso' };
     if (d.need === 'awake6' && s.ark.awake < 6) return { ok: false, reason: 'Precisa de 6 colonos despertos para operar' };
+    if (d.need === 'era2' && !s.won) return { ok: false, reason: 'Liberado na Era II: erga um Marco primeiro' };
     if (d.need === 'berco' && !ofType(s, 'berco', true).length) return { ok: false, reason: 'Construa o Berço primeiro' };
     var allIce = true;
     for (j = 0; j < d.h; j++) for (i = 0; i < d.w; i++) { k = (z + j) * N + x + i;
       if (!s.rt.fog[k]) return { ok: false, reason: 'Área ainda não explorada' };
+      if (s.rt.play[k] < 110) return { ok: false, reason: 'Fora da área explorável: avance a fronteira com um Posto avançado' };
       if (m.rock[k]) return { ok: false, reason: 'Bloqueado por rocha' };
       if (s.rt.occ[k]) return { ok: false, reason: 'Local ocupado' };
       if (m.steep[k]) return { ok: false, reason: 'Terreno inclinado demais' };
@@ -213,7 +225,7 @@ var Sim = (function () {
   // Uma veia esgotada nunca deixa o mapa vazio: a varredura geológica acha outra do mesmo tipo, mais longe da base
   function newVein(s, res, ox, oz) { var C = N / 2, tries = 0;
     while (tries++ < 80) { var a = rnd(s) * 6.283, r = 8 + rnd(s) * 14 + tries * 0.2, x = Math.floor(ox + Math.cos(a) * r), z = Math.floor(oz + Math.sin(a) * r);
-      if (x < 3 || z < 3 || x > N - 4 || z > N - 4 || Math.hypot(x - C, z - C) < 8) continue; var k = z * N + x; if (s.rt.map.rock[k] || s.rt.map.ice[k] || s.rt.occ[k]) continue;
+      if (x < 3 || z < 3 || x > N - 4 || z > N - 4 || Math.hypot(x - C, z - C) < 8) continue; var k = z * N + x; if (s.rt.map.rock[k] || s.rt.map.ice[k] || s.rt.occ[k] || s.rt.play[k] < 140) continue;
       var d = { id: s.nid++, res: res, x: x, z: z, left: (res === 'metal' ? 60 : 75) * (Math.hypot(x - C, z - C) > 30 ? 1.6 : 1) }; s.deps.push(d); rebuildOcc(s); reveal(s, { x: x + 0.5, z: z + 0.5, id: 'elias' }, 2);
       alertK(s, 'info', 'Varredura geológica: nova veia de ' + (res === 'metal' ? 'metal' : 'regolito') + ' encontrada', 'vein' + d.id, x, z, 0); return d; } return null; }
   function netAll(s) { // alcance da rede incluindo obras (para validar posição)
@@ -227,7 +239,7 @@ var Sim = (function () {
   function demolish(s, id) { var b = byId(s, id); if (!b || b.type === 'lander' || BD[b.type].landmark || b.id === s.ark.pad) return false; var d = BD[b.type];
     for (var k in d.cost) addRes(s, k, d.cost[k] * (b.built ? 0.5 : 1));
     s.b.splice(s.b.indexOf(b), 1); rebuildOcc(s); for (var c in s.chars) if (s.chars[c].act && s.chars[c].act.id === id) clearAct(s.chars[c]); return true; }
-  function finishBuilding(s, b, c) { var d = BD[b.type]; b.built = true; b.prog = 1; b.why = '';
+  function finishBuilding(s, b, c) { var d = BD[b.type]; b.built = true; b.prog = 1; b.why = ''; if (b.type === 'posto') { var cb = center(b); addZone(s, cb.x, cb.z, B.outpostR); alertK(s, 'info', 'Posto avançado pronto: a fronteira avançou', 'posto' + b.id, b.x, b.z, 0); chron(s, 'posto', {}); }
     if (b.type === 'greenhouse') b.plots = [null, null, null, null];
     if (b.type === 'solar' && !s.flags.firstPanel) { s.flags.firstPanel = true; chron(s, 'firstPanel', { who: cname(c.id) }); }
     if (b.type === 'casa' && !s.flags.firstHouse) { s.flags.firstHouse = true; chron(s, 'firstHouse', {}); }
@@ -425,7 +437,7 @@ var Sim = (function () {
     if (c.hero) return null;
     if (c.job === 'sci') for (i = 0; i < s.b.length; i++) { b = s.b[i]; if (b.type === 'lab' && b.on && !jobTaken(s, c, 'research', b.id)) return { type: 'research', kind: 'b', id: b.id }; }
     if (!storm && workTime(s, c) && c.needs.o2 > 45 && !(c.weak > s.t)) { var cp = caps(s), T = Math.min(cp.mat * 0.8, 170), want = s.res.metal <= s.res.reg ? 'metal' : 'reg'; if (s.res[want] >= T) return null;
-      for (var pass = 0; pass < 2 && !best; pass++) { for (i = 0; i < s.deps.length; i++) { var dp = s.deps[i]; if (dp.res !== want || !s.rt.fog[dp.z * N + dp.x] || workers(s, c, 'gather', dp.id) >= 2) continue; d = Math.hypot(dp.x - c.x, dp.z - c.z); if (d < bd) { bd = d; best = dp; } } if (!best) { want = want === 'metal' ? 'reg' : 'metal'; if (s.res[want] >= T) break; } }
+      for (var pass = 0; pass < 2 && !best; pass++) { for (i = 0; i < s.deps.length; i++) { var dp = s.deps[i]; if (dp.res !== want || !s.rt.fog[dp.z * N + dp.x] || s.rt.play[dp.z * N + dp.x] < 110 || workers(s, c, 'gather', dp.id) >= 2) continue; d = Math.hypot(dp.x - c.x, dp.z - c.z); if (d < bd) { bd = d; best = dp; } } if (!best) { want = want === 'metal' ? 'reg' : 'metal'; if (s.res[want] >= T) break; } }
       if (best) return { type: 'gather', kind: 'd', id: best.id }; }
     return null; }
   function sleepTime(s, c) { var hr = hour(s); return s.nightShift && c.shift ? hr >= 9 && hr < 17 : hr >= 21 || hr < 5; }
@@ -621,6 +633,6 @@ var Sim = (function () {
 
   return { newGame: newGame, tick: tick, canPlace: canPlace, place: place, demolish: demolish, order: order, plant: plant, buyTech: buyTech, choose: choose,
     serialize: serialize, deserialize: deserialize, requirements: requirements, readiness: readiness, cinfo: cinfo, pop: pop, beds: beds, freeBeds: freeBeds, wakeNext: wakeNext, sleepers: sleepers, reqOK: reqOK, objectives: objectives, signal: signal, caps: caps, byId: byId, depById: depById,
-    upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
+    playable: playable, addZone: addZone, zoneR: zoneR, upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
 })();
 if (typeof module !== 'undefined') module.exports = Sim;

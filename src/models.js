@@ -150,6 +150,14 @@ var Models = (function () {
     for (var i = 0; i < 3; i++) k.add('metal', G.cyl(0.24, 0.24, 0.7, 16), { p: [1.35 - i * 0.2, 0.35, 0.2 + i * 0.05], uv: 'scale', su: 2, sv: 1 }); return 2.1; };
 
   function dishGeo(Rd, depth) { var pts = [], i, n = 10; for (i = 0; i <= n; i++) { var r = i / n * Rd; pts.push([r, r * r / (Rd * Rd) * depth]); } for (i = n; i >= 0; i--) { r = i / n * Rd * 0.98; pts.push([r, r * r / (Rd * Rd) * depth - 0.07]); } return G.lathe(pts, 32); }
+  B.posto = function (k, o) { // Posto avançado: módulo angular com farol, mastro de sinal e painel próprio; marca a nova fronteira
+    k.add('dark', G.cyl(1.9, 2.0, 0.25, 6), { p: [0, 0.12, 0] }); k.add('screenOn', G.cyl(1.95, 1.95, 0.03, 6), { p: [0, 0.26, 0], uv: 'keep' });
+    vol(k, 2.0, 1.6, 1.6, -0.3, 0.25, 0.1, 0.2, { gw: 0.8, fin: true });
+    bx(k, 'dark', 0.22, 4.6, 0.22, 1.1, 2.55, -0.8); for (var i = 0; i < 4; i++) bx(k, 'metal', 0.6 - i * 0.1, 0.04, 0.04, 1.1, 2.0 + i * 0.8, -0.8); bx(k, 'hull', 0.5, 0.9, 0.06, 1.1, 4.3, -0.62, [0, 0, 0]); bx(k, 'visor', 0.4, 0.75, 0.03, 1.1, 4.3, -0.58);
+    k.add('dark', G.cyl(0.18, 0.24, 0.3, 6), { p: [1.1, 4.95, -0.8] }); k.add('winOn', G.cyl(0.14, 0.14, 0.18, 6), { p: [1.1, 5.18, -0.8], uv: 'keep' }); led(k, 'ledR', 1.1, 5.35, -0.8);
+    k.add('solar', G.rbox(1.4, 0.04, 0.9, 0.01), { p: [-0.4, 2.15, 0.1], r: [0.35, 0.2, 0], d: 1.25 }); k.add('metal', G.rod([-1.4, 0.25, 1.2], [-1.4, 2.6, 1.2], 0.02)); k.add('flag', G.rbox(0.6, 0.38, 0.01, 0.005), { p: [-1.1, 2.4, 1.2], uv: 'keep' });
+    o.lights = [[1.1, 5.1, -0.8, 0xfff1dc, 30, 1.8], [0, 1.4, 1.2]]; o.leds = true; return 5.5; };
+
   B.torre = function (k, o) { // Torre de luz: mastro alto com refletores voltados para baixo
     k.add('dark', G.rbox(0.9, 0.2, 0.9, 0.05), { p: [0, 0.1, 0] }); k.add('concrete', G.rbox(0.5, 0.35, 0.5, 0.06), { p: [0, 0.35, 0] });
     G.truss(k, 'dark', 5.0, 0.42, 6, 0.025, 0, 0, 0.5); k.add('metal', G.rbox(1.2, 0.12, 0.5, 0.04), { p: [0, 5.55, 0] });
@@ -263,69 +271,114 @@ var Models = (function () {
       for (var key in geo) { var m = new T.Mesh(geo[key], M[key]); m.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); m.scale.setScalar(s); m.rotation.y = i; m.castShadow = true; g.add(m); } } return g; }
 
   // ---------- montagem final de uma construção ----------
-  // Níveis 1–5. Cada nível muda a estrutura: 2 Reforçada (base de concreto, equipamentos), 3 Avançada (módulo extra, luz de contorno),
-  // 4 Tecnológica (sensores, radiadores, passarela), 5 Monumental (torre com anel de luz). Estufa, casa, painel, habitat, bateria e oficina têm formas próprias.
-  function glowBand(k, W, D, y) { k.add('screenOn', G.rbox(W, 0.035, 0.035, 0.015), { p: [0, y, D / 2], uv: 'keep' }); k.add('screenOn', G.rbox(W, 0.035, 0.035, 0.015), { p: [0, y, -D / 2], uv: 'keep' }); k.add('screenOn', G.rbox(0.035, 0.035, D, 0.015), { p: [W / 2, y, 0], uv: 'keep' }); k.add('screenOn', G.rbox(0.035, 0.035, D, 0.015), { p: [-W / 2, y, 0], uv: 'keep' }); }
-  function spire(k, x, z, y0, hh, o) { G.truss(k, 'dark', hh, 0.34, Math.max(3, Math.round(hh / 0.9)), 0.022, x, z, y0); k.add('metal', G.cyl(0.05, 0.02, 0.8, 8), { p: [x, y0 + hh + 0.4, z] });
-    k.add('screenOn', G.torus(0.42, 0.035, 6, 28), { p: [x, y0 + hh - 0.2, z], r: [R / 2, 0, 0], uv: 'keep' }); k.add('screenOn', G.torus(0.6, 0.025, 6, 32), { p: [x, y0 + hh * 0.6, z], r: [R / 2, 0, 0], uv: 'keep' }); led(k, 'ledR', x, y0 + hh + 0.82, z); o.lights.push([x, y0 + hh, z, 0x9ad8ff]); }
-  function floorMod(k, w, hgt, d, x, y, z, win) { k.add('hull', G.rbox(w, hgt, d, Math.min(0.35, hgt * 0.3), 3), { p: [x, y + hgt / 2, z], d: 2.2 }); band(k, 'paint', w + 0.04, 0.1, d + 0.04, 0.05, x, y + 0.08, z);
-    for (var i = 0; i < win; i++) { var wx = x - w / 2 + (i + 0.5) * w / win; k.add('dark', G.rbox(w / win * 0.62 + 0.08, hgt * 0.38 + 0.08, 0.06, 0.03), { p: [wx, y + hgt * 0.55, z + d / 2 + 0.01] }); k.add('winOn', G.rbox(w / win * 0.62, hgt * 0.38, 0.07, 0.02), { p: [wx, y + hgt * 0.55, z + d / 2 + 0.02], uv: 'keep' }); } }
-  var LVX = {
-    solar: function (k, o, W, D, h, lv) { var hd = o.dyn.panel, dk = new G.Kit();
-      if (lv >= 2) { dk.add('metal', G.rbox(3.7, 0.06, 2.6, 0.02), { p: [0, 0.32, 0] }); dk.add('solar', G.rbox(3.6, 0.05, 2.5, 0.02), { p: [0, 0.35, 0], d: 1.25 }); for (var i = -1; i <= 1; i += 2) for (var j = -1; j <= 1; j += 2) dk.add('metal', G.rod([i * 1.7, 0.02, j * 1.15], [i * 1.7, 0.32, j * 1.15], 0.025, 6)); k.add('dark', G.rbox(0.7, 0.55, 0.45, 0.08), { p: [1.3, 0.3, 1.3] }); led(k, 'ledG', 1.3, 0.62, 1.53); }
-      if (lv >= 3) { hd.position.y += 0.6; k.add('metal', G.cyl(0.14, 0.16, 0.7, 12), { p: [0, 1.95, 0] }); dk.add('screenOn', G.rbox(3.72, 0.03, 0.03, 0.01), { p: [0, 0.4, 1.31], uv: 'keep' }); dk.add('screenOn', G.rbox(3.72, 0.03, 0.03, 0.01), { p: [0, 0.4, -1.31], uv: 'keep' }); }
-      if (lv >= 4) for (var s = -1; s <= 1; s += 2) { k.add('metal', G.cyl(0.05, 0.06, 1.3, 8), { p: [s * 1.55, 0.65, -1.45] }); k.add('chrome', G.sphere(0.5, 18, 10, 0, R * 2, 0, R * 0.35), { p: [s * 1.55, 1.45, -1.45], r: [-0.6, 0, 0], uv: 'keep' }); led(k, 'ledO', s * 1.55, 1.32, -1.45); }
-      if (lv >= 5) { dk.add('metal', G.rbox(1.6, 0.06, 2.6, 0.02), { p: [2.65, 0.0, 0], r: [0, 0, -0.18] }); dk.add('solar', G.rbox(1.5, 0.05, 2.5, 0.02), { p: [2.65, 0.03, 0], r: [0, 0, -0.18], d: 1.25 }); dk.add('metal', G.rbox(1.6, 0.06, 2.6, 0.02), { p: [-2.65, 0.0, 0], r: [0, 0, 0.18] }); dk.add('solar', G.rbox(1.5, 0.05, 2.5, 0.02), { p: [-2.65, 0.03, 0], r: [0, 0, 0.18], d: 1.25 });
-        k.add('screenOn', G.cyl(0.2, 0.2, 0.5, 12), { p: [0, 0.6, 0], uv: 'keep' }); k.add('screenOn', G.torus(0.95, 0.03, 6, 32), { p: [0, 0.14, 0], r: [R / 2, 0, 0], uv: 'keep' }); }
-      dk.build(hd); return h + (lv >= 3 ? 0.6 : 0) + (lv >= 2 ? 0.35 : 0); },
-    casa: function (k, o, W, D, h, lv) { var top = 2.35;
-      if (lv >= 2) { floorMod(k, 2.2, 1.0, 1.9, -0.5, top, -0.15, 2); top += 1.0; }
-      if (lv >= 3) { k.add('metal', G.rbox(1.2, 0.07, 0.8, 0.02), { p: [-0.5, 2.4, 1.2] }); for (var i = -1; i <= 1; i++) k.add('metal', G.rod([-0.5 + i * 0.55, 2.4, 1.58], [-0.5 + i * 0.55, 2.85, 1.58], 0.015, 4)); k.add('metal', G.rod([-1.05, 2.85, 1.58], [0.05, 2.85, 1.58], 0.018, 4)); k.add('solar', G.rbox(1.6, 0.05, 1.1, 0.02), { p: [-0.5, top + 0.12, -0.2], r: [0.25, 0, 0], d: 1.25 }); glowBand(k, 3.02, 2.52, 0.62); }
-      if (lv >= 4) { floorMod(k, 1.6, 0.95, 1.5, -0.6, top, -0.2, 2); top += 0.95; k.add('dark', G.rbox(0.25, 1.9, 0.25, 0.06), { p: [0.75, 1.3 + top / 2, -0.95], s: [1, top / 1.9 / 1.5, 1] }); k.add('screenOn', G.rbox(0.05, top - 0.6, 0.05, 0.02), { p: [0.88, top / 2 + 0.3, -0.82], uv: 'keep' }); }
-      if (lv >= 5) { k.add('hull', G.cyl(0.95, 1.05, 0.2, 24), { p: [-0.6, top + 0.1, -0.2] }); k.add('glass', G.sphere(0.9, 22, 12, 0, R * 2, 0, R / 2), { p: [-0.6, top + 0.2, -0.2], uv: 'keep' }); k.add('screenOn', G.torus(0.97, 0.03, 6, 30), { p: [-0.6, top + 0.21, -0.2], r: [R / 2, 0, 0], uv: 'keep' }); k.add('leaf', G.sphere(0.35, 10, 8), { p: [-0.6, top + 0.45, -0.2] }); o.lights.push([-0.6, top + 0.6, -0.2, 0xffe2b8]); top += 0.9; }
-      return Math.max(h, top + 0.4); },
-    greenhouse: function (k, o, W, D, h, lv) { var i, s;
-      if (lv >= 2) for (s = -1; s <= 1; s += 2) for (i = -1; i <= 1; i++) { k.add('hull', G.cyl(0.32, 0.32, 0.9, 16), { p: [i * 1.6, 0.6, s * 2.25] }); k.add('screenOn', G.rbox(0.05, 0.6, 0.05, 0.02), { p: [i * 1.6, 0.6, s * 2.57], uv: 'keep' }); }
-      if (lv >= 3) { k.add('glass', new T.CylinderGeometry(0.9, 0.9, 3.4, 24, 1, true, 0, R), { p: [0, 2.25, 0], r: [0, 0, R / 2], uv: 'keep' }); for (i = 0; i <= 4; i++) k.add('metal', G.torus(0.92, 0.035, 6, 20, R), { p: [-1.7 + i * 0.85, 2.25, 0], r: [0, R / 2, 0] }); k.add('grow', G.rbox(3.2, 0.05, 0.12, 0.02), { p: [0, 3.0, 0], uv: 'keep' }); glowBand(k, 5.84, 3.84, 0.58); }
-      if (lv >= 4) { k.add('hull', G.cyl(1.25, 1.3, 0.3, 24), { p: [-3.6, 0.15, 0] }); k.add('glass', G.sphere(1.2, 22, 14, 0, R * 2, 0, R / 2), { p: [-3.6, 0.3, 0], uv: 'keep' }); for (i = 0; i < 6; i++) k.add('metal', G.torus(1.21, 0.025, 4, 22, R), { p: [-3.6, 0.3, 0], r: [0, i * R / 6, 0] }); k.add('leaf', G.sphere(0.55, 12, 8), { p: [-3.6, 0.7, 0] }); k.add('leaf2', G.sphere(0.4, 10, 8), { p: [-3.3, 1.1, 0.2] }); o.lights.push([-3.6, 1.2, 0, 0xff6ad8]); }
-      if (lv >= 5) { k.add('glass', G.sphere(3.4, 32, 16, 0, R * 2, 0, R / 2), { p: [0, 0.55, 0], s: [1, 1.05, 0.72], uv: 'keep' }); for (i = 0; i < 10; i++) k.add('metal', G.torus(3.42, 0.035, 4, 40, R), { p: [0, 0.55, 0], r: [0, i * R / 10, 0], s: [1, 1.05, 0.72] }); k.add('metal', G.torus(3.42, 0.06, 6, 48), { p: [0, 0.55, 0], r: [R / 2, 0, 0], s: [1, 0.72, 1] });
-        G.truss(k, 'dark', 3.0, 0.3, 4, 0.02, 0, 0, 0.55); for (i = 0; i < 4; i++) k.add('leaf', G.sphere(0.28, 10, 8), { p: [Math.cos(i * 1.57) * 0.3, 1.2 + i * 0.6, Math.sin(i * 1.57) * 0.3] }); k.add('screenOn', G.torus(3.45, 0.03, 6, 48), { p: [0, 0.6, 0], r: [R / 2, 0, 0], s: [1, 0.72, 1], uv: 'keep' }); return 4.2; }
-      return h + (lv >= 3 ? 0.9 : 0); },
-    habitat: function (k, o, W, D, h, lv) { var top = h - 0.2;
-      if (lv >= 2) { floorMod(k, W * 0.55, 1.1, D * 0.55, -W * 0.12, top - 0.1, 0, 3); top += 1.0; }
-      if (lv >= 3) { glowBand(k, W - 0.2, D - 0.2, 0.5); k.add('dark', G.rbox(0.9, 0.08, D * 0.5, 0.02), { p: [W * 0.3, top - 0.95, 0] }); for (var i = 0; i < 4; i++) k.add('metal', G.rbox(0.05, 0.6, D * 0.45, 0.01), { p: [W * 0.3 - 0.35 + i * 0.23, top - 0.65, 0] }); }
-      if (lv >= 4) { floorMod(k, W * 0.38, 0.9, D * 0.4, -W * 0.12, top - 0.1, 0, 2); top += 0.9; }
-      if (lv >= 5) { k.add('glass', G.sphere(0.95, 22, 12, 0, R * 2, 0, R / 2), { p: [-W * 0.12, top - 0.1, 0], uv: 'keep' }); k.add('screenOn', G.torus(1.0, 0.03, 6, 30), { p: [-W * 0.12, top - 0.08, 0], r: [R / 2, 0, 0], uv: 'keep' }); top += 0.9; }
-      return Math.max(h, top + 0.3); },
-    battery: function (k, o, W, D, h, lv) { var i;
-      if (lv >= 2) for (i = -1; i <= 1; i += 2) { k.add('hull', G.cyl(0.32, 0.32, 1.3, 16), { p: [i * 0.62, 0.75, -0.55] }); k.add('screenOn', G.rbox(0.05, 0.9, 0.05, 0.02), { p: [i * 0.62, 0.75, -0.22], uv: 'keep' }); }
-      if (lv >= 3) for (i = 0; i < 5; i++) k.add('metal', G.rbox(0.04, 0.9, 0.6, 0.01), { p: [-0.5 + i * 0.25, 0.65, 0.75] });
-      if (lv >= 4) { k.add('dark', G.cyl(0.55, 0.6, 0.25, 20), { p: [0, h + 0.1, 0] }); k.add('screenOn', G.cyl(0.45, 0.45, 0.4, 20), { p: [0, h + 0.4, 0], uv: 'keep' }); k.add('dark', G.cyl(0.55, 0.5, 0.12, 20), { p: [0, h + 0.65, 0] }); }
-      return h + (lv >= 4 ? 0.8 : 0); },
-    workshop: function (k, o, W, D, h, lv) { var i;
-      if (lv >= 2) { for (i = 0; i < 2; i++) k.add('metal', G.cyl(0.12, 0.14, 1.6, 10), { p: [W / 2 - 0.4 - i * 0.4, h + 0.3, -D / 2 + 0.45] }); }
-      if (lv >= 3) { floorMod(k, W * 0.45, 0.9, D * 0.5, -W * 0.18, h - 0.2, 0, 2); k.add('metal', G.rbox(W * 0.9, 0.12, 0.2, 0.04), { p: [0, h + 0.6, D / 2 - 0.2] }); k.add('dark', G.rbox(0.4, 0.3, 0.3, 0.06), { p: [0.2, h + 0.4, D / 2 - 0.2] }); }
-      if (lv >= 4) { k.add('dark', G.rbox(0.7, 0.9, 0.7, 0.1), { p: [W / 2 + 0.25, 0.45, D / 2 - 0.5] }); pipe(k, [[W / 2 + 0.25, 0.9, D / 2 - 0.5], [W / 2 - 0.2, 1.6, D / 2 - 0.7], [W / 2 - 0.6, h, D / 2 - 0.8]], 0.05, 'metal'); glowBand(k, W - 0.1, D - 0.1, 0.45); }
-      return h + (lv >= 3 ? 0.9 : 0.3); }
+  // ---------- Níveis 1–5: design moderno, arestas vivas ----------
+  // Do nível 2 em diante as construções principais trocam o módulo arredondado por arquitetura angular: volumes empilhados e girados,
+  // fachadas de vidro escuro, aletas laranja, filetes de luz. Cada nível é um salto de tecnologia sobre o anterior.
+  function bx(k, m, w, h, d, x, y, z, r) { k.add(m, G.rbox(w, h, d, Math.min(0.025, w * 0.1, h * 0.1, d * 0.1)), { p: [x, y, z], r: r, uv: m === 'screenOn' || m === 'winOn' || m === 'visor' ? 'keep' : undefined }); }
+  function strip(k, len, ax, x, y, z, m) { var s = 0.035; bx(k, m || 'screenOn', ax === 'x' ? len : s, ax === 'y' ? len : s, ax === 'z' ? len : s, x, y, z); }
+  function glassF(k, w, h, x, y, z, face) { // fachada de vidro com caixilho e montantes; face: 'z' (frente/trás) ou 'x' (lados)
+    var fz = face === 'x', n = Math.max(1, Math.round(w / 0.8)), i;
+    if (fz) { bx(k, 'dark', 0.06, h + 0.1, w + 0.1, x, y, z); bx(k, 'visor', 0.07, h, w, x, y, z); for (i = 1; i < n; i++) bx(k, 'metal', 0.09, h, 0.035, x, y, z - w / 2 + i * w / n); }
+    else { bx(k, 'dark', w + 0.1, h + 0.1, 0.06, x, y, z); bx(k, 'visor', w, h, 0.07, x, y, z); for (i = 1; i < n; i++) bx(k, 'metal', 0.035, h, 0.09, x - w / 2 + i * w / n, y, z); } }
+  function vol(k, w, h, d, x, y, z, ry, opt) { // volume branco com recorte de vidro na frente, faixa escura na base e filete de luz no topo
+    var c = Math.cos(ry || 0), s = Math.sin(ry || 0), g = new G.Kit(), o = opt || {};
+    bx(g, 'hull', w, h, d, 0, h / 2, 0); bx(g, 'dark', w + 0.02, 0.12, d + 0.02, 0, 0.06, 0); bx(g, 'dark', w + 0.06, 0.08, d + 0.06, 0, h + 0.04, 0);
+    glassF(g, w * (o.gw || 0.7), h * 0.55, o.gx || 0, h * 0.55, d / 2 + 0.02); if (o.back) glassF(g, w * 0.5, h * 0.45, 0, h * 0.55, -d / 2 - 0.02);
+    strip(g, w + 0.06, 'x', 0, h + 0.09, d / 2 + 0.03); if (o.fin) { bx(g, 'paint', 0.1, h + 0.2, 0.5, w / 2 + 0.05, h / 2, d / 2 - 0.3); }
+    for (var i = 1; i < 4; i++) bx(g, 'dark', 0.02, h * 0.9, 0.02, -w / 2 - 0.005, h / 2, -d / 2 + i * d / 4); // juntas dos painéis
+    var m4 = new T.Matrix4().makeRotationY(ry || 0).setPosition(x, y, z); for (var key in g.parts) g.parts[key].forEach(function (geo) { k.add(key, geo.clone().applyMatrix4(m4), { uv: 'keep' }); }); }
+  function obelisk(k, x, z, hh, o) { // marco do nível 5: obelisco de vidro escuro com filetes de luz e quadros flutuantes
+    k.add('visor', G.cyl(0.18, 0.42, hh, 4), { p: [x, hh / 2 + 0.1, z], r: [0, R / 4, 0], uv: 'keep' }); k.add('dark', G.cyl(0.5, 0.55, 0.25, 4), { p: [x, 0.12, z], r: [0, R / 4, 0] });
+    for (var s = -1; s <= 1; s += 2) { strip(k, hh * 0.85, 'y', x + s * 0.21, hh * 0.5, z); strip(k, hh * 0.85, 'y', x, hh * 0.5, z + s * 0.21); }
+    for (var i = 0; i < 2; i++) { var y = hh * (0.55 + i * 0.3), w = 1.1 - i * 0.3; strip(k, w, 'x', x, y, z + w / 2); strip(k, w, 'x', x, y, z - w / 2); strip(k, w, 'z', x + w / 2, y, z); strip(k, w, 'z', x - w / 2, y, z); }
+    led(k, 'ledR', x, hh + 0.2, z); o.lights.push([x, hh * 0.7, z, 0x9ad8ff, 22, 1.2]); }
+  var MOD = {
+    casa: function (k, o, W, D, lv) { var y = 0.3, i, tw = [0, 0.12, -0.1, 0.18];
+      bx(k, 'dark', 3.7, 0.3, 3.5, 0, 0.15, 0); strip(k, 3.7, 'x', 0, 0.3, 1.76); bx(k, 'concrete', 1.2, 0.08, 0.9, 1.1, 0.34, 1.9);
+      vol(k, 3.1, 1.9, 2.5, -0.15, y, -0.15, 0, { fin: true, back: true }); y += 1.9;
+      bx(k, 'hull', 0.9, 1.5, 1.2, 1.65, 0.3 + 0.75, -0.2); bx(k, 'dark', 0.6, 1.1, 0.05, 1.65, 0.85, 0.42); strip(k, 1.1, 'y', 1.98, 0.85, 0.42, 'paint');
+      if (lv === 2) { bx(k, 'hull', 3.5, 0.1, 2.9, -0.15, y + 0.05, -0.05); strip(k, 3.5, 'x', -0.15, y + 0.05, 1.42); k.add('solar', G.rbox(1.6, 0.04, 1.1, 0.01), { p: [-0.4, y + 0.3, -0.4], r: [0.3, 0, 0], d: 1.25 }); y += 0.35; }
+      if (lv >= 3) { for (i = 1; i <= (lv >= 5 ? 3 : lv >= 4 ? 2 : 1); i++) { var w = 2.9 - i * 0.25, d = 2.4 - i * 0.15; vol(k, w, 1.45, d, -0.15 + (i % 2 ? 0.25 : -0.1), y, -0.1 + (i % 2 ? 0.3 : 0), tw[i], { gw: 0.85, fin: i % 2 === 0 }); y += 1.45; } }
+      if (lv === 3) { for (i = -1; i <= 1; i++) bx(k, 'glass', 0.9, 0.5, 0.03, -0.15 + i * 0.92, 2.45, 1.3); bx(k, 'metal', 2.8, 0.04, 0.04, -0.15, 2.7, 1.3); bx(k, 'metal', 0.5, 0.06, 1.6, 1.2, 1.2, 1.05, [0.75, 0, 0]); }
+      if (lv >= 4) { for (var s = -1; s <= 1; s += 2) strip(k, y - 0.4, 'y', s * 1.45 - 0.15, 0.3 + (y - 0.4) / 2, 1.1); bx(k, 'dark', 0.08, 1.4, 0.08, 0.6, y + 0.7, -0.6); led(k, 'ledR', 0.6, y + 1.42, -0.6); }
+      if (lv >= 5) { k.add('glass', G.cyl(0.9, 1.05, 1.0, 8), { p: [-0.1, y + 0.5, 0.1], uv: 'keep' }); k.add('dark', G.cyl(1.08, 1.08, 0.08, 8), { p: [-0.1, y + 0.04, 0.1] }); k.add('screenOn', G.cyl(1.1, 1.1, 0.03, 8), { p: [-0.1, y + 0.1, 0.1], uv: 'keep' }); k.add('leaf', G.cyl(0.4, 0.5, 0.6, 7), { p: [-0.1, y + 0.4, 0.1] });
+        for (i = 0; i < 4; i++) { var a = i * R / 2 + R / 4; strip(k, 1.3, 'y', -0.1 + Math.cos(a) * 1.25, y + 0.9, 0.1 + Math.sin(a) * 1.25); } o.lights.push([-0.1, y + 0.6, 0.1, 0xffe2b8]); y += 1.1; }
+      o.lights.push([0.4, 1.6, 1.8]); return y + 0.3; },
+    habitat: function (k, o, W, D, lv) { var y = 0.35, i;
+      bx(k, 'dark', 5.8, 0.35, 4.1, 0, 0.17, 0); strip(k, 5.8, 'x', 0, 0.35, 2.06); strip(k, 4.1, 'z', 2.91, 0.35, 0);
+      vol(k, 5.2, 2.3, 3.6, 0, y, 0, 0, { gw: 0.8, back: true, fin: true }); bx(k, 'hull', 0.9, 2.0, 1.6, 2.95, y + 1.0, 0); bx(k, 'dark', 0.06, 1.5, 0.9, 3.41, y + 0.85, 0); strip(k, 1.5, 'y', 3.43, y + 0.85, 0.5, 'paint');
+      bx(k, 'hull', 2.4, 0.08, 1.2, 0.8, y + 2.2, 2.2); strip(k, 2.4, 'x', 0.8, y + 2.16, 2.8); y += 2.3;
+      if (lv >= 3) { vol(k, 3.8, 1.7, 3.0, -0.5, y, -0.15, 0.08, { gw: 0.9 }); for (i = 0; i < 6; i++) bx(k, 'metal', 0.04, 1.3, 0.7, 1.9 + i * 0.16, y + 0.75, 1.0); y += 1.7; }
+      if (lv >= 4) { vol(k, 2.8, 1.5, 2.4, -0.7, y, -0.25, -0.1, { gw: 0.85, fin: true }); for (i = 0; i < 3; i++) k.add('solar', G.rbox(1.5, 0.04, 0.7, 0.01), { p: [1.4, 2.75 + 0.05, -1.2 + i * 0.75], r: [0.45, 0, 0], d: 1.25 });
+        for (var s = -1; s <= 1; s += 2) { k.add('dark', G.rod([s * 2.75, 0.35, 1.95], [s * 2.75, y, 1.95], 0.05, 4)); k.add('dark', G.rod([s * 2.75, 0.35, -1.95], [s * 2.75, y, -1.95], 0.05, 4)); k.add('dark', G.rod([s * 2.75, 0.4, 1.95], [s * 2.75, y - 0.2, -1.95], 0.035, 4)); } y += 1.5; }
+      if (lv >= 5) { var tx = 1.9, tz = -1.0; bx(k, 'hull', 1.5, 6.5, 1.5, tx, 3.25, tz); glassF(k, 1.2, 5.6, tx, 3.3, tz + 0.77); glassF(k, 1.2, 5.6, tx + 0.77, 3.3, tz, 'x'); for (i = 0; i < 4; i++) strip(k, 6.4, 'y', tx + (i % 2 ? 0.76 : -0.76), 3.3, tz + (i < 2 ? 0.76 : -0.76));
+        bx(k, 'dark', 1.9, 0.15, 1.9, tx, 6.55, tz); bx(k, 'screenOn', 1.92, 0.05, 1.92, tx, 6.66, tz); k.add('metal', G.rod([tx, 6.6, tz], [tx, 8.0, tz], 0.04, 6)); led(k, 'ledR', tx, 8.05, tz); o.lights.push([tx, 6.4, tz, 0x9ad8ff, 24, 1.2]); y = Math.max(y, 8); }
+      o.lights.push([3.5, 2.0, 0], [0, 2.2, 2.6]); return y + 0.3; },
+    greenhouse: function (k, o, W, D, lv) { var i, L = 5.4, Wd = 3.6, H = lv >= 3 ? 2.6 : 2.2;
+      bx(k, 'dark', 6.0, 0.45, 4.0, 0, 0.22, 0); strip(k, 6.0, 'x', 0, 0.45, 2.01); strip(k, 6.0, 'x', 0, 0.45, -2.01);
+      var ridges = lv >= 3 ? 3 : 1, rw = L / ridges;
+      for (i = 0; i < ridges; i++) { var cx = -L / 2 + rw * (i + 0.5); // telhado em dente de serra / duas águas, vidro com caixilho
+        for (var s = -1; s <= 1; s += 2) { var ang = Math.atan2(0.9, Wd / 2); k.add('glass', G.rbox(rw - 0.04, 0.04, Wd / 2 / Math.cos(ang) + 0.05, 0.01), { p: [cx, H + 0.45, s * Wd / 4], r: [-s * ang, 0, 0], uv: 'keep' }); }
+        bx(k, 'dark', rw, 0.08, 0.08, cx, H + 0.9, 0); bx(k, 'dark', 0.06, 0.06, Wd, cx - rw / 2, H + 0.45, 0); }
+      for (var sd = -1; sd <= 1; sd += 2) { k.add('glass', G.rbox(L, H - 0.45, 0.04, 0.01), { p: [0, 0.45 + (H - 0.45) / 2, sd * Wd / 2], uv: 'keep' }); bx(k, 'dark', L + 0.06, 0.08, 0.08, 0, H, sd * Wd / 2); for (i = 0; i <= 6; i++) bx(k, 'dark', 0.06, H - 0.45, 0.06, -L / 2 + i * L / 6, 0.45 + (H - 0.45) / 2, sd * Wd / 2); }
+      k.add('glass', G.rbox(0.04, H - 0.45, Wd, 0.01), { p: [-L / 2, 0.45 + (H - 0.45) / 2, 0], uv: 'keep' }); bx(k, 'hull', 0.9, H, 1.6, L / 2 + 0.4, H / 2, 0); bx(k, 'visor', 0.06, 1.3, 0.8, L / 2 + 0.86, 1.0, 0); strip(k, H, 'y', L / 2 + 0.86, H / 2, 0.55, 'paint');
+      o.plots = []; for (i = 0; i < 4; i++) { var px = -1.85 + i * 1.2; bx(k, 'dark', 1.0, 0.3, 2.8, px, 0.6, 0); k.add('soil', G.rbox(0.9, 0.06, 2.7, 0.02), { p: [px, 0.76, 0], uv: 'keep' }); strip(k, 2.8, 'z', px - 0.5, 0.75, 0, 'grow'); var pg = grp(); pg.position.set(px, 0.78, 0); k.extra.push(pg); o.plots.push(pg); }
+      bx(k, 'grow', L - 0.4, 0.05, 0.1, 0, H - 0.1, 0.9); bx(k, 'grow', L - 0.4, 0.05, 0.1, 0, H - 0.1, -0.9);
+      if (lv >= 3) for (i = -1; i <= 1; i++) { k.add('hull', G.cyl(0.3, 0.3, 1.0, 6), { p: [i * 1.8, 0.5, 2.4] }); strip(k, 0.8, 'y', i * 1.8, 0.55, 2.68); }
+      var top = H + 0.9;
+      if (lv >= 4) { var y4 = top + 0.15; for (var s4 = -1; s4 <= 1; s4 += 2) for (var t4 = -1; t4 <= 1; t4 += 2) bx(k, 'dark', 0.12, 1.9, 0.12, s4 * 1.8, y4 + 0.95 - 0.9, t4 * 1.2);
+        bx(k, 'dark', 4.0, 0.12, 2.8, 0, y4 + 0.9, 0); k.add('glass', G.rbox(3.8, 1.6, 2.6, 0.02), { p: [0, y4 + 1.75, 0], uv: 'keep' }); bx(k, 'dark', 3.9, 0.08, 2.7, 0, y4 + 2.6, 0);
+        for (i = 0; i < 4; i++) { bx(k, 'metal', 0.06, 1.5, 2.2, -1.4 + i * 0.93, y4 + 1.7, 0); for (var j = 0; j < 3; j++) k.add('leaf', G.rbox(0.25, 0.22, 2.0, 0.08), { p: [-1.4 + i * 0.93 + 0.12, y4 + 1.15 + j * 0.45, 0] }); }
+        strip(k, 3.9, 'x', 0, y4 + 2.64, 1.36); o.lights.push([0, y4 + 1.6, 0, 0xff6ad8]); top = y4 + 2.7; }
+      if (lv >= 5) { var dome = G.sphere(3.6, 10, 5, 0, R * 2, 0, R / 2); k.add('glass', dome, { p: [0, 0.45, 0], s: [1, 1.15, 0.78], uv: 'keep' }); var wf = new T.EdgesGeometry(dome); var ln = new T.LineSegments(wf, new T.LineBasicMaterial({ color: 0x1a1a1e })); ln.position.y = 0.45; ln.scale.set(1.002, 1.152, 0.782); k.extra.push(ln);
+        k.add('hull', G.cyl(0.55, 0.65, 5.2, 6), { p: [-2.1, 2.6, 0] }); for (i = 0; i < 5; i++) { k.add('leaf', G.cyl(0.75, 0.75, 0.18, 6), { p: [-2.1, 1.0 + i * 0.85, 0] }); strip(k, 1.4, 'x', -2.1, 1.12 + i * 0.85, 0.7, 'grow'); }
+        bx(k, 'screenOn', 7.4, 0.04, 0.04, 0, 0.47, 2.8); bx(k, 'screenOn', 7.4, 0.04, 0.04, 0, 0.47, -2.8); top = Math.max(top, 4.6); }
+      o.lights.push([0, 1.8, 0, 0xff6ad8]); return top; },
+    solar: function (k, o, W, D, lv) { var ph = lv >= 5 ? 3.6 : lv >= 3 ? 2.6 : 2.0, i;
+      bx(k, 'dark', 1.2, 0.25, 1.2, 0, 0.12, 0); strip(k, 1.2, 'x', 0, 0.25, 0.61); k.add('metal', G.cyl(0.1, 0.22, ph, 4), { p: [0, ph / 2 + 0.2, 0], r: [0, R / 4, 0] }); bx(k, 'dark', 0.5, 0.35, 0.4, 0, ph + 0.2, 0);
+      bx(k, 'hull', 0.6, 0.8, 0.45, 1.25, 0.45, 1.25); bx(k, 'visor', 0.4, 0.25, 0.03, 1.25, 0.6, 1.48); strip(k, 0.6, 'x', 1.25, 0.85, 1.48);
+      var head = grp(); head.position.y = ph + 0.32; var dk = new G.Kit(), pw = lv >= 5 ? 5.0 : lv >= 4 ? 4.4 : 3.8, pd = lv >= 5 ? 3.4 : lv >= 4 ? 3.0 : 2.6;
+      function panel(x, w, d, ry, rz) { dk.add('dark', G.rbox(w + 0.08, 0.06, d + 0.08, 0.01), { p: [x, 0, 0], r: [0, ry || 0, rz || 0] }); dk.add('solar', G.rbox(w, 0.05, d, 0.01), { p: [x, 0.025, 0], r: [0, ry || 0, rz || 0], d: 1.25 }); }
+      if (lv === 2) panel(0, pw, pd); else { panel(-pw / 4 - 0.06, pw / 2, pd, 0, 0.12); panel(pw / 4 + 0.06, pw / 2, pd, 0, -0.12); }
+      dk.add('screenOn', G.rbox(pw + 0.1, 0.03, 0.03, 0.01), { p: [0, 0.03, pd / 2 + 0.05], uv: 'keep' }); dk.add('screenOn', G.rbox(pw + 0.1, 0.03, 0.03, 0.01), { p: [0, 0.03, -pd / 2 - 0.05], uv: 'keep' }); dk.add('dark', G.rbox(0.3, 0.16, pd * 0.8, 0.02), { p: [0, -0.1, 0] });
+      if (lv >= 4) for (i = -1; i <= 1; i += 2) dk.add('metal', G.rbox(0.05, 0.05, pd, 0.01), { p: [i * pw * 0.25, 0.06, 0] });
+      dk.build(head); o.dyn.panel = head; k.extra.push(head);
+      if (lv >= 4) for (var s = -1; s <= 1; s += 2) { bx(k, 'dark', 0.12, 1.0, 0.12, s * 1.5, 0.5, -1.5); bx(k, 'hull', 0.5, 0.06, 0.5, s * 1.5, 1.05, -1.5, [0.5, 0, 0]); led(k, 'ledG', s * 1.5, 1.12, -1.5); }
+      if (lv >= 5) { k.add('dark', G.cyl(0.3, 0.3, 0.6, 6), { p: [0, ph - 0.5, 0] }); k.add('screenOn', G.cyl(0.24, 0.24, 0.62, 6), { p: [0, ph - 0.5, 0], uv: 'keep' }); o.lights.push([0, ph - 0.5, 0, 0x9ad8ff]); }
+      return ph + 0.9; },
+    battery: function (k, o, W, D, lv) { var i, h = 1.8;
+      bx(k, 'dark', 1.8, 0.2, 1.6, 0, 0.1, 0); strip(k, 1.8, 'x', 0, 0.2, 0.81);
+      if (lv <= 3) { var n = lv === 2 ? 1 : 2; for (i = 0; i < n; i++) { var x = n === 1 ? 0 : -0.42 + i * 0.84; bx(k, 'hull', n === 1 ? 1.2 : 0.72, 1.7, 1.0, x, 1.05, 0); bx(k, 'visor', n === 1 ? 0.8 : 0.45, 1.2, 0.03, x, 1.05, 0.51); for (var j = 0; j < 5; j++) bx(k, 'screenOn', n === 1 ? 0.6 : 0.32, 0.1, 0.035, x, 0.6 + j * 0.2, 0.53); bx(k, 'paint', n === 1 ? 1.22 : 0.74, 0.08, 1.02, x, 1.9, 0); } h = 2.0;
+        if (lv === 3) for (i = 0; i < 7; i++) bx(k, 'metal', 0.03, 1.4, 0.4, -0.75 + i * 0.25, 1.0, -0.72); }
+      else { k.add('dark', G.cyl(0.75, 0.8, 0.3, 6), { p: [0, 0.35, 0] }); var hh = lv >= 5 ? 3.6 : 2.2; k.add('glass', G.cyl(0.5, 0.5, hh, 6), { p: [0, 0.5 + hh / 2, 0], uv: 'keep' }); k.add('screenOn', G.cyl(0.24, 0.24, hh - 0.2, 6), { p: [0, 0.5 + hh / 2, 0], uv: 'keep' });
+        for (i = 0; i < 6; i++) { var a = i * R / 3; bx(k, 'hull', 0.12, hh, 0.12, Math.cos(a) * 0.62, 0.5 + hh / 2, Math.sin(a) * 0.62); } k.add('dark', G.cyl(0.75, 0.6, 0.25, 6), { p: [0, 0.6 + hh, 0] }); o.lights.push([0, 0.5 + hh / 2, 0, 0x9ad8ff]); h = hh + 0.9;
+        if (lv >= 5) for (i = 0; i < 3; i++) { var y = 1.0 + i * 1.0, w = 1.5 - i * 0.2; strip(k, w, 'x', 0, y, w / 2); strip(k, w, 'x', 0, y, -w / 2); strip(k, w, 'z', w / 2, y, 0); strip(k, w, 'z', -w / 2, y, 0); } }
+      return h; },
+    workshop: function (k, o, W, D, lv) { var i, h = 2.4;
+      bx(k, 'dark', 3.8, 0.3, 3.6, 0, 0.15, 0); strip(k, 3.8, 'x', 0, 0.3, 1.81);
+      bx(k, 'hull', 3.4, h, 3.0, 0, 0.3 + h / 2, -0.1); bx(k, 'dark', 2.0, 1.7, 0.06, 0.4, 1.2, 1.42); for (i = 0; i < 9; i++) bx(k, 'metal', 1.95, 0.03, 0.08, 0.4, 0.45 + i * 0.18, 1.45); bx(k, 'paint', 0.12, h, 0.4, -1.75, 0.3 + h / 2, 1.2); glassF(k, 0.9, 1.0, -1.1, 1.8, 1.42);
+      for (i = 0; i < 3; i++) { var x = -1.2 + i * 1.15; bx(k, 'hull', 1.1, 0.05, 3.0, x, 0.3 + h + 0.35, -0.1, [0, 0, 0.55]); bx(k, 'visor', 0.04, 0.55, 2.9, x + 0.32, 0.3 + h + 0.3, -0.1); } h += 0.9;
+      if (lv >= 3) { G.truss(k, 'dark', 3.6, 0.3, 4, 0.02, 1.95, -1.4, 0.3); G.truss(k, 'dark', 3.6, 0.3, 4, 0.02, -1.95, -1.4, 0.3); bx(k, 'paint', 4.2, 0.3, 0.3, 0, 3.95, -1.4); bx(k, 'dark', 0.4, 0.3, 0.4, 0.6, 3.7, -1.4); k.add('metal', G.rod([0.6, 3.55, -1.4], [0.6, 2.9, -1.4], 0.015, 4)); }
+      if (lv >= 4) { bx(k, 'dark', 0.6, 4.2, 0.6, -1.4, 2.1 + 0.3, -1.0); strip(k, 4, 'y', -1.09, 2.3, -0.69, 'paint'); bx(k, 'dark', 0.5, 0.5, 0.5, 1.4, 0.55, 2.0); k.add('metal', G.rod([1.4, 0.8, 2.0], [1.2, 1.7, 1.9], 0.06, 6)); k.add('metal', G.rod([1.2, 1.7, 1.9], [0.7, 1.5, 2.1], 0.05, 6)); bx(k, 'paint', 0.16, 0.16, 0.3, 0.7, 1.45, 2.1); o.vent = [-1.4, 4.7, -1.0]; }
+      if (lv >= 5) { vol(k, 2.6, 1.4, 2.2, 0.3, h + 0.05, 0, 0.1, { gw: 0.9, fin: true }); bx(k, 'winOn', 2.0, 0.06, 0.06, 0.4, 0.5, 1.47); o.lights.push([0.3, h + 0.8, 1.4, 0xffb070]); h += 1.5; }
+      o.lights.push([0.4, 2.3, 2.3]); return h; },
+    posto: function (k, o, W, D, lv) { return B.posto(k, o, W, D); }
   };
-  function levelKit(k, type, def, W, D, h, lv, o) { var hx = W / 2 - 0.3, hz = D / 2 - 0.3, i, s, own = LVX[type];
-    // 2 · Reforçada: base de concreto mais larga e equipamentos nos cantos
-    k.add('concrete', G.rbox(W + 0.5, 0.1, D + 0.5, 0.05), { p: [0, 0.05, 0] });
-    if (!own || type === 'casa') for (s = -1; s <= 1; s += 2) { k.add('dark', G.rbox(0.45, 0.4, 0.45, 0.08), { p: [s * hx, 0.3, -hz] }); k.add('metal', G.cyl(0.045, 0.045, 0.5, 8), { p: [s * hx, 0.75, -hz] }); led(k, 'ledG', s * hx, 1.02, -hz); }
-    if (own) h = own(k, o, W, D, h, lv);
-    else { // demais construções: módulos genéricos, mas cada nível acrescenta algo visível
-      if (lv >= 3) { floorMod(k, Math.min(1.5, W * 0.4), 0.9, Math.min(1.1, D * 0.4), -W / 2 + Math.min(1.5, W * 0.4) / 2 + 0.1, 0.1, D / 2 - 0.65, 1); glowBand(k, W + 0.3, D + 0.3, 0.14); }
-      if (lv >= 4) { for (i = 0; i < 4; i++) k.add('metal', G.rbox(0.04, 0.8, 0.5, 0.01), { p: [W / 2 + 0.15, 0.6, -0.4 + i * 0.27] }); k.add('dark', G.cyl(0.05, 0.05, 0.8, 8), { p: [-hx, h + 0.1, -hz] }); k.add('chrome', G.sphere(0.35, 14, 8, 0, R * 2, 0, R * 0.4), { p: [-hx, h + 0.55, -hz], r: [-0.7, 0.6, 0], uv: 'keep' }); }
-      if (lv >= 5) { k.add('hull', G.sphere(0.5, 16, 10, 0, R * 2, 0, R / 2), { p: [hx - 0.3, h - 0.05, hz - 0.3], uv: 'keep' }); k.add('screenOn', G.torus(0.52, 0.03, 6, 24), { p: [hx - 0.3, h - 0.03, hz - 0.3], r: [R / 2, 0, 0], uv: 'keep' }); h += 0.5; } }
-    // 3 · Avançada: luz de contorno na base
-    if (lv >= 3) glowBand(k, W + 0.48, D + 0.48, 0.11);
-    // 4 · Tecnológica: postes de luz nos cantos e passarela
-    if (lv >= 4) for (s = -1; s <= 1; s += 2) for (var t2 = -1; t2 <= 1; t2 += 2) { k.add('dark', G.cyl(0.035, 0.045, 1.4, 6), { p: [s * (W / 2 + 0.18), 0.75, t2 * (D / 2 + 0.18)] }); k.add('winOn', G.rbox(0.12, 0.06, 0.12, 0.02), { p: [s * (W / 2 + 0.18), 1.47, t2 * (D / 2 + 0.18)], uv: 'keep' }); }
-    // 5 · Monumental: torre com anéis de luz e anel no chão
-    if (lv >= 5) { spire(k, W / 2 - 0.1, -D / 2 + 0.1, 0.1, h + 2.2, o); k.add('paint', G.torus(Math.max(W, D) * 0.6, 0.05, 6, 48), { p: [0, 0.1, 0], r: [R / 2, 0, 0] }); for (i = 0; i < 10; i++) { var a = i * R / 5; led(k, 'ledO', Math.cos(a) * Math.max(W, D) * 0.6, 0.17, Math.sin(a) * Math.max(W, D) * 0.6); } h += 2.6; }
+  function levelKit(k, type, def, W, D, h, lv, o) { var i, s, t2, M = Math.max(W, D);
+    // 2 · base escura com filete de luz (vale para todas)
+    if (!MOD[type]) { bx(k, 'dark', W + 0.5, 0.12, D + 0.5, 0, 0.06, 0); strip(k, W + 0.5, 'x', 0, 0.12, D / 2 + 0.26); }
+    if (!MOD[type] && lv >= 3) { // demais construções: anexo angular com vidro e aletas
+      vol(k, Math.min(1.6, W * 0.45), 1.1, Math.min(1.2, D * 0.4), -W / 2 + Math.min(1.6, W * 0.45) / 2 + 0.05, 0.12, D / 2 - 0.65, 0, { gw: 0.8 }); for (i = 0; i < 4; i++) bx(k, 'metal', 0.03, 0.8, 0.5, W / 2 + 0.12, 0.6, -0.4 + i * 0.25); }
+    if (!MOD[type] && lv >= 4) { bx(k, 'dark', 0.1, 1.6, 0.1, -W / 2 + 0.2, h + 0.7, -D / 2 + 0.2); bx(k, 'hull', 0.7, 0.05, 0.5, -W / 2 + 0.2, h + 1.5, -D / 2 + 0.2, [0.5, 0, 0]); led(k, 'ledG', -W / 2 + 0.2, h + 1.56, -D / 2 + 0.2); }
+    // 3 · moldura de luz no chão
+    if (lv >= 3) { strip(k, W + 0.8, 'x', 0, 0.05, D / 2 + 0.4); strip(k, W + 0.8, 'x', 0, 0.05, -D / 2 - 0.4); strip(k, D + 0.8, 'z', W / 2 + 0.4, 0.05, 0); strip(k, D + 0.8, 'z', -W / 2 - 0.4, 0.05, 0); }
+    // 4 · postes de luz angulares nos cantos
+    if (lv >= 4) for (s = -1; s <= 1; s += 2) for (t2 = -1; t2 <= 1; t2 += 2) { bx(k, 'dark', 0.08, 1.5, 0.08, s * (W / 2 + 0.4), 0.75, t2 * (D / 2 + 0.4)); bx(k, 'winOn', 0.3, 0.04, 0.08, s * (W / 2 + 0.4) - s * 0.12, 1.5, t2 * (D / 2 + 0.4)); }
+    // 5 · obelisco de vidro escuro com quadros de luz
+    if (lv >= 5) { obelisk(k, W / 2 + 0.4, -D / 2 - 0.4, Math.max(5.5, h + 2.5), o); h = Math.max(h, 6); }
     return h; }
   function building(type, def, opts) { var g = grp(), k = new G.Kit(), o = { dyn: {}, lights: [] }; k.extra = []; for (var x in opts || {}) o[x] = opts[x];
-    var W = def.w * TS, D = def.h * TS, h = B[type](k, o, W, D), lv = o.lv || 1; if (lv > 1) h = levelKit(k, type, def, W, D, h, lv, o); k.build(g); if (lv > 1) g.scale.setScalar(1 + 0.03 * (lv - 1)); k.extra.forEach(function (e) { g.add(e); }); if (o.garden) o.garden.add(garden());
+    var W = def.w * TS, D = def.h * TS, lv = o.lv || 1, h = lv > 1 && MOD[type] ? MOD[type](k, o, W, D, lv) : B[type](k, o, W, D); if (lv > 1) h = levelKit(k, type, def, W, D, h, lv, o); k.build(g);  k.extra.forEach(function (e) { g.add(e); }); if (o.garden) o.garden.add(garden());
     g.userData.h = h; g.userData.o = o; g.traverse(function (m) { if (m.isMesh) { m.castShadow = m.castShadow && m.material !== M.glass; } }); return g; }
 
   // ---------- depósitos e rochas ----------

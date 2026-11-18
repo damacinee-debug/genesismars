@@ -5,7 +5,7 @@
 var World = (function () {
   var T = THREE, G = Gfx, TS = G.TS, N = Sim.N, BD = DATA.buildings, MD = Models;
   var W = { cam: { x: N / 2, z: N / 2 + 1, dist: 34, yaw: 0.5, pitch: 0.82, lookUp: 0 }, landerY: 0, flame: false, arkY: 0, arkFlame: false, loading: 0, hideChars: false, shake: 0, overlayOn: false, selected: {}, selB: null, nf: 0, q: 'high' };
-  var renderer, scene, cam, composer, bloom, grade, sunL, hemi, skyMat, envScene, pmrem, envRT = null, envAt = { h: -99, k: -1 }, terrMat, terrain, outer, fogTex, fogData, trod, hTex;
+  var renderer, scene, cam, composer, bloom, grade, sunL, hemi, skyMat, envScene, pmrem, envRT = null, envAt = { h: -99, k: -1 }, terrMat, terrain, outer, fogTex, fogData, trod, hTex, playTex, playData;
   var ghost = null, ghostType = null, arkMesh = null, ghostHolo, footDecal, selDecal, overlay, pool = [], spots = [], dust, glow, flameMesh, mapSeed = null, map = null;
   var bMesh = {}, cRig = {}, dMesh = {}, pickables = [], time = 0, occSig = '', lastFog = 0, sunDir = new T.Vector3(0, 1, 0);
 
@@ -30,7 +30,7 @@ var World = (function () {
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.localClippingEnabled = true;
     scene = new T.Scene(); scene.fog = new T.FogExp2(0xc9a27a, 0.004); cam = new T.PerspectiveCamera(36, 1, 0.3, 3000);
     G.init(renderer, W.q);
-    G.U.uFog = { value: null }; G.U.uN = { value: N }; G.U.uTS = { value: TS };
+    G.U.uFog = { value: null }; G.U.uPlay = { value: null }; G.U.uN = { value: N }; G.U.uTS = { value: TS };
     hemi = new T.HemisphereLight(0xffe2c4, 0x5a3220, 0.25); scene.add(hemi);
     sunL = new T.DirectionalLight(0xfff0dc, 3); sunL.castShadow = true; var ss = W.q === 'high' ? 4096 : W.q === 'mid' ? 2048 : 1024; sunL.shadow.mapSize.set(ss, ss);
     sunL.shadow.bias = -0.0004; sunL.shadow.normalBias = 0.04; scene.add(sunL); scene.add(sunL.target);
@@ -106,10 +106,10 @@ var World = (function () {
   function terrainMaterial() { var m = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, envMapIntensity: 0.55 }); m.extensions = { derivatives: true };
     m.onBeforeCompile = function (sh) { for (var k in G.U) sh.uniforms[k] = G.U[k];
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;varying vec3 vWN;').replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWP=(modelMatrix*vec4(transformed,1.)).xyz;vWN=normalize(mat3(modelMatrix)*objectNormal);');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;varying vec3 vWN;uniform sampler2D uFog;uniform float uN,uTS;float gH=0.,gR=.95,gVis=1.;\n' + G.NOISE)
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;varying vec3 vWN;uniform sampler2D uFog;uniform sampler2D uPlay;uniform float uN,uTS;float gH=0.,gR=.95,gVis=1.;\n' + G.NOISE)
         .replace('#include <map_fragment>', [
           'vec2 q=vWP.xz/uTS;float lod=length(fwidth(q));vec4 fd=texture2D(uFog,q/uN);float ins=step(0.,q.x)*step(0.,q.y)*step(q.x,uN)*step(q.y,uN);',
-          'gVis=mix(.62,fd.r,ins);float ice=fd.g*ins,base=fd.b*ins,trod=fd.a*ins;',
+          'float pl=texture2D(uPlay,q/uN).r*ins;float outA=1.-smoothstep(.3,.62,pl+(fbm(q*.35,vec2(1e4),3.)-.5)*.25);gVis=mix(.62,fd.r,ins)*(1.-outA*.45);float ice=fd.g*ins,base=fd.b*ins,trod=fd.a*ins;',
           '#define AA(f) (1.-smoothstep(.12,.45,lod*(f)))',
           'float n1=fbm(q*.085,vec2(1e4),5.),n2=fbm(q*.42+7.3,vec2(1e4),5.),n3=fbm(q*2.6+3.1,vec2(1e4),3.);',
           'float slope=1.-clamp(vWN.y,0.,1.);',
@@ -128,6 +128,7 @@ var World = (function () {
           'c=mix(vec3(dot(c,vec3(.3,.59,.11))),c,.82);',
           'c=mix(c,c*.78+cDark*.08,base*.55);c=mix(c,cDark*1.05,trod*.32);',
           'float iceM=smoothstep(.3,.62,ice+(n2-.5)*.45+(n3-.5)*.5);vec3 fv=vor(q*2.2,vec2(1e4));float frc=(1.-smoothstep(.0,.06,fv.z-fv.x))*AA(6.);c=mix(c,s2l(vec3(.84,.88,.93))*(.8+.3*n3)*(1.-frc*.35),iceM*.9);',
+          'vec3 hz=mix(vec3(dot(c,vec3(.3,.59,.11))),c,.45)*vec3(.82,.72,.66);c=mix(c,hz*.7,outA*.85);float edge=smoothstep(.25,.45,pl)*(1.-smoothstep(.5,.66,pl));c=mix(c,cDust*1.15,edge*.35*(.6+.4*sin(q.x*.9+q.y*.7)));',
           'diffuseColor.rgb=c;gH=((dune*.35+rp*.06+rp2*.01)*flt+n3*.05*AA(5.)+pk*clamp(1.-sh*sh,0.,1.)*pr*1.1+(g1-.5)*.012*AA(18.)+(tM1-.5)*.08)*mix(1.,.3,base)+n2*.05;gR=mix(.96,.5,iceM)-pk*.05;'].join('\n'))
         .replace('#include <roughnessmap_fragment>', 'float roughnessFactor=gR;')
         .replace('#include <normal_fragment_maps>', 'normal=bumpN(-vViewPosition,normal,gH);')
@@ -168,7 +169,7 @@ var World = (function () {
   function buildTerrain(s) { map = s.rt.map; var i, v;
     chunks.forEach(function (c) { scene.remove(c.terr); c.terr.geometry.dispose(); c.inst.forEach(function (m) { scene.remove(m); }); if (c.peb) scene.remove(c.peb); }); chunks = []; if (outer) { scene.remove(outer); outer.geometry.dispose(); }
     // textura de dados por tile: névoa, gelo, base compactada, trilhas
-    fogData = new Uint8Array(N * N * 4); trod = new Float32Array(N * N); fogTex = new T.DataTexture(fogData, N, N, T.RGBAFormat); fogTex.magFilter = T.LinearFilter; fogTex.minFilter = T.LinearFilter; G.U.uFog.value = fogTex;
+    fogData = new Uint8Array(N * N * 4); trod = new Float32Array(N * N); fogTex = new T.DataTexture(fogData, N, N, T.RGBAFormat); fogTex.magFilter = T.LinearFilter; fogTex.minFilter = T.LinearFilter; G.U.uFog.value = fogTex; playData = new Uint8Array(N * N * 4); playTex = new T.DataTexture(playData, N, N, T.RGBAFormat); playTex.magFilter = T.LinearFilter; playTex.minFilter = T.LinearFilter; G.U.uPlay.value = playTex;
     for (i = 0; i < N * N; i++) fogData[i * 4 + 1] = map.ice[i] ? 255 : 0;
     // textura de altura (para sujeira na base de tudo que toca o chão)
     var V = N + 1, hd = new Uint8Array(V * V * 4), mn = -10, rg = 30; for (i = 0; i < V * V; i++) { var hv = clamp((map.h[i] - mn) / rg * 256, 0, 255.99), r = Math.floor(hv); hd[i * 4] = r; hd[i * 4 + 1] = Math.round((hv - r) * 255); hd[i * 4 + 3] = 255; }
@@ -189,7 +190,8 @@ var World = (function () {
     var sig = s.b.map(function (b) { return b.id + ':' + b.x + ',' + b.z; }).join('|');
     if (sig !== occSig) { occSig = sig; for (i = 0; i < N * N; i++) fogData[i * 4 + 2] = 0;
       s.b.forEach(function (b) { var d = BD[b.type]; for (var z = b.z - 1; z <= b.z + d.h; z++) for (var x = b.x - 1; x <= b.x + d.w; x++) { if (x < 0 || z < 0 || x >= N || z >= N) continue; var inn = x >= b.x && x < b.x + d.w && z >= b.z && z < b.z + d.h; fogData[(z * N + x) * 4 + 2] = Math.max(fogData[(z * N + x) * 4 + 2], inn ? 255 : 140); } }); ch = true; }
-    if (ch || force) fogTex.needsUpdate = true; }
+    if (ch || force) fogTex.needsUpdate = true;
+    if (s.rt.playDirty || force) { s.rt.playDirty = false; var P = s.rt.play; for (i = 0; i < N * N; i++) playData[i * 4] = P[i]; playTex.needsUpdate = true; } }
 
   function ensureRig(k) { var rig = MD.astronaut(k, Sim.cinfo(k)); rig.root.userData.kind = 'c'; rig.root.userData.id = k; rig.ph = h2(k.length * 3.3 + k.charCodeAt(k.length - 1), 1.7) * 6;
     var pk = new T.Mesh(new T.CylinderGeometry(0.6, 0.6, 2.2, 8), new T.MeshBasicMaterial({ visible: false })); pk.position.y = 1.1; rig.root.add(pk);
@@ -246,7 +248,7 @@ var World = (function () {
   // ---------------- quadro a quadro ----------------
   var lightT = 0, dataT = 0, fxT = 0;
   W.sync = function (s, dt) { time += dt; G.U.uTime.value = time; grade.uniforms.uTime.value = time; var i, k, b, d, nf;
-    dataT += dt; if (s.rt.fogDirty || dataT > 0.5) { updateData(s, s.rt.fogDirty); s.rt.fogDirty = false; dataT = 0; }
+    dataT += dt; if (s.rt.fogDirty || s.rt.playDirty || dataT > 0.5) { updateData(s, s.rt.fogDirty); s.rt.fogDirty = false; dataT = 0; }
     atmosphere(s); nf = W.nf; var seen = {}; var GM = G.mats; GM.winOn.emissiveIntensity = 0.25 + 1.7 * nf; GM.grow.emissiveIntensity = 0.8 + 1.8 * nf; GM.screenOn.emissiveIntensity = 0.9 + 1.4 * nf;
     for (i = 0; i < s.b.length; i++) { b = s.b[i]; d = BD[b.type]; seen[b.id] = 1; var o = bMesh[b.id];
       if (o && b.type === 'corridor') { var mk = corridorMask(s, b); if (mk !== o.mask) { removeB(b.id); o = null; } }
@@ -306,7 +308,8 @@ var World = (function () {
     // destaque da construção selecionada
     var sb = W.selB != null ? Sim.byId(s, W.selB) : null; selDecal.visible = !!sb; if (sb) { var sd = BD[sb.type]; selDecal.position.set((sb.x + sd.w / 2) * TS, Hr(sb.x + sd.w / 2, sb.z + sd.h / 2) + 0.12, (sb.z + sd.h / 2) * TS); selDecal.scale.set(sd.w * TS + 0.4, sd.h * TS + 0.4, 1); selDecal.material.uniforms.uAsp.value.set(sd.w * TS + 0.4, sd.h * TS + 0.4); }
     // câmera de estratégia
-    var cs = W.cam; cs.x = clamp(cs.x, 2, N - 2); cs.z = clamp(cs.z, 2, N - 2); cs.dist = clamp(cs.dist, 7, 120); cs.pitch = clamp(cs.pitch, 0.1, 1.45);
+    var cs = W.cam, zb = W.zb || (W.zb = [0, 0, N, N]); if (W.zbN !== s.zones.length) { W.zbN = s.zones.length; zb = W.zb = [N, N, 0, 0]; s.zones.forEach(function (z) { var r = z.r * 1.3 + 10; zb[0] = Math.min(zb[0], z.x - r); zb[1] = Math.min(zb[1], z.z - r); zb[2] = Math.max(zb[2], z.x + r); zb[3] = Math.max(zb[3], z.z + r); }); }
+    cs.x = clamp(cs.x, Math.max(2, zb[0]), Math.min(N - 2, zb[2])); cs.z = clamp(cs.z, Math.max(2, zb[1]), Math.min(N - 2, zb[3])); cs.dist = clamp(cs.dist, 7, 120); cs.pitch = clamp(cs.pitch, 0.1, 1.45);
     var ty = Hr(cs.x, cs.z) + 1, cp = Math.cos(cs.pitch), sh = W.shake > 0.001 ? W.shake : 0; W.shake *= Math.pow(0.02, dt);
     cam.position.set(cs.x * TS + Math.sin(cs.yaw) * cp * cs.dist + (Math.random() - 0.5) * sh, ty + Math.sin(cs.pitch) * cs.dist + (Math.random() - 0.5) * sh, cs.z * TS + Math.cos(cs.yaw) * cp * cs.dist);
     var gyc = (cam.position.x / TS > 0 && cam.position.x / TS < N && cam.position.z / TS > 0 && cam.position.z / TS < N ? Hr(cam.position.x / TS, cam.position.z / TS) : Hout(cam.position.x / TS, cam.position.z / TS)) + 1.2; if (cam.position.y < gyc) cam.position.y = gyc;
