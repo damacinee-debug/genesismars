@@ -75,6 +75,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 #build>*{pointer-events:auto}
 #cats,#items{display:flex;gap:4px;padding:4px;max-width:100%;overflow-x:auto;scrollbar-width:thin}
 #cats button{padding:.5em .8em;border-radius:3px;font-family:var(--cond);text-transform:uppercase;letter-spacing:.07em;font-size:.9em;color:var(--muted);white-space:nowrap}
+body.raid::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:5;box-shadow:inset 0 0 180px rgba(210,30,25,.5);animation:raidp 1.8s ease-in-out infinite}@keyframes raidp{50%{box-shadow:inset 0 0 110px rgba(210,30,25,.28)}}
 #bq{flex:0 0 13em;min-width:9em;padding:.45em .7em;border-radius:3px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.35);color:var(--fg);font:inherit;font-size:.9em}#bq:focus{outline:none;border-color:var(--blue)}
 #cats button:hover{color:var(--fg)}#cats button.on{background:rgba(116,198,255,.16);color:var(--blue)}
 #items button{flex:0 0 auto;text-align:left;padding:.45em .7em;border:1px solid var(--line);border-radius:3px;min-width:9.5em}
@@ -1101,7 +1102,7 @@ var DATA = {
     zone0: 46, outpostR: 30, // raio da bacia inicial e de cada Posto avançado (em tiles)
     solSec: 480,        // segundos reais por sol na velocidade 1x
     sunrise: 6, sunset: 18,
-    start: { o2: 120, water: 60, food: 30, metal: 30, comp: 10, reg: 0, seeds: 0, ice: 0, research: 0, energy: 60 },
+    start: { o2: 120, water: 60, food: 30, metal: 30, comp: 10, reg: 0, seeds: 0, ice: 0, research: 0, energy: 60, ammo: 0 },
     cargo: { metal: 50, comp: 34, seeds: 12 },
     caps: { o2: 150, water: 80, food: 80, ice: 40, mat: 160, energy: 60 },
     landerUse: 2, netRadius: 9, revealR: 7, revealRGeo: 12,
@@ -1151,6 +1152,13 @@ var DATA = {
     solar:   { name: 'Painel solar', cat: 'Energia', w: 2, h: 2, cost: { metal: 8, comp: 3 }, t: 12, gen: 14, desc: 'Gera energia de dia. A poeira reduz a eficiência.' },
     poste:   { name: 'Poste de energia', cat: 'Energia', w: 1, h: 1, cost: { metal: 4 }, t: 6, link: 30, desc: 'Leva a energia longe: alcança 30 m. Depois de colocar um, a ferramenta continua ativa para você ir puxando a linha até onde precisar.' },
     posto:   { name: 'Posto avançado', cat: 'Infraestrutura', w: 2, h: 2, cost: { metal: 30, comp: 12, reg: 20 }, t: 30, gen: 4, cap: 40, need: 'era2', desc: 'Empurra a fronteira: abre uma nova área de cerca de 60 m em volta dele. Tem painel e bateria próprios. Liberado na Era II.' },
+    quartel: { name: 'Quartel', cat: 'Defesa', w: 3, h: 2, cost: { metal: 30, comp: 10, reg: 20 }, t: 30, use: 1, need: 'era2', desc: 'Treina a Guarda: selecione um colono e use Armar no painel dele. Cada guarda precisa de uma arma do Arsenal.' },
+    arsenal: { name: 'Arsenal', cat: 'Defesa', w: 2, h: 2, cost: { metal: 25, comp: 12 }, t: 28, use: 2, need: 'quartel', desc: 'Fabrica armas e munição. A munição sai sozinha (metal e componentes); as armas você encomenda no painel.' },
+    garagem: { name: 'Garagem', cat: 'Defesa', w: 3, h: 3, cost: { metal: 35, comp: 15, reg: 10 }, t: 34, use: 2, need: 'arsenal', desc: 'Fabrica e recarrega veículos: Explorador leve, Rover de exploração e Veículo de resgate.' },
+    estrada: { name: 'Estrada', cat: 'Infraestrutura', w: 1, h: 1, cost: { reg: 2 }, t: 1.5, floor: true, desc: 'Caminho compactado: quem anda por ela vai 40% mais rápido. Evolui sozinha com as Eras (trilha, placas de concreto, pista iluminada, via de luz). Continue clicando para traçar.' },
+    bastiao: { name: 'Bastião de tiro', cat: 'Defesa', w: 1, h: 1, cost: { reg: 10, metal: 8 }, t: 10, wall: true, need: 'quartel', desc: 'Plataforma elevada para a linha de muros. Um guarda posicionado nela (botão direito com o guarda selecionado) atira 50% mais longe e recebe 60% menos dano.' },
+    muro:    { name: 'Muro de regolito', cat: 'Defesa', w: 1, h: 1, cost: { reg: 6 }, t: 3, wall: true, need: 'era2', desc: 'Bloco de regolito compactado. Segura os ataques; continue clicando para erguer uma linha. Melhore para concreto armado, blindagem e, no nível 5, muro de energia.' },
+    vigia:   { name: 'Torre de vigia', cat: 'Defesa', w: 1, h: 1, cost: { metal: 12, comp: 6 }, t: 14, use: 0.6, need: 'arsenal', range: 10, dps: 7, desc: 'Atira sozinha em tudo que se aproximar (10 m) e enxerga longe. Gasta munição.' },
     torre:   { name: 'Torre de luz', cat: 'Energia', w: 1, h: 1, cost: { metal: 8, comp: 2 }, t: 10, use: 0.5, prio: 2, desc: 'Ilumina uma área grande à noite, para enxergar e trabalhar na base.' },
     battery: { name: 'Bateria', cat: 'Energia', w: 1, h: 1, cost: { metal: 10, comp: 5 }, t: 14, cap: 130, desc: 'Guarda energia para a noite.' },
     airlock: { name: 'Câmara de descompressão', cat: 'Infraestrutura', w: 1, h: 1, cost: { metal: 12, comp: 4 }, t: 16, press: true, desc: 'Entrada e saída da área pressurizada. Comece o complexo por ela.' },
@@ -1174,7 +1182,7 @@ var DATA = {
     jardim:  { name: 'Jardim Selado', cat: 'Marco', w: 4, h: 4, cost: { metal: 60, comp: 30, reg: 40 }, t: 80, landmark: true, desc: 'Marco de Era. Uma estufa monumental: a vida como fundação. Empurra para Marte e para a Vida.' },
     farol:   { name: 'Farol Profundo', cat: 'Marco', w: 4, h: 4, cost: { metal: 60, comp: 30, reg: 40 }, t: 80, landmark: true, desc: 'Marco de Era. Uma antena de longo alcance: a Terra nunca fica longe. Empurra para a Terra e a Ciência.' }
   },
-  cats: ['Energia', 'Infraestrutura', 'Habitação', 'Sociedade', 'Oxigênio', 'Água', 'Agricultura', 'Pesquisa', 'Produção', 'Armazenamento', 'Comunicação', 'Marco'],
+  cats: ['Energia', 'Infraestrutura', 'Habitação', 'Sociedade', 'Defesa', 'Oxigênio', 'Água', 'Agricultura', 'Pesquisa', 'Produção', 'Armazenamento', 'Comunicação', 'Marco'],
 
   crops: {
     batata: { name: 'Batata', hours: 40, water: 0.12, food: 12, o2: 0.05, desc: 'Lenta, rende muito.' },
@@ -1192,8 +1200,8 @@ var DATA = {
   lockedResearch: ['Pequeno reator nuclear', 'Drone de transporte', 'Rover de exploração', 'Impressão 3D com regolito', 'Habitat subterrâneo', 'Busca por sinais de vida'],
 
   eras: [
-    { n: 'I', name: 'Pouso', theme: 'Sobreviver' }, { n: 'II', name: 'Posto Avançado', theme: 'Permanecer' },
-    { n: 'III', name: 'Assentamento', theme: 'Pertencer' }, { n: 'IV', name: 'Colônia', theme: 'Governar' }, { n: 'V', name: 'Civilização', theme: 'Transformar' }
+    { n: 'I', name: 'Pouso', theme: 'Sobreviver' }, { n: 'II', name: 'Sinais', theme: 'Resistir' },
+    { n: 'III', name: 'Os Outros', theme: 'Negociar' }, { n: 'IV', name: 'Contato', theme: 'Sobreviver juntos' }, { n: 'V', name: 'Marte', theme: 'Decidir' }
   ],
   axes: { origem: ['Terra', 'Marte'], comunidade: ['Coletivo', 'Indivíduo'], planeta: ['Preservar', 'Transformar'] },
   traditions: [
@@ -1231,6 +1239,11 @@ var DATA = {
     awake6: 'Sol {sol}. Seis despertos. A base virou um lugar com gente demais para caber numa mesa só.',
     firstHouse: 'Sol {sol}. A primeira casa de Marte ficou pronta. Tinha dois leitos e uma porta que alguém podia chamar de sua.',
     bairro: 'Sol {sol}. Três casas vizinhas, e alguém deu nome ao lugar: {what}. O primeiro bairro marciano.',
+    sinal: 'Sol {sol}. A antena captou um sinal regular vindo de baixo do gelo. Não é natural, e não é nosso.',
+    ataque: 'Sol {sol}. Algo saiu do escuro e atacou a base. Pela primeira vez, Marte respondeu.',
+    guarda: 'Sol {sol}. {who} pegou em armas. A colônia agora tem uma Guarda.',
+    estrutura: 'Sol {sol}. {who} tocou a estrutura. Ela é antiga, muito mais antiga que nós, e está acordando.',
+    noites: 'Sol {sol}. Três noites de ataque, e a base continua de pé.',
     posto: 'Sol {sol}. Um Posto avançado acendeu na fronteira, e Marte ficou um pouco maior.',
     bairroN: 'Sol {sol}. Nasceu mais um bairro: {what}.',
     berco: 'Sol {sol}. O Berço foi ligado. Ninguém disse em voz alta o que aquilo significava.',
@@ -1246,6 +1259,27 @@ var DATA = {
     agua: ['A primeira água', 'Segurou Marte derretido nas mãos.'],
     despertou: ['Dormiu na Terra', 'Fechou os olhos em um planeta e abriu em outro.'],
     nascido: ['Nascido em Marte', 'Marte é o único chão que conhece.']
+  },
+
+  // ---------- Era II: armas, veículos e o que vem do gelo ----------
+  weapons: {
+    smg:     { name: 'Submetralhadora MK-III', short: 'Submetralhadora', era: 2, range: 5.5, dps: 9, cost: { metal: 8, comp: 4 }, desc: 'Barata e rápida. Curto alcance.' },
+    shotgun: { name: 'Escopeta tática MK-I', short: 'Escopeta', era: 2, range: 3.2, dps: 16, cost: { metal: 10, comp: 4 }, desc: 'Muito dano de perto. Boa para defender portas.' },
+    rifle:   { name: 'Fuzil de assalto marciano MK-III', short: 'Fuzil de assalto', era: 2, range: 8.5, dps: 8, cost: { metal: 12, comp: 6 }, desc: 'A arma padrão da Guarda: alcance e dano equilibrados.' },
+    sniper:  { name: 'Fuzil de precisão MK-II', short: 'Fuzil de precisão', era: 3, range: 14, dps: 7, cost: { metal: 16, comp: 10 }, desc: 'Alcance muito longo. Era III.' },
+    lmg:     { name: 'Metralhadora leve MK-II', short: 'Metralhadora', era: 3, range: 8, dps: 15, cost: { metal: 20, comp: 10 }, desc: 'Suprime grupos. Era III.' },
+    grenade: { name: 'Lançador de granadas MK-II', short: 'Lança-granadas', era: 3, range: 7, dps: 12, area: true, cost: { metal: 18, comp: 12 }, desc: 'Dano em área. Era III.' },
+    rocket:  { name: 'Lançador de foguetes MK-I', short: 'Lança-foguetes', era: 4, range: 10, dps: 22, cost: { metal: 24, comp: 16 }, desc: 'Contra veículos e criaturas grandes. Era IV.' },
+    energy:  { name: 'Rifle de energia MK-II', short: 'Rifle de energia', era: 4, range: 10, dps: 20, cost: { metal: 20, comp: 20 }, desc: 'O mais forte contra os aliens. Era IV.' }
+  },
+  vehicles: {
+    scout:  { name: 'Explorador leve', short: 'Explorador', era: 2, speed: 3.4, hp: 70, reveal: 10, cost: { metal: 25, comp: 10 }, hours: 4, desc: 'Batedor: o mais rápido, revela o mapa por onde passa.' },
+    rover:  { name: 'Rover de exploração', short: 'Rover', era: 2, speed: 2.4, hp: 160, reveal: 7, carry: 10, cost: { metal: 40, comp: 15 }, hours: 6, desc: 'Coleta sozinho e carrega 10 vezes mais que um colono.' },
+    rescue: { name: 'Veículo de resgate', short: 'Resgate', era: 2, speed: 2.8, hp: 140, reveal: 6, cost: { metal: 35, comp: 14 }, hours: 5, desc: 'Busca feridos e quem está sem oxigênio e leva para dentro.' }
+  },
+  aliens: {
+    crawler: { name: 'Rastejador', hp: 34, dps: 5, speed: 1.5, range: 0.9 },
+    spitter: { name: 'Cuspidor', hp: 26, dps: 4, speed: 1.2, range: 5 }
   },
 
   // Verbetes da Crônica: os recursos do jogo e o que eles são de verdade
@@ -1287,7 +1321,16 @@ var DATA = {
     { id: 'berco', text: 'Construa o Berço (menu Sociedade)' },
     { id: 'born', text: 'Mantenha leito, comida e água até nascer o primeiro marciano' },
     { id: 'escola', text: 'Construa a Escola' },
-    { id: 'landmark', text: 'Cumpra os requisitos da Era e erga um Marco' }
+    { id: 'landmark', text: 'Cumpra os requisitos da Era e erga um Marco' },
+    { id: 'sinal', text: 'Era II: espere o sinal. A antena está captando algo vindo do gelo' },
+    { id: 'quartel', text: 'Construa o Quartel (menu Defesa)' },
+    { id: 'arsenal', text: 'Construa o Arsenal e encomende armas' },
+    { id: 'guarda', text: 'Arme dois colonos: selecione um e use Armar no painel' },
+    { id: 'muro', text: 'Erga muros de regolito e uma Torre de vigia do lado de onde vêm os ataques' },
+    { id: 'noites', text: 'Resista a 3 noites de ataque' },
+    { id: 'garagem', text: 'Construa a Garagem e fabrique um Rover' },
+    { id: 'posto2', text: 'Construa um Posto avançado na direção do sinal' },
+    { id: 'estrutura', text: 'Leve alguém até a estrutura enterrada (marcada no mapa)' },
   ],
 
   dialogues: [
@@ -1405,7 +1448,7 @@ var Sim = (function () {
       tech: {}, trad: {}, axes: { origem: 0, comunidade: 0, planeta: 0 }, bond: 45, chron: [], cd: {}, said: {}, pending: null,
       stableH: 0, shed: false, lifeSupport: true, rate: { o2: 0, energy: 0 }, lastHour: 7, auto: true, fogStr: null, nborn: 0, nbairro: 0, school: false,
       ark: { st: 0, pods: D.colonists.map(function (c) { return { id: c.id, st: 'sleep' }; }), wake: null, lostT: 0, awake: 0, pad: null } };
-    var C = N / 2;
+    warInit(s); var C = N / 2;
     for (var id in D.chars) mkChar(s, id, C + D.chars[id].dx, C + D.chars[id].dz);
     attach(s);
     s.b.push({ id: s.nid++, type: 'lander', x: C - 1, z: C - 1, prog: 1, built: true, hp: 100, on: true, why: '', dust: 0 });
@@ -1423,6 +1466,7 @@ var Sim = (function () {
   }
   function attach(s) { // dados de execução, recriados ao carregar
     s.rt = { map: genMap(s.seed), occ: new Int16Array(N * N), fog: new Uint8Array(N * N), play: new Uint8Array(N * N), out: [], fogDirty: true }; computePlay(s);
+    warInit(s); s.rt.fx = []; for (var vk in s.chars) if (s.chars[vk].veh) regVeh(vk, s.chars[vk].veh);
     if (s.fogStr) for (var i = 0; i < N * N; i++) s.rt.fog[i] = s.fogStr.charCodeAt(i) === 49 ? 1 : 0;
     rebuildOcc(s);
   }
@@ -1435,8 +1479,8 @@ var Sim = (function () {
     s.rt.playDirty = true; }
   function playable(s, x, z) { x = Math.floor(x); z = Math.floor(z); return x >= 0 && z >= 0 && x < N && z < N && s.rt.play[z * N + x] >= 110; }
   function addZone(s, x, z, r) { s.zones.push({ x: x, z: z, r: r, k: s.zones.length + 1 }); computePlay(s); emit(s, { type: 'zone' }); }
-  function rebuildOcc(s) { var o = s.rt.occ; o.fill(0); var i, x, z;
-    for (i = 0; i < s.b.length; i++) { var b = s.b[i], d = BD[b.type]; for (z = 0; z < d.h; z++) for (x = 0; x < d.w; x++) o[(b.z + z) * N + b.x + x] = b.id; }
+  function rebuildOcc(s) { var o = s.rt.occ; o.fill(0); var i, x, z; if (!s.rt.road) s.rt.road = new Uint8Array(N * N); s.rt.road.fill(0);
+    for (i = 0; i < s.b.length; i++) { var b = s.b[i], d = BD[b.type]; if (d.floor) { s.rt.road[b.z * N + b.x] = b.built ? 2 : 1; continue; } for (z = 0; z < d.h; z++) for (x = 0; x < d.w; x++) o[(b.z + z) * N + b.x + x] = b.id; }
     for (i = 0; i < s.deps.length; i++) o[s.deps[i].z * N + s.deps[i].x] = -1; }
   function serialize(s) { var rt = s.rt, f = ''; for (var i = 0; i < N * N; i++) f += rt.fog[i] ? '1' : '0'; s.fogStr = f; delete s.rt; var j = JSON.stringify(s); s.rt = rt; s.fogStr = null; return j; }
   function deserialize(j) { var s = JSON.parse(j); if (s.v !== 3) throw new Error('versão antiga'); attach(s); s.fogStr = null; return s; }
@@ -1448,13 +1492,14 @@ var Sim = (function () {
   function chron(s, key, v) { v = v || {}; v.sol = sol(s); v.year = D.lore.year; v.ship = D.lore.ship; v.company = D.lore.company; v.ark = D.lore.ark; s.chron.push({ sol: v.sol, text: fmt(D.chronicle[key], v), key: key }); emit(s, { type: 'chron' }); }
   // ---- pessoas: os dois da Gênesis, os doze da Alvorada e os nascidos em Marte
   var COL = {}; D.colonists.forEach(function (c) { COL[c.id] = c; });
-  function cinfo(id) { if (D.chars[id]) return D.chars[id]; if (COL[id]) return COL[id]; var n = +id.slice(1) || 1, nm = D.bornNames[(n - 1) % D.bornNames.length];
+  var VEH = {}; function regVeh(id, ty) { var V = D.vehicles[ty]; VEH[id] = { id: id, name: V.name + ' ' + id.slice(1), short: V.short + ' ' + id.slice(1), role: 'Veículo', job: 'pil', veh: ty, trait: [V.short, V.desc], why: 'Fabricado na Garagem.' }; }
+  function cinfo(id) { if (D.chars[id]) return D.chars[id]; if (COL[id]) return COL[id]; if (VEH[id]) return VEH[id]; var n = +id.slice(1) || 1, nm = D.bornNames[(n - 1) % D.bornNames.length];
     return { id: id, name: nm, short: nm, role: 'Nascido em Marte', job: D.jobKeys[(n - 1) % D.jobKeys.length], born: true, trait: ['Nascido em Marte', 'Nunca viu a Terra. Marte é o único chão que conhece.'], why: 'Não veio de lugar nenhum. É daqui.' }; }
   function cname(id) { return cinfo(id).short; }
   function mkChar(s, id, x, z) { var inf = cinfo(id), sk = inf.skills ? JSON.parse(JSON.stringify(inf.skills)) : { eng: 1, bot: 1, geo: 1, pil: 1, med: 1, sci: 1 };
     return (s.chars[id] = { id: id, x: x, z: z, inside: null, alive: true, critical: 0, sleeping: false, carry: null, act: null, queue: [], mem: [], lastTalk: -99, lastCont: -99, job: inf.job || null, home: null, hero: !!D.chars[id], shift: D.chars[id] ? 0 : Object.keys(s.chars).length % 2,
       needs: { health: 100, o2: 100, hunger: 20, thirst: 20, energy: 85, temp: 90, stress: 25, morale: 65, rad: 0 }, skills: sk, xp: {} }); }
-  function pop(s) { var n = 0; for (var id in s.chars) if (s.chars[id].alive) n++; return n; }
+  function pop(s) { var n = 0; for (var id in s.chars) if (s.chars[id].alive && !s.chars[id].veh) n++; return n; }
   function isShelter(b) { return b.built && (b.type === 'lander' || (!!BD[b.type].beds && b.on)); }
   // Níveis 1–4: cada melhoria multiplica produção, geração e armazenamento, e soma leitos
   var LVM = [1, 1.5, 2.1, 3, 4.2];
@@ -1463,7 +1508,7 @@ var Sim = (function () {
   function useOf(b) { return (BD[b.type].use || 0) * (1 + 0.25 * (lvl(b) - 1)); }
   function upCost(b) { var c = BD[b.type].cost, k = [0, 1.5, 2.5, 4, 6][lvl(b)], o = {}; for (var r in c) o[r] = Math.ceil(c[r] * k); return o; }
   function canUpgrade(s, b) { var d = BD[b.type], L = lvl(b); if (!b.built || b.up != null) return { ok: false, msg: b.up != null ? 'Melhoria em andamento' : 'Termine a obra primeiro' };
-    if (b.type === 'lander' || d.landmark || b.type === 'corridor' || b.type === 'pad' || b.type === 'airlock') return { ok: false, msg: 'Esta construção não tem níveis' };
+    if (b.type === 'lander' || d.landmark || d.floor || b.type === 'corridor' || b.type === 'pad' || b.type === 'airlock') return { ok: false, msg: 'Esta construção não tem níveis' };
     if (L >= 5) return { ok: false, msg: 'Nível máximo' };
     if (L === 2 && Object.keys(s.tech).filter(function (k) { return s.tech[k]; }).length < 2) return { ok: false, msg: 'Nível 3 pede 2 pesquisas concluídas' };
     if (L === 3 && !s.won) return { ok: false, msg: 'Nível 4 pede a Era II (erga um Marco)' };
@@ -1475,9 +1520,9 @@ var Sim = (function () {
   function reserved(s) { var n = s.ark.wake ? 1 : 0; for (var i = 0; i < s.b.length; i++) if (s.b[i].gest) n++; return n; }
   function freeBeds(s) { return beds(s) - pop(s) - reserved(s); }
   function sleepers(s) { return s.ark.pods.filter(function (p) { return p.st === 'sleep'; }); }
-  function nearestOther(s, c, pred) { var best = null, bd = 1e9; for (var id in s.chars) { var o = s.chars[id]; if (o === c || !o.alive || (pred && !pred(o))) continue; var d = Math.hypot(o.x - c.x, o.z - c.z); if (d < bd) { bd = d; best = o; } } return best; }
+  function nearestOther(s, c, pred) { var best = null, bd = 1e9; for (var id in s.chars) { var o = s.chars[id]; if (o === c || !o.alive || o.veh || (pred && !pred(o))) continue; var d = Math.hypot(o.x - c.x, o.z - c.z); if (d < bd) { bd = d; best = o; } } return best; }
   function workers(s, c, type, id, plot) { var n = 0; for (var k in s.chars) { var o = s.chars[k], a = o.act; if (o !== c && o.alive && a && (a.type === type || (type === 'gather' && a.type === 'haul' && a.back === id)) && (a.id === id || a.back === id) && (plot == null || a.plot === plot)) n++; } return n; }
-  function rescueTarget(s, c) { for (var id in s.chars) { var o = s.chars[id]; if (o === c || !o.alive || o.critical <= 0) continue; if (!workers(s, c, 'rescue', o.id)) return o; } return null; }
+  function rescueTarget(s, c) { for (var id in s.chars) { var o = s.chars[id]; if (o === c || !o.alive || o.veh || o.critical <= 0) continue; if (!workers(s, c, 'rescue', o.id)) return o; } return null; }
   function byId(s, id) { for (var i = 0; i < s.b.length; i++) if (s.b[i].id === id) return s.b[i]; return null; }
   function depById(s, id) { for (var i = 0; i < s.deps.length; i++) if (s.deps[i].id === id) return s.deps[i]; return null; }
   function ofType(s, t, builtOnly) { var r = []; for (var i = 0; i < s.b.length; i++) if (s.b[i].type === t && (!builtOnly || s.b[i].built)) r.push(s.b[i]); return r; }
@@ -1550,11 +1595,14 @@ var Sim = (function () {
     if (d.need === 'antenna' && !ofType(s, 'antenna', true).length) return { ok: false, reason: 'Precisa de uma antena pronta para guiar o pouso' };
     if (d.need === 'awake6' && s.ark.awake < 6) return { ok: false, reason: 'Precisa de 6 colonos despertos para operar' };
     if (d.need === 'era2' && !s.won) return { ok: false, reason: 'Liberado na Era II: erga um Marco primeiro' };
+    if (d.need === 'quartel' && !ofType(s, 'quartel', true).length) return { ok: false, reason: 'Construa o Quartel primeiro' };
+    if (d.need === 'arsenal' && !ofType(s, 'arsenal', true).length) return { ok: false, reason: 'Construa o Arsenal primeiro' };
     if (d.need === 'berco' && !ofType(s, 'berco', true).length) return { ok: false, reason: 'Construa o Berço primeiro' };
     var allIce = true;
     for (j = 0; j < d.h; j++) for (i = 0; i < d.w; i++) { k = (z + j) * N + x + i;
       if (!s.rt.fog[k]) return { ok: false, reason: 'Área ainda não explorada' };
       if (s.rt.play[k] < 110) return { ok: false, reason: 'Fora da área explorável: avance a fronteira com um Posto avançado' };
+      if (s.rt.road && s.rt.road[k]) return { ok: false, reason: d.floor ? 'Já tem estrada aqui' : 'Tem uma estrada aqui' };
       if (m.rock[k]) return { ok: false, reason: 'Bloqueado por rocha' };
       if (s.rt.occ[k]) return { ok: false, reason: 'Local ocupado' };
       if (m.steep[k]) return { ok: false, reason: 'Terreno inclinado demais' };
@@ -1590,7 +1638,7 @@ var Sim = (function () {
   function demolish(s, id) { var b = byId(s, id); if (!b || b.type === 'lander' || BD[b.type].landmark || b.id === s.ark.pad) return false; var d = BD[b.type];
     for (var k in d.cost) addRes(s, k, d.cost[k] * (b.built ? 0.5 : 1));
     s.b.splice(s.b.indexOf(b), 1); rebuildOcc(s); for (var c in s.chars) if (s.chars[c].act && s.chars[c].act.id === id) clearAct(s.chars[c]); return true; }
-  function finishBuilding(s, b, c) { var d = BD[b.type]; b.built = true; b.prog = 1; b.why = ''; if (b.type === 'posto') { var cb = center(b); addZone(s, cb.x, cb.z, B.outpostR); alertK(s, 'info', 'Posto avançado pronto: a fronteira avançou', 'posto' + b.id, b.x, b.z, 0); chron(s, 'posto', {}); }
+  function finishBuilding(s, b, c) { var d = BD[b.type]; b.built = true; b.prog = 1; b.why = ''; if (d.floor) rebuildOcc(s); if (b.type === 'posto') { var cb = center(b); addZone(s, cb.x, cb.z, B.outpostR); alertK(s, 'info', 'Posto avançado pronto: a fronteira avançou', 'posto' + b.id, b.x, b.z, 0); chron(s, 'posto', {}); }
     if (b.type === 'greenhouse') b.plots = [null, null, null, null];
     if (b.type === 'solar' && !s.flags.firstPanel) { s.flags.firstPanel = true; chron(s, 'firstPanel', { who: cname(c.id) }); }
     if (b.type === 'casa' && !s.flags.firstHouse) { s.flags.firstHouse = true; chron(s, 'firstHouse', {}); }
@@ -1643,6 +1691,7 @@ var Sim = (function () {
     var i, b, d, o2Before = s.res.o2;
     for (i = 0; i < s.b.length; i++) { b = s.b[i]; d = BD[b.type];
       if (b.type === 'greenhouse' && b.built) plots(s, b, dtH);
+      if ((b.type === 'arsenal' || b.type === 'garagem') && b.built) factory(s, b, dtH);
       if (b.leak && b.built) s.res.o2 = Math.max(0, s.res.o2 - 2 * dtH);
       if (!b.on) continue;
       if (b.type === 'o2ext') { var g = Math.min(cp.o2 - s.res.o2, d.out.o2 * mul(b) * dtH); if (g > 0) { s.res.o2 += g; s.stats.o2Made += g; if (!s.flags.firstO2 && s.stats.o2Made > 1) { s.flags.firstO2 = true; chron(s, 'firstO2', {}); } } }
@@ -1678,10 +1727,10 @@ var Sim = (function () {
   function homeOf(s, c) { var b = c.home != null ? byId(s, c.home) : null; return b && isShelter(b) ? b : shelter(s, c); }
   // Casas: cada colono ganha a sua (prefere Casa; o habitat fica para Elias e Helena) e dorme nela
   function assignHomes(s) { var occ = {}, id, c, i, ids = Object.keys(s.chars);
-    for (i = 0; i < ids.length; i++) { c = s.chars[ids[i]]; if (!c.alive) continue; var hb = c.home != null ? byId(s, c.home) : null; if (hb && isShelter(hb)) occ[hb.id] = (occ[hb.id] || 0) + 1; else c.home = null; }
+    for (i = 0; i < ids.length; i++) { c = s.chars[ids[i]]; if (!c.alive || c.veh) continue; var hb = c.home != null ? byId(s, c.home) : null; if (hb && isShelter(hb)) occ[hb.id] = (occ[hb.id] || 0) + 1; else c.home = null; }
     function free(b) { return isShelter(b) && b.type !== 'lander' && (occ[b.id] || 0) < bedsOf(b); }
     function pick(pref) { for (var j = 0; j < s.b.length; j++) if (s.b[j].type === pref && free(s.b[j])) return s.b[j]; return null; }
-    for (i = 0; i < ids.length; i++) { c = s.chars[ids[i]]; if (!c.alive) continue; var cur = c.home != null ? byId(s, c.home) : null;
+    for (i = 0; i < ids.length; i++) { c = s.chars[ids[i]]; if (!c.alive || c.veh) continue; var cur = c.home != null ? byId(s, c.home) : null;
       var want = c.hero ? ['habitat', 'casa'] : ['casa', 'habitat']; if (cur && cur.type === want[0]) continue;
       var nb = pick(want[0]) || (!cur || cur.type === 'lander' ? pick(want[1]) : null);
       if (!nb && !cur) { for (var j = 0; j < s.b.length; j++) if (free(s.b[j])) { nb = s.b[j]; break; } }
@@ -1749,7 +1798,7 @@ var Sim = (function () {
       case 'warm': return c.needs.temp >= 85 || a.t > 40;
       case 'inspect': if (a.t >= 3) { s.flags.inspected = true; return true; } return false;
       case 'unload': if (a.t >= 6) { s.flags.unloaded = true; for (var r in B.cargo) s.res[r] += B.cargo[r]; alertK(s, 'info', 'Suprimentos retirados: metal, componentes e sementes', 'unl', c.x, c.z, 0); emit(s, { type: 'sound', id: 'built' }); return true; } return false;
-      case 'gather': var dp = depById(s, a.id); if (!dp) return true; if (a.t >= 5) { var n = Math.min(B.carry, dp.left); dp.left -= n; c.carry = { res: dp.res, n: n * (s.tech.geologia ? 1.25 : 1) };
+      case 'gather': var dp = depById(s, a.id); if (!dp) return true; if (a.t >= 5) { var n = Math.min(B.carry * (c.veh ? D.vehicles[c.veh].carry || 1 : 1), dp.left); dp.left -= n; c.carry = { res: dp.res, n: n * (s.tech.geologia ? 1.25 : 1) };
           if (dp.left <= 0) { s.deps.splice(s.deps.indexOf(dp), 1); rebuildOcc(s); newVein(s, dp.res, dp.x, dp.z); emit(s, { type: 'deps' }); }
           var dr = dropoff(s, c); if (!start(s, c, { type: 'haul', kind: 'b', id: dr.id, back: a.id }, a.player)) return true; return false; } return false;
       case 'haul': if (c.carry) { if (!a.player) a.back = null; var got = addRes(s, c.carry.res, c.carry.n); if (got < c.carry.n - 0.01) alertK(s, 'warn', 'Armazém cheio: construa um armazém', 'full', c.x, c.z, 6); c.carry = null; s.stats.trips++; s.flags.gathered = true; emit(s, { type: 'sound', id: 'drop' }); }
@@ -1811,19 +1860,20 @@ var Sim = (function () {
 
   function charTick(s, c, dtS, dtH) {
     if (!c.alive) return;
+    if (c.veh) { vehNeeds(s, c, dtH); if (!c.alive) return; } else if (fightOrFlee(s, c, dtS)) return;
     if (c.critical > 0) { c.critical -= dtH; if (c.critical <= 0) die(s, c); return; }
-    needs(s, c, dtH); if (c.critical > 0 || !c.alive) return;
+    if (!c.veh) needs(s, c, dtH); if (c.critical > 0 || !c.alive) return;
     var a = c.act, n = c.needs;
     if (a) { // interrupções de sobrevivência
       var urgent = a.type === 'warm' || a.type === 'refill' || a.type === 'rescue' || a.type === 'sleep' || a.type === 'eat' || a.type === 'drink';
       if (!urgent && ((c.inside == null && n.o2 < 20) || (c.inside == null && n.temp < 32) || n.energy < 6 || (n.thirst >= 88 && s.res.water > 0.5) || (n.hunger >= 88 && s.res.food >= B.mealFood) || rescueTarget(s, c))) { requeue(c); a = null; }
     }
-    if (!c.act) { if (c.wait > s.t) return; decide(s, c); a = c.act; if (!a) return; }
-    if (a.phase === 'go') { var v = B.walk * (1 + 0.03 * c.skills.pil) * (s.stormK > 0.3 ? 0.6 : 1) * (n.energy < 12 ? 0.7 : 1) * (c.weak > s.t ? 0.65 : 1), left = v * dtS;
+    if (!c.act) { if (c.wait > s.t) return; if (c.veh) vehDecide(s, c); else decide(s, c); a = c.act; if (!a) return; }
+    if (a.phase === 'go') { var v = c.veh ? B.walk * D.vehicles[c.veh].speed * (c.bat > 0 ? 1 : 0.3) : B.walk * (1 + 0.03 * c.skills.pil) * (s.stormK > 0.3 ? 0.6 : 1) * (n.energy < 12 ? 0.7 : 1) * (c.weak > s.t ? 0.65 : 1); if (s.rt.road && s.rt.road[Math.floor(c.z) * N + Math.floor(c.x)] === 2) v *= 1.4 + 0.1 * Math.max(0, s.era - 1); var left = v * dtS;
       if (a.kind === 'c' && a.pi === 0 && a.t === 0) a.t = 0;
       while (left > 0 && a.pi < a.path.length) { var p = a.path[a.pi], dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz);
         if (d <= left) { c.x = p.x; c.z = p.z; left -= d; a.pi++; } else { c.x += dx / d * left; c.z += dz / d * left; c.face = Math.atan2(dx, dz); left = 0; } }
-      var tx = Math.floor(c.x), tz = Math.floor(c.z); if (c.lt !== tz * N + tx) { c.lt = tz * N + tx; reveal(s, c, s.tech.geologia ? B.revealRGeo : B.revealR); }
+      var tx = Math.floor(c.x), tz = Math.floor(c.z); if (c.lt !== tz * N + tx) { c.lt = tz * N + tx; reveal(s, c, c.veh ? D.vehicles[c.veh].reveal : s.tech.geologia ? B.revealRGeo : B.revealR); if (c.veh) c.bat = Math.max(0, c.bat - 0.02); }
       xp(s, c, 'pil', dtS * 0.3);
       if (a.pi >= a.path.length) { a.phase = 'work'; a.t = 0; }
       else return; }
@@ -1842,6 +1892,7 @@ var Sim = (function () {
       else if (b.type === 'solar') o.type = b.dust > 0.08 ? 'clean' : 'move';
       else if (BD[b.type].beds) o.type = c.needs.energy < 70 ? 'sleep' : 'shelter';
       else if (b.type === 'lab') o.type = 'research';
+      else if (b.type === 'bastiao' && c.guard) { c.post = b.id; o.type = 'move'; }
       else if (b.type === 'greenhouse') { o.type = 'shelter'; for (var p = 0; p < 4; p++) { var pl = b.plots[p]; if (pl && pl.crop && pl.g >= 1) { o.type = 'harvest'; o.plot = p; break; } if (pl && pl.order) { o.type = 'plant'; o.plot = p; } } }
       else o.type = 'move';
       return o; }
@@ -1849,7 +1900,7 @@ var Sim = (function () {
   function order(s, cid, tg, queue) { var c = s.chars[cid]; if (!c || !c.alive || c.critical > 0) return { ok: false, msg: 'Não pode receber ordens agora' };
     var o = tg.type ? tg : orderFor(s, c, tg); if (!o) return { ok: false, msg: 'Nada a fazer aqui' };
     if (queue && c.act) { c.queue.push(o); return { ok: true, msg: 'Na fila: ' + LABEL[o.type] }; }
-    c.queue = []; c.hold = null; var prev = c.act; clearAct(c);
+    c.queue = []; c.hold = null; if (!(tg && tg.kind === 'b' && byId(s, tg.id) && byId(s, tg.id).type === 'bastiao')) c.post = null; var prev = c.act; clearAct(c);
     if (!start(s, c, o, true)) { c.act = prev; return { ok: false, msg: 'Caminho bloqueado' }; }
     return { ok: true, msg: LABEL[o.type] }; }
   function plant(s, bid, plot, crop) { var b = byId(s, bid); if (!b || !b.plots) return { ok: false, msg: 'Estufa indisponível' }; if (b.plots[plot]) return { ok: false, msg: 'Canteiro ocupado' };
@@ -1928,11 +1979,94 @@ var Sim = (function () {
     var dtH = dtS / HS; s.t += dtH;
     var st = s.storm, k = 0; if (!B.storm && st.st) st.st = 0; if (st.st === 2) k = clamp(Math.min(s.t - st.start, st.end - s.t) / 3, 0, 1); s.stormK = k;
     var cp = networks(s, dtH); production(s, dtH, cp); society(s, dtH);
-    var alive = 0; for (var id in s.chars) { charTick(s, s.chars[id], dtS, dtH); if (s.chars[id].alive) alive++; }
+    var alive = 0; for (var id in s.chars) { charTick(s, s.chars[id], dtS, dtH); if (s.chars[id].alive && !s.chars[id].veh) alive++; }
+    war(s, dtS, dtH);
     for (var r in s.res) if (s.res[r] < 0) s.res[r] = 0;
     if (Math.floor(s.t) !== s.lastHour) { s.lastHour = Math.floor(s.t); hourly(s); if (s.lastHour % 24 === 0) emit(s, { type: 'newSol' }); }
     if (!alive && !s.lost) { s.lost = true; chron(s, 'lost', {}); emit(s, { type: 'scene', id: 'defeat' }); }
   }
+
+  // ---------------- ERA II: SINAIS, ATAQUES, GUARDA E VEÍCULOS ----------------
+  function warInit(s) { s.arms = s.arms || {}; s.al = s.al || { st: 0, t0: 0, wave: 0, next: 0, nights: 0, attack: false, found: false, site: null, kills: 0 }; s.foes = s.foes || []; s.fid = s.fid || 1; s.nv = s.nv || 0; if (s.res.ammo == null) s.res.ammo = 0; }
+  function fx(s, o) { if (s.rt.fx && s.rt.fx.length < 300) s.rt.fx.push(o); }
+  function nightAt(t) { var d = Math.floor(t / 24) * 24 + 21; return d > t ? d : d + 24; }
+  function foesNear(s, x, z, r) { var best = null, bd = r; for (var i = 0; i < s.foes.length; i++) { var f = s.foes[i]; if (f.hp <= 0 || f.flee) continue; var d = Math.hypot(f.x - x, f.z - z); if (d < bd) { bd = d; best = f; } } return best ? { f: best, d: bd } : null; }
+  function spawnWave(s) { var A = s.al, C = N / 2, n = Math.min(14, 2 + Math.floor(A.wave * 1.6)), sp = A.wave >= 2 ? Math.floor(n / 3) : 0, base = Math.atan2(A.site.z - C, A.site.x - C) + (rnd(s) - 0.5) * 1.6, r = 10, x, z;
+    while (r < N / 2 - 4) { x = Math.floor(C + Math.cos(base) * r); z = Math.floor(C + Math.sin(base) * r); if (s.rt.play[z * N + x] < 40) break; r += 1; } r += 4;
+    var ox = C + Math.cos(base) * r, oz = C + Math.sin(base) * r;
+    for (var i = 0; i < n; i++) s.foes.push({ id: s.fid++, type: i < sp ? 'spitter' : 'crawler', x: ox + (rnd(s) - 0.5) * 5, z: oz + (rnd(s) - 0.5) * 5, sx: ox, sz: oz, hp: D.aliens[i < sp ? 'spitter' : 'crawler'].hp * (1 + A.wave * 0.08), cd: 0 });
+    A.wave++; A.attack = true; if (A.wave === 1) chron(s, 'ataque', {}); alertK(s, 'crit', 'Ataque! ' + n + ' criaturas vindo do escuro. Os colonos se abrigam; a Guarda vai ao combate', 'wave' + A.wave, ox, oz, 0); emit(s, { type: 'sound', id: 'alarm' }); emit(s, { type: 'raid', on: true }); }
+  function postOf(s, c) { if (c.post == null) return null; var b = byId(s, c.post); if (!b || !b.built || b.hp <= 0) { c.post = null; return null; } return b; }
+  function hitChar(s, c, dmg) { var pb = postOf(s, c); if (pb && Math.hypot(pb.x + 0.5 - c.x, pb.z + 0.5 - c.z) < 1.2) dmg *= 0.4; c.needs.health = Math.max(0, c.needs.health - dmg); if (c.veh && c.needs.health <= 0) { c.alive = false; alertK(s, 'crit', cname(c.id) + ' foi destruído', 'vd' + c.id, c.x, c.z, 0); } }
+  function hitBuilding(s, b, dmg) { if (!b.built) dmg *= 1.5; b.hp = Math.max(0, b.hp - dmg); if (b.hp <= 0 && BD[b.type].wall) { s.b.splice(s.b.indexOf(b), 1); rebuildOcc(s); fx(s, { k: 'boom', x: b.x + 0.5, z: b.z + 0.5 }); } else if (b.hp < 40) alertK(s, 'warn', BD[b.type].name + ' sob ataque', 'atk' + b.id, b.x, b.z, 8); }
+  function foeTick(s, f, dtS) { var A = D.aliens[f.type], C = N / 2, i;
+    if (f.flee) { var dx = f.sx - f.x, dz = f.sz - f.z, d = Math.hypot(dx, dz); if (d < 1) { f.gone = true; return; } f.x += dx / d * A.speed * 1.3 * dtS; f.z += dz / d * A.speed * 1.3 * dtS; return; }
+    if (!f.tg || f.rt < s.t) { f.rt = s.t + 0.08; f.tg = null; var bd = 13;
+      for (var id in s.chars) { var c = s.chars[id]; if (!c.alive || c.inside != null || c.critical > 0) continue; var d0 = Math.hypot(c.x - f.x, c.z - f.z); if (d0 < bd) { bd = d0; f.tg = { k: 'c', id: id }; } }
+      if (!f.tg) { bd = 1e9; for (i = 0; i < s.b.length; i++) { var b0 = s.b[i]; if (b0.hp <= 0 || BD[b0.type].floor) continue; var cb0 = center(b0), d1 = Math.hypot(cb0.x - f.x, cb0.z - f.z) + (BD[b0.type].wall ? 6 : 0); if (d1 < bd) { bd = d1; f.tg = { k: 'b', id: b0.id }; } } } }
+    if (!f.tg) return; var tx, tz, reach = A.range, tc = null, tb = null;
+    if (f.tg.k === 'c') { tc = s.chars[f.tg.id]; if (!tc || !tc.alive || tc.inside != null) { f.tg = null; return; } tx = tc.x; tz = tc.z; }
+    else { tb = byId(s, f.tg.id); if (!tb || tb.hp <= 0) { f.tg = null; return; } var cb = center(tb); tx = cb.x; tz = cb.z; reach += Math.max(BD[tb.type].w, BD[tb.type].h) / 2; }
+    var ddx = tx - f.x, ddz = tz - f.z, dd = Math.hypot(ddx, ddz); f.face = Math.atan2(ddx, ddz); f.cd -= dtS;
+    if (dd > reach) { var st = A.speed * dtS, nx = f.x + ddx / dd * st, nz = f.z + ddz / dd * st, k = Math.floor(nz) * N + Math.floor(nx), oc = (k >= 0 && k < N * N) ? s.rt.occ[k] : 0;
+      if (oc > 0 && (!tb || oc !== tb.id)) { var blk = byId(s, oc); if (blk) { if (f.cd <= 0) { f.cd = 0.5; hitBuilding(s, blk, A.dps * 0.5 * (BD[blk.type].wall ? 0.35 / mul(blk) : 0.7)); fx(s, { k: 'claw', x: f.x, z: f.z }); } return; } }
+      f.x = nx; f.z = nz; f.mv = true; return; }
+    f.mv = false; if (f.cd > 0) return; f.cd = 0.5;
+    if (f.type === 'spitter') fx(s, { k: 'spit', x: f.x, z: f.z, tx: tx, tz: tz });
+    if (tc) hitChar(s, tc, A.dps * 0.5); else hitBuilding(s, tb, A.dps * 0.5 * (BD[tb.type].wall ? 0.35 / mul(tb) : 0.7)); }
+  function shoot(s, x, z, f, dps, dtS, who) { var dmg = dps * dtS; if (s.res.ammo <= 0) dmg *= 0.15; else s.res.ammo = Math.max(0, s.res.ammo - 0.3 * dtS); f.hp -= dmg;
+    who.sh = (who.sh || 0) - dtS; if (who.sh <= 0) { who.sh = 0.18 + Math.random() * 0.12; fx(s, { k: 'shot', x: x, z: z, tx: f.x, tz: f.z, w: who.guard || 'tower' }); } }
+  function fightOrFlee(s, c, dtS) { if (!s.foes.length || c.critical > 0) return false;
+    if (c.guard) { if (c.needs.health < 25) return false; var nf = foesNear(s, c.x, c.z, c.post != null ? 22 : 16); if (!nf) return false; var W = D.weapons[c.guard];
+      if (c.act && !c.act.fight) { requeue(c); clearAct(c); } c.act = null; c.sleeping = false; c.inside = null; c.hold = null; c.fighting = true; c.face = Math.atan2(nf.f.x - c.x, nf.f.z - c.z);
+      var pb = postOf(s, c), rng = W.range * (pb ? 1.5 : 1); if (pb) { var pd = Math.hypot(pb.x + 0.5 - c.x, pb.z + 0.5 - c.z); if (pd > 0.4) { var pv = Math.min(pd, B.walk * 1.2 * dtS); c.x += (pb.x + 0.5 - c.x) / pd * pv; c.z += (pb.z + 0.5 - c.z) / pd * pv; c.firing = false; return true; } if (nf.d > rng) { c.firing = false; return true; } }
+      if (!pb && nf.d > W.range * 0.9) { var v = B.walk * 1.1 * dtS, nx = c.x + (nf.f.x - c.x) / nf.d * v, nz = c.z + (nf.f.z - c.z) / nf.d * v; if (freeTile(s, Math.floor(nx), Math.floor(nz))) { c.x = nx; c.z = nz; } else if (freeTile(s, Math.floor(nx), Math.floor(c.z))) c.x = nx; else if (freeTile(s, Math.floor(c.x), Math.floor(nz))) c.z = nz; c.firing = false; }
+      else { shoot(s, c.x, c.z, nf.f, W.dps * (1 + 0.04 * (c.skills.pil || 0)), dtS, c); c.firing = true; }
+      return true; }
+    c.fighting = false; c.firing = false;
+    if (c.inside == null && !c.veh) { var near = foesNear(s, c.x, c.z, 9); if (near && !(c.act && c.act.type === 'warm' && c.act.flee)) { var sh = shelter(s, c); if (sh) { requeue(c); clearAct(c); c.queue = []; c.hold = null; if (start(s, c, { type: 'warm', kind: 'b', id: sh.id })) c.act.flee = true; alertK(s, 'warn', 'Colonos correndo para se abrigar', 'flee', c.x, c.z, 12); } } }
+    else if (c.inside != null && !c.act && s.al.attack) { c.wait = s.t + 0.5; return true; }
+    return false; }
+  function war(s, dtS, dtH) { var A = s.al, i;
+    if (s.won && A.st === 0) { if (!A.t0) A.t0 = s.t; if (s.t - A.t0 >= 6) { A.st = 1; A.site = { x: N / 2 - 18, z: N / 2 - 74 }; for (var dz = -4; dz <= 4; dz++) for (var dx = -4; dx <= 4; dx++) { var kk = (A.site.z + dz) * N + A.site.x + dx; if (kk >= 0 && kk < N * N) s.rt.fog[kk] = 1; } s.rt.fogDirty = true;
+        A.next = nightAt(s.t + 18); chron(s, 'sinal', {}); alertK(s, 'crit', 'A antena captou um sinal regular vindo de baixo do gelo, ao norte. Prepare a defesa', 'sinal', A.site.x, A.site.z, 0); emit(s, { type: 'sound', id: 'discover' }); emit(s, { type: 'scene', id: 'signal' }); } }
+    if (A.st >= 1 && !A.attack && s.t >= A.next) spawnWave(s);
+    if (A.attack && !isNight(s)) for (i = 0; i < s.foes.length; i++) s.foes[i].flee = true;
+    for (i = 0; i < s.foes.length; i++) foeTick(s, s.foes[i], dtS);
+    // torres de vigia
+    for (i = 0; i < s.b.length; i++) { var b = s.b[i]; if (b.type !== 'vigia' || !b.built || !b.on) continue; var cb = center(b), nf = foesNear(s, cb.x, cb.z, BD.vigia.range); if (nf) shoot(s, cb.x, cb.z, nf.f, BD.vigia.dps * mul(b), dtS, b); }
+    for (i = s.foes.length - 1; i >= 0; i--) { var f = s.foes[i]; if (f.hp <= 0) { A.kills++; fx(s, { k: 'die', x: f.x, z: f.z }); s.foes.splice(i, 1); } else if (f.gone) s.foes.splice(i, 1); }
+    if (A.attack && !s.foes.length) { A.attack = false; A.nights++; A.next = nightAt(s.t + 4); alertK(s, 'info', 'O ataque acabou. Confira os estragos e repare', 'endw' + A.wave, null, null, 0); emit(s, { type: 'raid', on: false }); if (A.nights === 3) chron(s, 'noites', {}); }
+    // estrutura: alguém chega perto
+    if (A.st === 1 && !A.found && A.site) for (var id in s.chars) { var c = s.chars[id]; if (c.alive && Math.hypot(c.x - A.site.x, c.z - A.site.z) < 4) { A.found = true; chron(s, 'estrutura', { who: cname(id) }); alertK(s, 'crit', cname(id) + ' chegou à estrutura. Ela pulsa, e algo no céu responde', 'found', A.site.x, A.site.z, 0); emit(s, { type: 'sound', id: 'discover' }); break; } }
+    // veículos recarregam perto da Garagem
+    for (var vid in s.chars) { var v = s.chars[vid]; if (!v.veh || !v.alive) continue; for (i = 0; i < s.b.length; i++) { var g = s.b[i]; if (g.type === 'garagem' && g.built && g.on) { var cg = center(g); if (Math.hypot(cg.x - v.x, cg.z - v.z) < 4) { v.bat = Math.min(100, v.bat + 30 * dtH); v.needs.health = Math.min(100, v.needs.health + 15 * dtH); } } } } }
+  function factory(s, b, dtH) { if (!b.on) return;
+    if (b.type === 'arsenal' && s.res.ammo < 200 && s.res.metal >= 1 && s.res.comp >= 0.5) { b.ap = (b.ap || 0) + dtH * 6 * mul(b); while (b.ap >= 3 && s.res.metal >= 1 && s.res.comp >= 0.5) { b.ap -= 3; s.res.metal -= 1; s.res.comp -= 0.5; s.res.ammo += 3; } }
+    if (!b.fab) return; b.fab.t += dtH * mul(b); var need = b.fab.w ? 3 : D.vehicles[b.fab.v].hours;
+    if (b.fab.t >= need) { if (b.fab.w) { s.arms[b.fab.w] = (s.arms[b.fab.w] || 0) + 1; alertK(s, 'info', D.weapons[b.fab.w].short + ' pronta no Arsenal', 'arm' + b.id + s.t, b.x, b.z, 0); }
+      else { var sp = spotNear(s, b), id = 'v' + (++s.nv); regVeh(id, b.fab.v); var c = mkChar(s, id, sp.x, sp.z); c.veh = b.fab.v; c.bat = 100; c.needs = { health: 100, o2: 100, hunger: 0, thirst: 0, energy: 100, temp: 90, stress: 0, morale: 80, rad: 0 }; c.vtype = b.fab.v; alertK(s, 'info', D.vehicles[b.fab.v].name + ' pronto na Garagem', 'veh' + id, c.x, c.z, 0); emit(s, { type: 'pop' }); }
+      emit(s, { type: 'sound', id: 'built' }); b.fab = null; } }
+  function orderItem(s, bid, kind, key) { var b = byId(s, bid); if (!b || !b.built) return { ok: false, msg: 'Termine a obra primeiro' }; if (b.fab) return { ok: false, msg: 'Já está fabricando' };
+    var it = kind === 'w' ? D.weapons[key] : D.vehicles[key]; if (!it) return { ok: false, msg: '?' }; if (it.era > s.era) return { ok: false, msg: 'Liberado na Era ' + D.eras[it.era - 1].n };
+    for (var r in it.cost) if (s.res[r] < it.cost[r]) return { ok: false, msg: 'Faltam materiais: ' + costText(it.cost) }; for (r in it.cost) s.res[r] -= it.cost[r];
+    b.fab = kind === 'w' ? { w: key, t: 0 } : { v: key, t: 0 }; return { ok: true, msg: 'Encomendado: ' + it.name }; }
+  function arm(s, cid, w) { var c = s.chars[cid]; if (!c || !c.alive || c.veh) return { ok: false, msg: 'Selecione um colono' }; if (!ofType(s, 'quartel', true).length) return { ok: false, msg: 'Construa o Quartel primeiro' };
+    if (c.guard) { s.arms[c.guard] = (s.arms[c.guard] || 0) + 1; c.guard = null; return { ok: true, msg: cname(cid) + ' entregou a arma e voltou ao trabalho' }; }
+    var order = w ? [w] : ['rifle', 'smg', 'shotgun', 'lmg', 'sniper', 'grenade', 'energy', 'rocket'], pick = null; for (var i = 0; i < order.length; i++) if (s.arms[order[i]] > 0) { pick = order[i]; break; }
+    if (!pick) return { ok: false, msg: 'Sem armas no estoque: encomende no Arsenal' }; s.arms[pick]--; c.guard = pick;
+    if (!s.flags.guarda) { s.flags.guarda = 1; chron(s, 'guarda', { who: cname(cid) }); } return { ok: true, msg: cname(cid) + ' agora é da Guarda (' + D.weapons[pick].short + ')' }; }
+  function guards(s) { var n = 0; for (var id in s.chars) if (s.chars[id].alive && s.chars[id].guard) n++; return n; }
+  function vehNeeds(s, c, dtH) { var n = c.needs; n.o2 = 100; n.hunger = 0; n.thirst = 0; n.energy = 100; n.temp = 90; n.stress = 0; n.morale = 80; c.inside = null; c.critical = 0;
+    if (c.bat < 15 && !c.lowBat) { c.lowBat = 1; alertK(s, 'warn', cname(c.id) + ' com pouca bateria: volte para a Garagem', 'bat' + c.id, c.x, c.z, 20); } if (c.bat > 40) c.lowBat = 0; if (n.health <= 0) { c.alive = false; } }
+  function vehDecide(s, c) { var V = c.veh, o, i;
+    while (c.queue.length) { var q = c.queue.shift(); if (start(s, c, q, true)) return true; }
+    if (c.hold) { c.wait = s.t + 0.5; return false; }
+    if (c.carry) { var dp0 = dropoff(s, c); return start(s, c, { type: 'haul', kind: 'b', id: dp0.id }); }
+    if (c.bat < 20) { for (i = 0; i < s.b.length; i++) if (s.b[i].type === 'garagem' && s.b[i].built) return start(s, c, { type: 'move', kind: 'b', id: s.b[i].id }); }
+    if (V === 'rescue') { o = rescueTarget(s, c); if (o) return start(s, c, { type: 'rescue', kind: 'c', id: o.id }); }
+    if (V === 'rover' && !s.al.attack) { var want = s.res.metal < s.res.reg ? 'metal' : 'reg', best = null, bd = 1e9; for (i = 0; i < s.deps.length; i++) { var d = s.deps[i]; if (d.res !== want || !s.rt.fog[d.z * N + d.x] || s.rt.play[d.z * N + d.x] < 110 || workers(s, c, 'gather', d.id) >= 2) continue; var dd = Math.hypot(d.x - c.x, d.z - c.z); if (dd < bd) { bd = dd; best = d; } } if (best) return start(s, c, { type: 'gather', kind: 'd', id: best.id }); }
+    c.wait = s.t + 1; return false; }
 
   // ---------------- SOCIEDADE: a Alvorada, o despertar, o Berço, os bairros ----------------
   function spotNear(s, b) { var d = BD[b.type], g = ring(s, b.x, b.z, d.w, d.h); if (!g.length) return { x: b.x + d.w + 0.5, z: b.z + 0.5 }; var k = g[Math.floor(rnd(s) * g.length)]; return { x: (k % N) + 0.5, z: Math.floor(k / N) + 0.5 }; }
@@ -1969,7 +2103,7 @@ var Sim = (function () {
 
   function objectives(s) { var f = s.flags, has = function (t, n) { return ofType(s, t, true).length >= (n || 1); };
     var done = { inspect: f.inspected, unload: f.unloaded, solar: has('solar', 2), battery: has('battery'), gather: f.gathered, airlock: has('airlock'), habitat: has('habitat'), workshop: has('workshop'), ice: f.iceFound, drill: has('drill'), water: f.firstWater, o2: has('o2ext'), greenhouse: has('greenhouse'), plant: f.potato || f.firstHarvest, storm: f.stormSurvived, landmark: s.won,
-      antenna: has('antenna'), pad: has('pad'), cryo: has('cryo'), arrival: s.ark.st === 2, wake: s.ark.awake >= 6, bairro: f.bairro, berco: has('berco'), born: f.firstBorn, escola: has('escola'), casas: has('casa', 6) || (s.ark.st === 2 && !sleepers(s).length) };
+      antenna: has('antenna'), pad: has('pad'), cryo: has('cryo'), arrival: s.ark.st === 2, wake: s.ark.awake >= 6, bairro: f.bairro, berco: has('berco'), born: f.firstBorn, escola: has('escola'), sinal: s.al.st >= 1, quartel: has('quartel'), arsenal: has('arsenal'), guarda: guards(s) >= 2, muro: has('muro', 8) && has('vigia'), noites: s.al.nights >= 3, garagem: Object.keys(s.chars).some(function (k) { return s.chars[k].veh === 'rover'; }), posto2: has('posto'), estrutura: s.al.found, casas: has('casa', 6) || (s.ark.st === 2 && !sleepers(s).length) };
     var nc = ofType(s, 'casa', true).length;
     return D.tutorial.map(function (t) { var tx = t.text; if (t.id === 'casas') tx = 'Construa casas para os 12 colonos: ' + nc + ' de 6 prontas (2 leitos cada)'; return { id: t.id, text: tx, done: !!done[t.id] }; }); }
   function signal(s) { var v = 0, on = 0, plants = 0, lit = false, id; v = Math.min(34, pop(s) * 5);
@@ -1984,7 +2118,7 @@ var Sim = (function () {
 
   return { newGame: newGame, tick: tick, canPlace: canPlace, place: place, demolish: demolish, order: order, plant: plant, buyTech: buyTech, choose: choose,
     serialize: serialize, deserialize: deserialize, requirements: requirements, readiness: readiness, cinfo: cinfo, pop: pop, beds: beds, freeBeds: freeBeds, wakeNext: wakeNext, sleepers: sleepers, reqOK: reqOK, objectives: objectives, signal: signal, caps: caps, byId: byId, depById: depById,
-    playable: playable, addZone: addZone, zoneR: zoneR, upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
+    playable: playable, addZone: addZone, zoneR: zoneR, spawnVehicle: function (s, ty, x, z) { var id = 'v' + (++s.nv); regVeh(id, ty); var c = mkChar(s, id, x, z); c.veh = ty; c.bat = 100; c.needs = { health: 100, o2: 100, hunger: 0, thirst: 0, energy: 100, temp: 90, stress: 0, morale: 80, rad: 0 }; return c; }, orderItem: orderItem, arm: arm, guards: guards, upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
 })();
 if (typeof module !== 'undefined') module.exports = Sim;
 
@@ -2135,6 +2269,9 @@ var Gfx = (function () {
     M.grow = std({ color: 0x200a1a, emissive: 0xff5ad0, emissiveIntensity: 2.4 });
     M.soil = std({ color: 0x3a2418, roughness: 1 });
     M.facade = std({ color: 0x3d5468, metalness: 0.7, roughness: 0.16, envMapIntensity: 1.8 }); // vidro de fachada azulado, reflexivo
+    M.chitin = std({ color: 0x17121a, metalness: 0.35, roughness: 0.32, envMapIntensity: 1.4 }); M.alienGlow = std({ color: 0x050a10, emissive: 0x3cf0e0, emissiveIntensity: 3.0, roughness: 0.4 });
+    M.alienGlow2 = std({ color: 0x0a0510, emissive: 0xb45cff, emissiveIntensity: 3.0, roughness: 0.4 }); M.relic = std({ color: 0x0c0c10, metalness: 0.9, roughness: 0.22, envMapIntensity: 2.0 });
+    M.redX = std({ color: 0x8a0d10, roughness: 0.5 }); M.tire = std({ color: 0x1b1918, roughness: 0.92 });
     M.leaf = std({ color: 0x4f9a3c, roughness: 0.6, side: T.DoubleSide }); M.leaf2 = std({ color: 0x7cc24a, roughness: 0.55, side: T.DoubleSide });
     M.ice = std({ color: 0xe8f2fa, roughness: 0.25, metalness: 0, envMapIntensity: 1.5 });
     M.flag = std({ color: 0xff6a1a, roughness: 0.7, side: T.DoubleSide });
@@ -2420,6 +2557,27 @@ var Models = (function () {
     k.add('solar', G.rbox(1.4, 0.04, 0.9, 0.01), { p: [-0.4, 2.15, 0.1], r: [0.35, 0.2, 0], d: 1.25 }); k.add('metal', G.rod([-1.4, 0.25, 1.2], [-1.4, 2.6, 1.2], 0.02)); k.add('flag', G.rbox(0.6, 0.38, 0.01, 0.005), { p: [-1.1, 2.4, 1.2], uv: 'keep' });
     o.lights = [[1.1, 5.1, -0.8, 0xfff1dc, 30, 1.8], [0, 1.4, 1.2]]; o.leds = true; return 5.5; };
 
+  // ---------- Era II: defesa ----------
+  B.muro = function (k, o) { bx(k, 'concrete', 1.98, 1.5, 1.98, 0, 0.75, 0); bx(k, 'dark', 2.0, 0.12, 2.0, 0, 0.06, 0); for (var i = -1; i <= 1; i += 2) bx(k, 'concrete', 0.7, 0.35, 1.98, i * 0.55, 1.67, 0); return 1.9; };
+  B.bastiao = function (k, o) { for (var s = -1; s <= 1; s += 2) for (var t2 = -1; t2 <= 1; t2 += 2) bx(k, 'dark', 0.16, 2.2, 0.16, s * 0.8, 1.1, t2 * 0.8);
+    bx(k, 'concrete', 1.98, 1.4, 1.98, 0, 0.7, 0); bx(k, 'metal', 2.1, 0.12, 2.1, 0, 2.25, 0); for (var i = 0; i < 4; i++) { var a = i * R / 2; bx(k, 'armor', i % 2 ? 0.08 : 2.1, 0.7, i % 2 ? 2.1 : 0.08, Math.round(Math.cos(a)) * 1.02, 2.6, Math.round(Math.sin(a)) * 1.02); }
+    bx(k, 'paint', 2.12, 0.06, 0.1, 0, 2.95, 1.02); for (i = 0; i < 6; i++) bx(k, 'metal', 0.5, 0.04, 0.05, 0, 0.3 + i * 0.32, 1.03); led(k, 'ledR', 0.9, 3.05, 0.9); return 3.1; };
+  B.quartel = function (k, o) { bx(k, 'dark', 5.9, 0.3, 3.9, 0, 0.15, 0); strip(k, 5.9, 'x', 0, 0.3, 1.96);
+    vol(k, 5.2, 2.4, 3.2, 0, 0.3, -0.1, 0, { gw: 0.5, fin: true }); bx(k, 'armor', 5.3, 0.5, 0.15, 0, 0.6, 1.58); bx(k, 'dark', 1.6, 1.8, 0.08, -1.6, 1.25, 1.55); bx(k, 'paint', 1.7, 0.12, 0.1, -1.6, 2.2, 1.58);
+    G.truss(k, 'dark', 4.2, 0.3, 5, 0.02, 2.4, -1.4, 0.3); bx(k, 'paint', 0.7, 0.45, 0.04, 2.4, 4.3, -1.25); led(k, 'ledR', 2.4, 4.6, -1.4);
+    for (var i = 0; i < 3; i++) bx(k, 'armor', 0.8, 0.5, 0.5, -2.2 + i * 0.9, 0.55, 2.4); o.lights = [[0, 2.6, 2.2, 0xffd8a8]]; return 4.6; };
+  B.arsenal = function (k, o) { bx(k, 'dark', 3.9, 0.3, 3.9, 0, 0.15, 0); bx(k, 'armor', 3.4, 2.2, 3.2, 0, 1.4, -0.1); bx(k, 'dark', 3.5, 0.12, 3.3, 0, 2.55, -0.1);
+    bx(k, 'dark', 2.0, 1.6, 0.06, 0.3, 1.1, 1.52); for (var i = 0; i < 8; i++) bx(k, 'metal', 1.95, 0.03, 0.08, 0.3, 0.4 + i * 0.19, 1.55); bx(k, 'paint', 0.15, 2.2, 0.2, -1.6, 1.4, 1.45); strip(k, 2.0, 'x', 0.3, 1.95, 1.56);
+    bx(k, 'paint', 1.0, 0.6, 0.8, -0.9, 2.9, -0.6); bx(k, 'metal', 0.3, 0.9, 0.3, 1.1, 3.0, -0.9); led(k, 'ledO', 1.1, 3.5, -0.9); o.lights = [[0.3, 2.2, 2.0]]; return 3.6; };
+  B.garagem = function (k, o) { bx(k, 'dark', 5.9, 0.25, 5.9, 0, 0.12, 0); strip(k, 5.9, 'x', 0, 0.25, 2.96);
+    bx(k, 'hull', 5.4, 2.8, 4.6, 0, 1.65, -0.5); bx(k, 'metal', 5.6, 0.15, 4.8, 0, 3.1, -0.5); for (var i = -1; i <= 1; i += 2) { bx(k, 'dark', 2.2, 2.2, 0.08, i * 1.3, 1.35, 1.82); for (var j = 0; j < 9; j++) bx(k, 'metal', 2.15, 0.03, 0.1, i * 1.3, 0.35 + j * 0.24, 1.86); strip(k, 2.2, 'x', i * 1.3, 2.55, 1.86); }
+    bx(k, 'paint', 0.2, 2.8, 0.25, 0, 1.65, 1.8); k.add('solar', G.rbox(2.4, 0.05, 1.6, 0.01), { p: [-1.2, 3.4, -1.3], r: [0.3, 0, 0], d: 1.25 }); bx(k, 'concrete', 5.6, 0.04, 1.2, 0, 0.27, 2.4);
+    for (i = 0; i < 4; i++) bx(k, 'paint', 0.5, 0.03, 0.12, -2 + i * 1.3, 0.3, 2.4); o.lights = [[-1.3, 2.7, 2.4], [1.3, 2.7, 2.4]]; return 3.6; };
+  B.vigia = function (k, o) { bx(k, 'dark', 1.6, 0.25, 1.6, 0, 0.12, 0); k.add('metal', G.cyl(0.18, 0.3, 3.4, 4), { p: [0, 1.9, 0], r: [0, R / 4, 0] });
+    var tur = grp(); tur.position.y = 3.7; var tk = new G.Kit(); tk.add('armor', G.rbox(0.9, 0.5, 0.9, 0.04), {}); tk.add('dark', G.rbox(0.6, 0.18, 0.3, 0.03), { p: [0, 0.3, -0.15] });
+    tk.add('dark', G.cyl(0.05, 0.05, 1.0, 8), { p: [0.12, 0.05, 0.85], r: [R / 2, 0, 0] }); tk.add('dark', G.cyl(0.05, 0.05, 1.0, 8), { p: [-0.12, 0.05, 0.85], r: [R / 2, 0, 0] }); tk.add('screenOn', G.rbox(0.3, 0.08, 0.03, 0.01), { p: [0, 0.12, 0.46], uv: 'keep' }); tk.add('paint', G.rbox(0.92, 0.06, 0.92, 0.02), { p: [0, -0.2, 0] });
+    tk.build(tur); o.dyn.turret = tur; k.extra.push(tur); led(k, 'ledR', 0, 4.25, 0); return 4.4; };
+
   B.torre = function (k, o) { // Torre de luz: mastro alto com refletores voltados para baixo
     k.add('dark', G.rbox(0.9, 0.2, 0.9, 0.05), { p: [0, 0.1, 0] }); k.add('concrete', G.rbox(0.5, 0.35, 0.5, 0.06), { p: [0, 0.35, 0] });
     G.truss(k, 'dark', 5.0, 0.42, 6, 0.025, 0, 0, 0.5); k.add('metal', G.rbox(1.2, 0.12, 0.5, 0.04), { p: [0, 5.55, 0] });
@@ -2625,6 +2783,14 @@ var Models = (function () {
       if (lv >= 4) { bx(k, 'dark', 0.6, 4.2, 0.6, -1.4, 2.1 + 0.3, -1.0); strip(k, 4, 'y', -1.09, 2.3, -0.69, 'paint'); bx(k, 'dark', 0.5, 0.5, 0.5, 1.4, 0.55, 2.0); k.add('metal', G.rod([1.4, 0.8, 2.0], [1.2, 1.7, 1.9], 0.06, 6)); k.add('metal', G.rod([1.2, 1.7, 1.9], [0.7, 1.5, 2.1], 0.05, 6)); bx(k, 'paint', 0.16, 0.16, 0.3, 0.7, 1.45, 2.1); o.vent = [-1.4, 4.7, -1.0]; }
       if (lv >= 5) { vol(k, 2.6, 1.4, 2.2, 0.3, h + 0.05, 0, 0.1, { gw: 0.9, fin: true }); bx(k, 'winOn', 2.0, 0.06, 0.06, 0.4, 0.5, 1.47); o.lights.push([0.3, h + 0.8, 1.4, 0xffb070]); h += 1.5; }
       o.lights.push([0.4, 2.3, 2.3]); return h; },
+    muro: function (k, o, W, D, lv) { var i; // 2 concreto armado · 3 blindado com espetos · 4 blindagem alta com luz · 5 muro de energia
+      bx(k, 'dark', 2.0, 0.15, 2.0, 0, 0.07, 0); var h = 1.6 + (lv - 2) * 0.35;
+      bx(k, lv >= 3 ? 'armor' : 'concrete', 1.98, h, 1.98, 0, h / 2, 0); for (i = -1; i <= 1; i += 2) bx(k, 'metal', 2.0, 0.08, 0.1, 0, h * (0.35 + i * 0.25), 1.0);
+      bx(k, 'metal', 2.04, 0.12, 2.04, 0, h + 0.06, 0);
+      if (lv >= 3) for (i = -2; i <= 2; i++) k.add('dark', G.cyl(0.0, 0.07, 0.4, 4), { p: [i * 0.42, h + 0.32, 0.2] });
+      if (lv >= 4) { strip(k, 2.0, 'x', 0, h - 0.15, 1.0); strip(k, 2.0, 'x', 0, h - 0.15, -1.0); bx(k, 'paint', 0.12, h, 0.12, 0.95, h / 2, 0.95); }
+      if (lv >= 5) { k.add('screenOn', G.rbox(1.9, 1.2, 0.06, 0.02), { p: [0, h + 0.75, 0], uv: 'keep' }); for (i = -1; i <= 1; i += 2) bx(k, 'dark', 0.14, 1.4, 0.14, i * 0.95, h + 0.7, 0); h += 1.4; }
+      return h + 0.2; },
     posto: function (k, o, W, D, lv) { return B.posto(k, o, W, D); }
   };
   function levelKit(k, type, def, W, D, h, lv, o) { var i, s, t2, M = Math.max(W, D);
@@ -2736,6 +2902,7 @@ var Models = (function () {
       tg.a0x = -s * 0.42; tg.a1x = s * 0.42; tg.f0 = -0.35 - Math.max(0, -s) * 0.3; tg.f1 = -0.35 - Math.max(0, s) * 0.3; tg.hy = 0.96 + Math.abs(Math.cos(ph)) * 0.035; tg.sy = s * 0.09; tg.sx = 0.06; }
     else if (st === 'carry') { s = Math.sin(ph); tg.t0 = -s * 0.5; tg.t1 = s * 0.5; tg.s0 = Math.max(0, Math.sin(ph + 1.9)) * 1.0 + 0.08; tg.s1 = Math.max(0, Math.sin(ph + 1.9 + R)) * 1.0 + 0.08; tg.a0x = tg.a1x = -0.55; tg.f0 = tg.f1 = -1.1; tg.a0z = 0.05; tg.a1z = -0.05; tg.hy = 0.96 + Math.abs(Math.cos(ph)) * 0.03; tg.sx = -0.05; }
     else if (st === 'work') { tg.a0x = -1.15 + Math.sin(t * 6) * 0.3; tg.a1x = -1.0 + Math.cos(t * 6.4) * 0.3; tg.f0 = -0.7 + Math.sin(t * 6 + 1) * 0.25; tg.f1 = -0.6; tg.sx = 0.18; tg.t0 = -0.12; tg.t1 = 0.14; tg.s0 = 0.2; tg.s1 = 0.05; tg.hy = 0.95; tg.hx = 0.2; }
+    else if (st === 'aim') { var rc = Math.max(0, Math.sin(t * 22)) * 0.06; tg.a0x = -1.5 + rc; tg.a1x = -1.3 + rc; tg.a0z = 0.12; tg.a1z = -0.5; tg.f0 = -0.12; tg.f1 = -0.6; tg.sx = 0.08; tg.hx = 0.05; }
     else if (st === 'mine') { var w = Math.pow(0.5 + 0.5 * Math.sin(t * 4.2), 1.6); tg.a0x = tg.a1x = -0.75 - 2.0 * w; tg.a0z = 0.16; tg.a1z = -0.16; tg.f0 = tg.f1 = -0.25 - 0.3 * w; tg.sx = 0.38 - 0.3 * w; tg.hx = 0.1; tg.t0 = -0.3; tg.t1 = 0.25; tg.s0 = 0.35; tg.s1 = 0.15; tg.hy = 0.93; }
     else if (st === 'crouch') { tg.t0 = tg.t1 = -1.3; tg.s0 = tg.s1 = 2.0; tg.k0 = tg.k1 = -0.7; tg.hy = 0.6; tg.sx = 0.45; tg.hx = 0.25; tg.a0x = -0.7 + Math.sin(t * 5) * 0.3; tg.a1x = -0.55 + Math.cos(t * 5.5) * 0.3; tg.f0 = tg.f1 = -0.5; }
     else if (st === 'look') { tg.hx = -0.35; tg.sx = -0.06; tg.a0z = 0.06; tg.a1z = -0.06; tg.f0 = tg.f1 = -0.1; }
@@ -2747,7 +2914,47 @@ var Models = (function () {
     rig.thigh[0].rotation.x = c.t0; rig.thigh[1].rotation.x = c.t1; rig.shin[0].rotation.x = c.s0; rig.shin[1].rotation.x = c.s1; rig.foot[0].rotation.x = c.k0; rig.foot[1].rotation.x = c.k1;
     rig.pose.rotation.x = -c.lie * R / 2; rig.pose.position.y = c.lie * 0.22; rig.pose.position.z = c.lie * 0.9; }
 
-  return { building: building, ark: ark, astronaut: astronaut, animate: animate, deposit: deposit, bed: bed, rocks: rocks, B: B };
+  // ---------- veículos (branco, laranja e preto, como na arte) ----------
+  function wheel(par, x, y, z, r, w) { var g = grp(); g.position.set(x, y, z); var k = new G.Kit(); k.add('tire', G.cyl(r, r, w, 18), { r: [0, 0, R / 2] }); for (var i = 0; i < 8; i++) k.add('tire', G.rbox(w * 1.02, 0.07, 0.16, 0.02), { p: [0, Math.cos(i * R / 4) * r, Math.sin(i * R / 4) * r], r: [i * R / 4, 0, 0] });
+    k.add('dark', G.cyl(r * 0.62, r * 0.62, w + 0.02, 12), { r: [0, 0, R / 2] }); k.add('paint', G.cyl(r * 0.64, r * 0.64, w * 0.4, 16), { p: [x > 0 ? w * 0.32 : -w * 0.32, 0, 0], r: [0, 0, R / 2] }); k.build(g); par.add(g); return g; }
+  function vehicle(type) { var root = grp(), body = grp(), k = new G.Kit(), wh = [], i, s; root.add(body);
+    if (type === 'rover') { // 6 rodas, cabine com vidro, faixas laranja
+      k.add('dark', G.rbox(2.3, 0.5, 5.2, 0.08), { p: [0, 1.0, 0] }); k.add('hull', G.rbox(2.4, 1.3, 3.2, 0.12), { p: [0, 1.9, -0.6] }); k.add('hull', G.rbox(2.3, 0.9, 1.8, 0.1), { p: [0, 1.65, 1.6] });
+      k.add('facade', G.rbox(2.0, 0.5, 0.05, 0.02), { p: [0, 2.0, 2.0], r: [-0.5, 0, 0], uv: 'keep' }); for (s = -1; s <= 1; s += 2) { k.add('facade', G.rbox(0.05, 0.45, 1.6, 0.02), { p: [s * 1.21, 2.15, -0.5], uv: 'keep' }); k.add('paint', G.rbox(0.06, 0.9, 0.5, 0.02), { p: [s * 1.22, 1.9, 0.9], r: [0, 0, 0], uv: 'keep' }); k.add('paint', G.rbox(0.05, 0.12, 3.0, 0.02), { p: [s * 1.22, 1.35, -0.4] }); }
+      k.add('screenOn', G.rbox(0.5, 0.08, 0.04, 0.01), { p: [0.6, 1.6, 2.52], uv: 'keep' }); k.add('screenOn', G.rbox(0.5, 0.08, 0.04, 0.01), { p: [-0.6, 1.6, 2.52], uv: 'keep' }); k.add('dark', G.rbox(2.2, 0.3, 0.3, 0.05), { p: [0, 1.1, 2.6] });
+      k.add('dark', G.rbox(1.6, 0.25, 2.4, 0.05), { p: [0, 2.65, -0.8] }); k.add('metal', G.rod([0.8, 2.7, -2.0], [0.8, 3.6, -2.0], 0.02)); k.add('metal', G.rod([-0.8, 2.7, -2.0], [-0.8, 3.3, -2.0], 0.02)); k.add('dark', G.rbox(0.5, 0.25, 0.4, 0.04), { p: [0, 2.85, 0.6] });
+      for (s = -1; s <= 1; s += 2) for (i = -1; i <= 1; i++) wh.push(wheel(body, s * 1.35, 0.62, i * 1.75, 0.62, 0.55)); }
+    else if (type === 'scout') { // quadriciclo explorador
+      k.add('dark', G.rbox(1.0, 0.3, 2.4, 0.06), { p: [0, 0.75, 0] }); k.add('hull', G.rbox(1.1, 0.45, 1.3, 0.1), { p: [0, 1.05, 0.5] }); k.add('paint', G.rbox(1.12, 0.12, 0.8, 0.04), { p: [0, 1.2, 0.6] });
+      k.add('dark', G.rbox(0.5, 0.25, 0.7, 0.06), { p: [0, 1.2, -0.4] }); k.add('metal', G.rod([0, 1.3, 1.0], [0, 1.65, 0.75], 0.03)); k.add('metal', G.rod([-0.35, 1.65, 0.75], [0.35, 1.65, 0.75], 0.025)); k.add('screenOn', G.rbox(0.4, 0.06, 0.04, 0.01), { p: [0, 1.0, 1.17], uv: 'keep' }); k.add('metal', G.rod([0.4, 1.0, -1.0], [0.4, 2.0, -1.0], 0.015));
+      for (s = -1; s <= 1; s += 2) for (i = -1; i <= 1; i += 2) wh.push(wheel(body, s * 0.75, 0.45, i * 0.85, 0.45, 0.38)); }
+    else { // resgate: furgão branco com cruz vermelha
+      k.add('dark', G.rbox(2.0, 0.4, 4.2, 0.08), { p: [0, 0.85, 0] }); k.add('hull', G.rbox(2.1, 1.6, 2.8, 0.15), { p: [0, 1.85, -0.5] }); k.add('hull', G.rbox(2.0, 1.0, 1.4, 0.12), { p: [0, 1.5, 1.5] });
+      k.add('facade', G.rbox(1.8, 0.5, 0.05, 0.02), { p: [0, 1.95, 1.85], r: [-0.55, 0, 0], uv: 'keep' }); for (s = -1; s <= 1; s += 2) { k.add('redX', G.rbox(0.05, 0.7, 0.22, 0.01), { p: [s * 1.06, 2.0, -0.5] }); k.add('redX', G.rbox(0.05, 0.22, 0.7, 0.01), { p: [s * 1.06, 2.0, -0.5] }); k.add('paint', G.rbox(0.05, 0.12, 2.6, 0.02), { p: [s * 1.06, 1.25, -0.4] }); }
+      k.add('dark', G.rbox(0.9, 0.12, 0.3, 0.03), { p: [0, 2.72, 0.5] }); k.add('ledR', G.rbox(0.3, 0.1, 0.2, 0.02), { p: [-0.25, 2.8, 0.5], uv: 'keep' }); k.add('screenOn', G.rbox(0.3, 0.1, 0.2, 0.02), { p: [0.25, 2.8, 0.5], uv: 'keep' });
+      for (s = -1; s <= 1; s += 2) for (i = -1; i <= 1; i += 2) wh.push(wheel(body, s * 1.15, 0.55, i * 1.35, 0.55, 0.45)); }
+    k.build(body); root.traverse(function (m) { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); return { root: root, body: body, wheels: wh, veh: true, cur: {} }; }
+  // ---------- o que vem do gelo ----------
+  function alien(type) { var root = grp(), body = grp(), k = new G.Kit(), legs = [], i; root.add(body);
+    if (type === 'spitter') { k.add('chitin', G.sphere(0.45, 14, 10), { p: [0, 1.15, -0.1], s: [1, 1.3, 1.1] }); k.add('alienGlow2', G.sphere(0.32, 12, 8), { p: [0, 1.5, -0.35] }); k.add('chitin', G.sphere(0.25, 10, 8), { p: [0, 1.0, 0.45], s: [1, 0.8, 1.3] }); k.add('alienGlow2', G.sphere(0.06, 6, 5), { p: [0.1, 1.05, 0.72] }); k.add('alienGlow2', G.sphere(0.06, 6, 5), { p: [-0.1, 1.05, 0.72] }); }
+    else { k.add('chitin', G.sphere(0.5, 14, 10), { p: [0, 0.55, -0.2], s: [0.9, 0.55, 1.5] }); k.add('chitin', G.sphere(0.32, 12, 8), { p: [0, 0.6, 0.6], s: [1, 0.7, 1.1] }); for (i = 0; i < 4; i++) k.add('chitin', G.cyl(0.0, 0.12, 0.35, 4), { p: [0, 0.82, -0.6 + i * 0.3], r: [-0.4, 0, 0] });
+      k.add('alienGlow', G.rbox(0.05, 0.04, 0.9, 0.01), { p: [0.32, 0.6, -0.2], uv: 'keep' }); k.add('alienGlow', G.rbox(0.05, 0.04, 0.9, 0.01), { p: [-0.32, 0.6, -0.2], uv: 'keep' }); k.add('alienGlow', G.sphere(0.05, 6, 5), { p: [0.12, 0.66, 0.92] }); k.add('alienGlow', G.sphere(0.05, 6, 5), { p: [-0.12, 0.66, 0.92] });
+      k.add('chitin', G.rod([0.12, 0.5, 0.85], [0.3, 0.2, 1.25], 0.035, 5)); k.add('chitin', G.rod([-0.12, 0.5, 0.85], [-0.3, 0.2, 1.25], 0.035, 5)); }
+    k.build(body);
+    for (i = 0; i < 6; i++) { var s = i < 3 ? 1 : -1, z = -0.5 + (i % 3) * 0.45, lg = grp(); lg.position.set(s * 0.3, type === 'spitter' ? 0.95 : 0.55, z); var lk = new G.Kit(); lk.add('chitin', G.rod([0, 0, 0], [s * 0.55, 0.3, 0], 0.04, 5)); lk.add('chitin', G.rod([s * 0.55, 0.3, 0], [s * 0.85, -(type === 'spitter' ? 0.95 : 0.55), 0], 0.03, 5)); lk.build(lg); body.add(lg); legs.push(lg); }
+    root.traverse(function (m) { if (m.isMesh) { m.castShadow = true; } }); return { root: root, body: body, legs: legs, type: type }; }
+  function animAlien(a, t, moving, attack) { var sp = moving ? 14 : attack ? 6 : 2; a.legs.forEach(function (l, i) { l.rotation.x = Math.sin(t * sp + i * 1.9) * (moving ? 0.45 : 0.1); l.rotation.z = Math.sin(t * sp + i * 1.9 + 1.5) * (moving ? 0.18 : 0.04); });
+    a.body.position.y = Math.abs(Math.sin(t * sp * 0.5)) * (moving ? 0.06 : 0.02); a.body.rotation.x = attack ? Math.sin(t * 9) * 0.25 : 0; }
+  function relic() { var g = grp(), k = new G.Kit(), i; // a estrutura enterrada: lâminas escuras saindo do gelo, com veios de luz
+    for (i = 0; i < 7; i++) { var a = i * 0.9, r = i ? 1.6 + (i % 3) * 0.6 : 0, h = i ? 2.2 + (i % 4) * 0.9 : 6.5; k.add('relic', G.cyl(0.05, i ? 0.45 : 0.9, h, 4), { p: [Math.cos(a) * r, h / 2 - 0.4, Math.sin(a) * r], r: [Math.sin(a) * 0.25, a, Math.cos(a) * 0.2] });
+      k.add('alienGlow', G.rbox(0.04, h * 0.7, 0.04, 0.01), { p: [Math.cos(a) * r + 0.12, h * 0.4, Math.sin(a) * r], r: [Math.sin(a) * 0.25, a, Math.cos(a) * 0.2], uv: 'keep' }); }
+    k.add('ice', G.cyl(4.2, 4.8, 0.5, 9), { p: [0, 0.0, 0] }); k.add('alienGlow', G.torus(3.0, 0.05, 6, 40), { p: [0, 0.3, 0], r: [R / 2, 0, 0] }); k.build(g); g.userData.lights = [[0, 3.5, 0, 0x3cf0e0, 30, 2]]; return g; }
+  function rifle(kind) { var g = grp(), k = new G.Kit(), L = kind === 'shotgun' ? 0.7 : kind === 'smg' ? 0.55 : 0.85; // arma da Guarda, nas cores da colônia
+    k.add('dark', G.rbox(0.07, 0.11, L, 0.015), { p: [0, 0, L / 2 - 0.15] }); k.add('hull', G.rbox(0.075, 0.08, L * 0.45, 0.015), { p: [0, 0.05, L * 0.3] }); k.add('paint', G.rbox(0.078, 0.03, L * 0.25, 0.01), { p: [0, 0.07, L * 0.15] });
+    k.add('dark', G.cyl(0.018, 0.018, 0.3, 6), { p: [0, 0.01, L - 0.05], r: [R / 2, 0, 0] }); k.add('dark', G.rbox(0.05, 0.14, 0.05, 0.01), { p: [0, -0.1, L * 0.35], r: [0.3, 0, 0] }); k.add('dark', G.rbox(0.05, 0.1, 0.18, 0.01), { p: [0, -0.02, -0.18] }); if (kind !== 'shotgun') k.add('screenOn', G.rbox(0.04, 0.04, 0.08, 0.01), { p: [0, 0.11, L * 0.3], uv: 'keep' });
+    k.build(g); return g; }
+
+  return { vehicle: vehicle, alien: alien, animAlien: animAlien, relic: relic, rifle: rifle, building: building, ark: ark, astronaut: astronaut, animate: animate, deposit: deposit, bed: bed, rocks: rocks, B: B };
 })();
 
 // ============================================================
@@ -2945,11 +3152,11 @@ var World = (function () {
     if (ch || force) fogTex.needsUpdate = true;
     if (s.rt.playDirty || force) { s.rt.playDirty = false; var P = s.rt.play; for (i = 0; i < N * N; i++) playData[i * 4] = P[i]; playTex.needsUpdate = true; } }
 
-  function ensureRig(k) { var rig = MD.astronaut(k, Sim.cinfo(k)); rig.root.userData.kind = 'c'; rig.root.userData.id = k; rig.ph = h2(k.length * 3.3 + k.charCodeAt(k.length - 1), 1.7) * 6;
+  function ensureRig(k, c) { var rig = c && c.veh ? MD.vehicle(c.veh) : MD.astronaut(k, Sim.cinfo(k)); rig.root.userData.kind = 'c'; rig.root.userData.id = k; rig.ph = h2(k.length * 3.3 + k.charCodeAt(k.length - 1), 1.7) * 6;
     var pk = new T.Mesh(new T.CylinderGeometry(0.6, 0.6, 2.2, 8), new T.MeshBasicMaterial({ visible: false })); pk.position.y = 1.1; rig.root.add(pk);
-    rig.ring = decal(0x6dffb0); rig.ring.material.uniforms.uRing.value = 1; rig.ring.scale.set(1.9, 1.9, 1);
+    rig.ring = decal(0x6dffb0); rig.ring.material.uniforms.uRing.value = 1; rig.ring.scale.set(rig.veh ? 5.5 : 1.9, rig.veh ? 5.5 : 1.9, 1); if (rig.veh) { pk.scale.set(2.5, 1.2, 2.5); }
     rig.root.traverse(function (m) { if (m.isMesh) { m.castShadow = m !== pk && !m.material.transparent; m.receiveShadow = true; } }); scene.add(rig.root); pickables.push(rig.root); cRig[k] = rig; return rig; }
-  W.rebuild = function (s) { var k; for (k in bMesh) removeB(k); for (k in cRig) { scene.remove(cRig[k].root); scene.remove(cRig[k].ring); } for (k in dMesh) scene.remove(dMesh[k]); bMesh = {}; cRig = {}; dMesh = {}; pickables = []; if (arkMesh) { scene.remove(arkMesh); arkMesh = null; }
+  W.rebuild = function (s) { var k; for (k in bMesh) removeB(k); for (k in cRig) { scene.remove(cRig[k].root); scene.remove(cRig[k].ring); } for (k in dMesh) scene.remove(dMesh[k]); bMesh = {}; cRig = {}; dMesh = {}; pickables = []; for (var fk in foeM) scene.remove(foeM[fk].root); foeM = {}; if (relicM) { scene.remove(relicM); relicM = null; } if (roadM) { scene.remove(roadM); roadM = null; } roadSig = ''; if (arkMesh) { scene.remove(arkMesh); arkMesh = null; }
     W.cam.x = N / 2; W.cam.z = N / 2 + 1.5; cam.updateMatrixWorld(); 
     if (mapSeed !== s.seed || !chunks.length) { mapSeed = s.seed; buildTerrain(s); } else { for (var i = 0; i < N * N; i++) trod[i] = 0; occSig = ''; }
     updateData(s, true); stream(s, 80); W.lastEnvForce = true; };
@@ -3005,6 +3212,7 @@ var World = (function () {
     for (i = 0; i < s.b.length; i++) { b = s.b[i]; d = BD[b.type]; seen[b.id] = 1; var o = bMesh[b.id];
       if (o && b.type === 'corridor') { var mk = corridorMask(s, b); if (mk !== o.mask) { removeB(b.id); o = null; } }
       if (o && o.lv !== (b.lv || 1)) { removeB(b.id); o = null; }
+      if (BD[b.type].floor) continue;
       if (!o) o = makeB(s, b); setBuilt(o, b.built); var u = o.g.userData.o;
       if (!b.built) { var cut = o.base + 0.05 + b.prog * (o.h + 0.1); o.clip.constant = cut; o.clipH.constant = -cut; o.holo.position.copy(o.g.position);
         for (k in s.chars) { var cc = s.chars[k]; if (cc.act && cc.act.type === 'build' && cc.act.id === b.id && cc.act.phase === 'work' && Math.random() < dt * 30) { var a = Math.random() * 6.28, rr = Math.min(d.w, d.h) * TS * 0.4; glow.emit(o.g.position.x + Math.cos(a) * rr, cut, o.g.position.z + Math.sin(a) * rr, (Math.random() - 0.5) * 3, Math.random() * 3, (Math.random() - 0.5) * 3, 0.09, 0.5 + Math.random() * 0.4, 1, 0.6, 0.25, 1, 0, 1, 6); } } }
@@ -3016,6 +3224,7 @@ var World = (function () {
       if (u.dyn.ramp) u.dyn.ramp.rotation.x = -Math.PI / 2 + (0.52 + Math.PI / 2) * (W.landerRamp == null ? 1 : W.landerRamp);
       if (!b.built) continue;
       if (u.dyn.spin && b.on && !b.idle) u.dyn.spin.rotation[u.dyn.spinAxis] += dt * (u.dyn.spinAxis === 'y' ? 9 : 7);
+      if (u.dyn.turret && s.foes.length) { var cbt = Sim.center(b), bf = null, bdd = 12; s.foes.forEach(function (f) { var dd = Math.hypot(f.x - cbt.x, f.z - cbt.z); if (dd < bdd) { bdd = dd; bf = f; } }); if (bf) u.dyn.turret.rotation.y = Math.atan2(bf.x - cbt.x, bf.z - cbt.z); }
       if (u.dyn.dish) { u.dyn.dish.rotation.y += dt * 0.08 * (b.on ? 1 : 0); }
       if (u.dyn.panel) { var tgy = Math.atan2(sunDir.x, sunDir.z), el = Math.asin(clamp(sunDir.y, -1, 1)), pn = u.dyn.panel; pn.rotation.order = 'YXZ'; var ty = b.on || sunDir.y > 0 ? tgy : pn.rotation.y; pn.rotation.y += (ty - pn.rotation.y) * Math.min(1, dt * 0.6); var tx2 = sunDir.y > 0.02 ? -(Math.PI / 2 - el) * 0.75 : 0; pn.rotation.x += (tx2 - pn.rotation.x) * Math.min(1, dt * 0.6);
         if (o.solar) { var du = b.dust; o.solar.color.setRGB(1 + du * 7, 1 + du * 3.6, 1 + du * 1.2); } }
@@ -3031,10 +3240,16 @@ var World = (function () {
     for (k in dMesh) if (!seen[k]) { scene.remove(dMesh[k]); pickables.splice(pickables.indexOf(dMesh[k]), 1); delete dMesh[k]; }
     // astronautas
     var si = 0; spots[0].intensity = 0; spots[1].intensity = 0;
-    for (k in s.chars) { var c = s.chars[k], rig = cRig[k]; if (!rig) { if (!c.alive) continue; rig = ensureRig(k); } var m = rig.root; var show = c.alive && !W.hideChars && (c.inside == null || c.critical > 0); m.visible = show; rig.ring.visible = show && !!W.selected[k];
+    for (k in s.chars) { var c = s.chars[k], rig = cRig[k]; if (!rig) { if (!c.alive) continue; rig = ensureRig(k, c); } var m = rig.root; var show = c.alive && !W.hideChars && (c.inside == null || c.critical > 0); m.visible = show; rig.ring.visible = show && !!W.selected[k];
       if (!show) continue;
       var gy = Hr(c.x, c.z); m.position.set(c.x * TS, gy, c.z * TS); rig.ring.position.set(c.x * TS, gy + 0.06, c.z * TS);
+      if (rig.veh) { var mv = rig.lx != null ? Math.hypot(c.x - rig.lx, c.z - rig.lz) : 0; rig.lx = c.x; rig.lz = c.z; rig.wheels.forEach(function (w) { w.rotation.x += mv * TS / 0.55; });
+        if (c.face != null) { var dfv = c.face - m.rotation.y; while (dfv > Math.PI) dfv -= 6.283; while (dfv < -Math.PI) dfv += 6.283; m.rotation.y += dfv * Math.min(1, dt * 4); }
+        var hx = Hr(c.x + Math.sin(m.rotation.y) * 1.2, c.z + Math.cos(m.rotation.y) * 1.2) - Hr(c.x - Math.sin(m.rotation.y) * 1.2, c.z - Math.cos(m.rotation.y) * 1.2); rig.body.rotation.x = -Math.atan2(hx, 4.8);
+        if (mv > 0.001 && Math.random() < dt * 14) dust.emit(m.position.x - Math.sin(m.rotation.y) * 2.4, gy + 0.3, m.position.z - Math.cos(m.rotation.y) * 2.4, (Math.random() - 0.5) * 1.5, 0.5 + Math.random() * 0.6, (Math.random() - 0.5) * 1.5, 0.9, 2.2, 0.62, 0.4, 0.26, 0.4, 1.2, 1.2, 0.1); continue; }
+      if (c.guard && !rig.gun) { rig.gun = MD.rifle(c.guard); rig.gun.rotation.x = Math.PI / 2; rig.gun.position.set(0, -0.3, 0.06); rig.fore[0].add(rig.gun); } if (rig.gun) { rig.gun.visible = !!c.guard; if (!c.guard) { rig.fore[0].remove(rig.gun); rig.gun = null; } }
       var a2 = c.act, st = 'idle'; if (c.critical > 0) st = 'lie'; else if (a2 && a2.phase === 'go') st = c.carry ? 'carry' : 'walk'; else if (a2 && a2.phase === 'work') { st = { gather: 'mine', plant: 'crouch', harvest: 'crouch', build: 'work', repair: 'work', clean: 'work', inspect: 'work', unload: 'work', contemplate: 'look', rescue: 'crouch' }[a2.type] || 'idle'; }
+      if (c.fighting && c.critical <= 0) st = c.firing ? 'aim' : 'walk';
       if (c.critical <= 0 && c.face != null) { var df = c.face - m.rotation.y; while (df > Math.PI) df -= 6.283; while (df < -Math.PI) df += 6.283; m.rotation.y += df * Math.min(1, dt * 8); }
       MD.animate(rig, st, time + rig.ph, dt, (s.stormK > 0.3 ? 0.65 : 1) * (c.weak > s.t ? 0.7 : 1)); rig.cargo.visible = !!c.carry; if (rig.pick) rig.pick.visible = st === 'mine';
       if ((st === 'walk' || st === 'carry') && Math.random() < dt * 5) dust.emit(m.position.x + (Math.random() - 0.5) * 0.3, gy + 0.08, m.position.z + (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.6, 0.25 + Math.random() * 0.3, (Math.random() - 0.5) * 0.6, 0.35, 1.4, 0.6, 0.38, 0.24, 0.35, 0.6, 1.2, 0.1);
@@ -3057,6 +3272,7 @@ var World = (function () {
     dust.update(dt); glow.update(dt);
     cables(s);
     if (W.overlayOn && Math.floor(time * 2) !== W.ovT) { W.ovT = Math.floor(time * 2); drawOverlay(s); }
+    warFx(s, dt, time); roads(s);
     // destaque da construção selecionada
     var sb = W.selB != null ? Sim.byId(s, W.selB) : null; selDecal.visible = !!sb; if (sb) { var sd = BD[sb.type]; selDecal.position.set((sb.x + sd.w / 2) * TS, Hr(sb.x + sd.w / 2, sb.z + sd.h / 2) + 0.12, (sb.z + sd.h / 2) * TS); selDecal.scale.set(sd.w * TS + 0.4, sd.h * TS + 0.4, 1); selDecal.material.uniforms.uAsp.value.set(sd.w * TS + 0.4, sd.h * TS + 0.4); }
     // câmera de estratégia
@@ -3089,6 +3305,44 @@ var World = (function () {
       near.sort(function (x, y) { return x.d - y.d; }); near.slice(0, 3).forEach(function (o) { var b = o.b, d0 = BD[b.type], c0 = Sim.center(b), dx = cpa.x - c0.x, dz = cpa.z - c0.z, L = Math.hypot(dx, dz) || 1, ex = c0.x + dx / L * Math.min(L, Math.max(d0.w, d0.h) * 0.5), ez = c0.z + dz / L * Math.min(L, Math.max(d0.w, d0.h) * 0.5);
         var p0 = top(pa); p0.y -= 0.15; span(p0, new T.Vector3(ex * TS, Hr(ex, ez) + 0.35, ez * TS), 0.25); }); }
     if (!pts.length) return; cabG = new T.LineSegments(new T.BufferGeometry().setFromPoints(pts), cabMat); cabG.frustumCulled = false; scene.add(cabG); }
+
+  // ---------- Era II: criaturas, tiros, estrutura ----------
+  var foeM = {}, relicM = null, tracers = [], trMat = null;
+  function tracer(x0, y0, z0, x1, y1, z1, col, life) { if (!trMat) trMat = {}; var key = col; if (!trMat[key]) trMat[key] = new T.LineBasicMaterial({ color: col, transparent: true, opacity: 1, blending: T.AdditiveBlending, depthWrite: false });
+    var g = new T.BufferGeometry().setFromPoints([new T.Vector3(x0, y0, z0), new T.Vector3(x1, y1, z1)]), l = new T.Line(g, trMat[key].clone()); l.userData.life = life; l.userData.max = life; scene.add(l); tracers.push(l); }
+  function warFx(s, dt, time) { var k, i;
+    // criaturas
+    var alive = {}; s.foes.forEach(function (f) { alive[f.id] = 1; var a = foeM[f.id]; if (!a) { a = foeM[f.id] = MD.alien(f.type); scene.add(a.root); a.ph = Math.random() * 9; }
+      var gy = Hr(f.x, f.z); a.root.position.set(f.x * TS, gy, f.z * TS); if (f.face != null) { var df = f.face - a.root.rotation.y; while (df > Math.PI) df -= 6.283; while (df < -Math.PI) df += 6.283; a.root.rotation.y += df * Math.min(1, dt * 6); }
+      MD.animAlien(a, time + a.ph, !!f.mv || !!f.flee, !f.mv && !f.flee); if (Math.random() < dt * 2) glow.emit(a.root.position.x, gy + 0.7, a.root.position.z, 0, 0.3, 0, 0.25, 0.8, 0.2, 0.9, 0.9, 0.6, 0.5, 1, 0); });
+    for (k in foeM) if (!alive[k]) { scene.remove(foeM[k].root); delete foeM[k]; }
+    // efeitos que a simulação pediu
+    var F = s.rt.fx || []; for (i = 0; i < F.length; i++) { var e = F[i], ex = e.x * TS, ez = e.z * TS, ey = Hr(e.x, e.z);
+      if (e.k === 'shot') { var ty = Hr(e.tx, e.tz) + 0.55, sy = ey + (e.w === 'tower' ? 3.75 : 1.35); tracer(ex, sy, ez, e.tx * TS + (Math.random() - 0.5) * 0.3, ty, e.tz * TS + (Math.random() - 0.5) * 0.3, e.w === 'energy' ? 0x66e0ff : 0xffd27a, 0.07);
+        glow.emit(ex, sy, ez, 0, 0, 0, 0.35, 0.06, 1, 0.8, 0.4, 1, 0, 1, 0); for (var q = 0; q < 2; q++) glow.emit(e.tx * TS, ty, e.tz * TS, (Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2, 0.12, 0.25, 0.5, 1, 0.9, 1, 0, 2, 3); }
+      else if (e.k === 'spit') { tracer(ex, ey + 1.2, ez, e.tx * TS, Hr(e.tx, e.tz) + 0.8, e.tz * TS, 0xc070ff, 0.25); }
+      else if (e.k === 'die') { for (q = 0; q < 26; q++) glow.emit(ex, ey + 0.5, ez, (Math.random() - 0.5) * 4, Math.random() * 3, (Math.random() - 0.5) * 4, 0.2, 0.9, 0.2, 1, 0.9, 1, 0, 1.5, 4); for (q = 0; q < 10; q++) dust.emit(ex, ey + 0.2, ez, (Math.random() - 0.5) * 2, Math.random() * 1.2, (Math.random() - 0.5) * 2, 0.8, 1.6, 0.25, 0.2, 0.22, 0.6, 1, 1.4, 0.4); }
+      else if (e.k === 'claw' || e.k === 'boom') { for (q = 0; q < (e.k === 'boom' ? 30 : 4); q++) dust.emit(ex, ey + 0.4, ez, (Math.random() - 0.5) * 3, Math.random() * 2, (Math.random() - 0.5) * 3, 0.8, 1.5, 0.6, 0.42, 0.3, 0.6, 1.2, 1.3, 0.5); } }
+    if (F.length) F.length = 0;
+    for (i = tracers.length - 1; i >= 0; i--) { var l = tracers[i]; l.userData.life -= dt; l.material.opacity = Math.max(0, l.userData.life / l.userData.max); if (l.userData.life <= 0) { scene.remove(l); l.geometry.dispose(); l.material.dispose(); tracers.splice(i, 1); } }
+    // a estrutura
+    if (s.al && s.al.site && !relicM) { relicM = MD.relic(); relicM.position.set(s.al.site.x * TS, Hr(s.al.site.x, s.al.site.z), s.al.site.z * TS); scene.add(relicM); relicM.traverse(function (m) { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); }
+    if (relicM) { relicM.rotation.y += dt * 0.02; if (Math.random() < dt * 6) glow.emit(relicM.position.x + (Math.random() - 0.5) * 4, relicM.position.y + Math.random() * 6, relicM.position.z + (Math.random() - 0.5) * 4, 0, 0.6, 0, 0.3, 2.5, 0.2, 0.95, 0.9, 0.8, 0.4, 1, -0.1); } }
+  // ---------- estradas: uma malha só, com o visual da Era ----------
+  var roadM = null, roadSig = '';
+  function roads(s) { var R0 = s.rt.road; if (!R0) return; var sig = s.era + ':', i, list = [];
+    for (i = 0; i < s.b.length; i++) { var b = s.b[i]; if (BD[b.type].floor && b.built) { list.push(b); sig += b.x + ',' + b.z + ';'; } } if (sig === roadSig) return; roadSig = sig;
+    if (roadM) { scene.remove(roadM); roadM.traverse(function (m) { if (m.geometry) m.geometry.dispose(); }); roadM = null; } if (!list.length) return;
+    var k = new G.Kit(), era = s.era, has = function (x, z) { return x >= 0 && z >= 0 && x < N && z < N && R0[z * N + x] === 2; };
+    list.forEach(function (b) { var x = b.x, z = b.z, cx = (x + 0.5) * TS, cz = (z + 0.5) * TS, y = Math.max(Hr(x + 0.5, z + 0.5), Hr(x, z), Hr(x + 1, z), Hr(x, z + 1), Hr(x + 1, z + 1)) + 0.04;
+      var nE = has(x + 1, z), nW = has(x - 1, z), nN = has(x, z - 1), nS = has(x, z + 1), horiz = nE || nW, vert = nN || nS;
+      var surf = era >= 4 ? 'facade' : era >= 3 ? 'rubber' : era >= 2 ? 'concrete' : 'dark';
+      k.add(surf, G.rbox(TS * 0.98, 0.08, TS * 0.98, 0.02), { p: [cx, y, cz] });
+      if (era === 2) { k.add('dark', G.rbox(0.03, 0.09, TS * 0.98, 0.01), { p: [cx, y + 0.005, cz] }); k.add('dark', G.rbox(TS * 0.98, 0.09, 0.03, 0.01), { p: [cx, y + 0.005, cz] }); if (!nN) k.add('paint', G.rbox(TS * 0.7, 0.1, 0.06, 0.01), { p: [cx, y + 0.01, cz - TS * 0.47] }); if (!nS) k.add('paint', G.rbox(TS * 0.7, 0.1, 0.06, 0.01), { p: [cx, y + 0.01, cz + TS * 0.47] }); }
+      if (era >= 3) { if (horiz && !vert) k.add(era >= 4 ? 'screenOn' : 'hull', G.rbox(TS * 0.45, 0.1, 0.06, 0.01), { p: [cx, y + 0.01, cz], uv: 'keep' }); else if (vert && !horiz) k.add(era >= 4 ? 'screenOn' : 'hull', G.rbox(0.06, 0.1, TS * 0.45, 0.01), { p: [cx, y + 0.01, cz], uv: 'keep' });
+        if (!nN && !horiz) {} k.add('screenOn', G.rbox(0.08, 0.1, 0.08, 0.02), { p: [cx - TS * 0.44, y + 0.02, cz - TS * 0.44], uv: 'keep' }); }
+      if (era >= 4) { if (!nN) k.add('screenOn', G.rbox(TS, 0.1, 0.04, 0.01), { p: [cx, y + 0.02, cz - TS * 0.49], uv: 'keep' }); if (!nS) k.add('screenOn', G.rbox(TS, 0.1, 0.04, 0.01), { p: [cx, y + 0.02, cz + TS * 0.49], uv: 'keep' }); if (!nE) k.add('screenOn', G.rbox(0.04, 0.1, TS, 0.01), { p: [cx + TS * 0.49, y + 0.02, cz], uv: 'keep' }); if (!nW) k.add('screenOn', G.rbox(0.04, 0.1, TS, 0.01), { p: [cx - TS * 0.49, y + 0.02, cz], uv: 'keep' }); } });
+    roadM = new T.Group(); k.build(roadM, true); roadM.traverse(function (m) { if (m.isMesh) { m.receiveShadow = true; m.castShadow = false; } }); scene.add(roadM); }
 
   function drawOverlay(s) { while (overlay.children.length) { var ch = overlay.children[0]; overlay.remove(ch); ch.geometry.dispose(); } if (!W.overlayOn) return;
     var pe = [], pp = [], po = [], i, j; function c3v(b) { var c = Sim.center(b); return new T.Vector3(c.x * TS, Hr(c.x, c.z) + 1.4, c.z * TS); }
@@ -3172,7 +3426,7 @@ var UI = (function () {
   function applySettings() { document.documentElement.style.setProperty('--u', set.ui); }
 
   // ---------------- HUD ----------------
-  var CH = [['energy', 'Energia'], ['o2', 'Oxigênio'], ['water', 'Água'], ['food', 'Alimento'], ['metal', 'Metal'], ['comp', 'Componentes'], ['reg', 'Regolito'], ['research', 'Pesquisa']];
+  var CH = [['energy', 'Energia'], ['o2', 'Oxigênio'], ['water', 'Água'], ['food', 'Alimento'], ['metal', 'Metal'], ['comp', 'Componentes'], ['reg', 'Regolito'], ['research', 'Pesquisa'], ['ammo', 'Munição']];
   function buildHUD() {
     $('top').innerHTML = '<div class="tr">' + CH.map(function (c) { return '<div class="chip pn" id="c_' + c[0] + '"><span class="lb">' + c[1] + '</span><b class="num"></b><small class="num"></small></div>'; }).join('') +
       '<div class="chip pn" id="c_pop" data-act="win" data-a="ark" style="cursor:pointer" title="Colonos e a Alvorada"><span class="lb">População</span><b class="num"></b><small class="num"></small></div><div class="chip pn" id="clock"><span class="lb"><i id="pulse"></i><span id="ckSol"></span></span><b class="num" id="ckTime"></b><small id="ckW"></small></div></div><div class="tr r">' +
@@ -3200,7 +3454,7 @@ var UI = (function () {
     chip('o2', r0(r.o2) + ' / ' + r0(cp.o2), 'dura ' + (alive ? (r.o2 / (alive * 10)).toFixed(1) : '0') + ' sóis parado', r.o2 < alive * 20, r.o2 < alive * 10);
     chip('water', r0(r.water) + ' / ' + r0(cp.water), 'gelo ' + r0(r.ice), r.water < 12, r.water < 4);
     chip('food', r0(r.food) + ' / ' + r0(cp.food), 'sementes ' + r0(r.seeds), r.food < 8, r.food < 3);
-    chip('metal', r0(r.metal), 'limite ' + r0(cp.mat), r.metal >= cp.mat, false); chip('comp', r0(r.comp), '', false, false); chip('reg', r0(r.reg), '', r.reg >= cp.mat, false); chip('research', r.research.toFixed(1), '', false, false);
+    chip('metal', r0(r.metal), 'limite ' + r0(cp.mat), r.metal >= cp.mat, false); chip('comp', r0(r.comp), '', false, false); chip('reg', r0(r.reg), '', r.reg >= cp.mat, false); chip('research', r.research.toFixed(1), '', false, false); chip('ammo', r0(r.ammo || 0), (s.al.attack ? 'ataque em andamento' : '') + ' · guardas ' + Sim.guards(s), false, s.res.ammo < 10 && s.era >= 2); $('c_ammo').hidden = s.era < 2;
     var h = Sim.hour(s), st = s.storm, day = h >= B.sunrise && h < B.sunset;
     $('ckSol').textContent = 'Sol ' + Sim.sol(s) + ' · ' + D.lore.year; $('ckTime').textContent = hhmm(h) + (day ? ' · dia' : ' · noite');
     var w = st.st === 2 ? 'Tempestade de poeira' : st.st === 1 ? 'Tempestade em ' + Math.ceil(st.start - s.t) + ' h' : (day ? 'Pôr do sol em ' + Math.ceil(B.sunset - h) : 'Nascer do sol em ' + Math.ceil((B.sunrise - h + 24) % 24)) + ' h'; $('ckW').textContent = w; $('ckW').style.color = st.st === 2 ? 'var(--crit)' : st.st === 1 ? 'var(--warn)' : '';
@@ -3209,7 +3463,7 @@ var UI = (function () {
     $('pause').hidden = !paused || !!modalKind; $('bNet').className = W.overlayOn ? 'on' : ''; $('bChron').innerHTML = 'Crônica' + (chronNew ? '<i class="dot"></i>' : '');
     // objetivos
     var ob = Sim.objectives(s), todo = ob.filter(function (o) { return !o.done; }).slice(0, 1), rq = Sim.requirements(s), nok = rq.filter(function (q) { return q.ok; }).length;
-    var html = '<h3>' + (s.won ? 'Capítulo I concluído' : 'Próximo passo') + '</h3>' + (todo.length ? todo.map(function (o) { return '<div class="obj"><i></i><span>' + esc(o.text) + '</span></div>'; }).join('') : '<div class="obj done"><i></i><span>A base é de vocês. Continuem construindo.</span></div>') +
+    var html = '<h3>Próximo passo</h3>' + (todo.length ? todo.map(function (o) { return '<div class="obj"><i></i><span>' + esc(o.text) + '</span></div>'; }).join('') : '<div class="obj done"><i></i><span>A base é de vocês. Continuem construindo.</span></div>') +
       '<button id="era" data-act="win" data-a="civ" style="text-align:left">Era <b>' + D.eras[s.era - 1].n + ' — ' + D.eras[s.era - 1].name + '</b>' + (s.won ? '' : ' · requisitos do Marco ' + nok + '/' + rq.length) + '</button>';
     if ($('left').dataset.h !== html) { $('left').dataset.h = html; $('left').innerHTML = html; }
     // tripulação
@@ -3230,16 +3484,19 @@ var UI = (function () {
   function bar(key, label) { return '<div class="bar" data-bar="' + key + '"><span>' + label + '</span><u><i></i></u><span class="num"></span></div>'; }
   function renderSide() { var el = $('side'), html = '', sig = '', dyn = {}, c, b, d, i;
     if (sel.c.length && !s.chars[sel.c[0]]) setSel({});
-    if (sel.c.length) { c = s.chars[sel.c[0]]; var cd = Sim.cinfo(c.id), hm = c.home != null ? Sim.byId(s, c.home) : null; sig = 'c' + sel.c.join() + (hm ? hm.id + '' + !!hm.bairro : 'x') + (c.weak > s.t) + c.alive + (c.critical > 0) + (c.act ? c.act.type : '') + c.queue.length + c.mem.join() + JSON.stringify(c.skills) + Sim.bondName(s.bond) + (c.inside != null);
+    if (sel.c.length && s.chars[sel.c[0]].veh) { c = s.chars[sel.c[0]]; var vi = D.vehicles[c.veh]; sig = 'v' + c.id + c.alive + (c.act ? c.act.type : '');
+      html = '<span class="lb">Veículo · Era ' + D.eras[vi.era - 1].n + '</span><h2>' + esc(Sim.cinfo(c.id).name) + '</h2><div class="st">' + esc(vi.desc) + '</div>' + bar('vhp', 'Blindagem') + bar('bat', 'Bateria') + '<div class="st">' + (c.act ? Sim.LABEL[c.act.type] || '' : 'Parado') + '</div><div class="st">Botão direito no mapa para mover; num depósito, para coletar. Recarrega perto da Garagem.</div>';
+      dyn.vhp = [c.needs.health, c.needs.health < 40 ? 'c' : 'g']; dyn.bat = [c.bat || 0, (c.bat || 0) < 20 ? 'c' : 'g']; }
+    else if (sel.c.length) { c = s.chars[sel.c[0]]; var cd = Sim.cinfo(c.id), hm = c.home != null ? Sim.byId(s, c.home) : null; sig = 'c' + sel.c.join() + (hm ? hm.id + '' + !!hm.bairro : 'x') + (c.weak > s.t) + c.guard + s.era + c.alive + (c.critical > 0) + (c.act ? c.act.type : '') + c.queue.length + c.mem.join() + JSON.stringify(c.skills) + Sim.bondName(s.bond) + (c.inside != null);
       html = '<div class="who">' + avatar(c.id, 'big') + '<div><span class="lb">' + cd.role + ' · ' + (cd.born ? 'nasceu no sol ' + (Math.floor((c.bornT || 0) / 24) + 1) : cd.age + ' anos') + (sel.c.length > 1 ? ' · ' + sel.c.length + ' selecionados' : '') + '</span><h2>' + esc(cd.name) + '</h2></div></div><p class="quote">' + (cd.quote ? '“' + esc(cd.quote) + '”' : esc(cd.why)) + '</p><div class="st ' + (c.critical > 0 || !c.alive ? 'bad' : 'ok') + '">' + charStatus(c) + (c.queue.length ? ' · ' + c.queue.length + ' na fila' : '') + '</div>' +
         NEEDS.map(function (n) { return bar(n[0], n[1]); }).join('') + '<div class="st">Casa: <b>' + (hm ? BD[hm.type].name + (hm.bairro ? ', num bairro' : '') : 'sem leito') + '</b>' + (c.weak > s.t ? ' · recém-desperto, ainda fraco' : '') + '</div><div class="st">Coesão da comunidade: <b>' + Sim.bondName(s.bond) + '</b></div>' +
         '<h3>Habilidades</h3><div class="tags">' + Object.keys(c.skills).map(function (k) { return '<span class="tag">' + D.skillNames[k] + ' <b>' + c.skills[k] + '</b></span>'; }).join('') + '</div>' +
         '<h3>Traços</h3><div class="tags">' + (cd.traits || [cd.trait]).map(function (t) { return '<span class="tag" title="' + esc(t[1]) + '"><b>' + t[0] + '</b></span>'; }).join('') + '</div>' +
         (c.mem.length ? '<h3>Memórias</h3><div class="tags">' + c.mem.map(function (m) { return '<span class="tag" title="' + esc(D.memories[m][1]) + '"><b>' + D.memories[m][0] + '</b></span>'; }).join('') + '</div>' : '') +
-        (c.alive && c.critical <= 0 ? '<div class="btns"><button class="bt" data-act="co" data-a="sleep">Dormir</button><button class="bt" data-act="co" data-a="eat">Comer</button><button class="bt" data-act="co" data-a="drink">Beber</button><button class="bt" data-act="co" data-a="talk">Conversar</button><button class="bt" data-act="co" data-a="contemplate">Olhar o horizonte</button><button class="bt" data-act="co" data-a="stop">Parar</button><button class="bt" data-act="focus">Centralizar</button></div><p>Botão direito no terreno, num depósito ou numa construção dá a ordem. Shift põe na fila.' + (D.chars[c.id] ? '' : ' Sem ordens, os colonos constroem, coletam e cuidam da base sozinhos.') + '</p>' : '');
+        (c.guard ? '<div class="st ok">Guarda · ' + D.weapons[c.guard].short + '</div>' : '') + (c.alive && c.critical <= 0 && s.era >= 2 && Sim.ofType(s, 'quartel', true).length ? '<div class="btns"><button class="bt' + (c.guard ? '' : ' pri') + '" data-act="arm">' + (c.guard ? 'Desarmar' : 'Armar (Guarda)') + '</button></div>' : '') + (c.alive && c.critical <= 0 ? '<div class="btns"><button class="bt" data-act="co" data-a="sleep">Dormir</button><button class="bt" data-act="co" data-a="eat">Comer</button><button class="bt" data-act="co" data-a="drink">Beber</button><button class="bt" data-act="co" data-a="talk">Conversar</button><button class="bt" data-act="co" data-a="contemplate">Olhar o horizonte</button><button class="bt" data-act="co" data-a="stop">Parar</button><button class="bt" data-act="focus">Centralizar</button></div><p>Botão direito no terreno, num depósito ou numa construção dá a ordem. Shift põe na fila.' + (D.chars[c.id] ? '' : ' Sem ordens, os colonos constroem, coletam e cuidam da base sozinhos.') + '</p>' : '');
       NEEDS.forEach(function (n) { var v = c.needs[n[0]], shown = n[2] === 1 ? 100 - v : v; dyn[n[0]] = [shown, n[2] === 2 ? (v > 70 ? 'c' : v > 45 ? 'w' : 'g') : (shown < 22 ? 'c' : shown < 45 ? 'w' : n[0] === 'health' || n[0] === 'morale' ? 'g' : '')]; });
     } else if (sel.b != null && (b = Sim.byId(s, sel.b))) { d = BD[b.type]; var pl = b.plots ? b.plots.map(function (p) { return !p ? '0' : p.order ? 'o' : p.g >= 1 ? 'r' : 'g'; }).join('') : '';
-      sig = 'b' + b.id + Sim.lvl(b) + (b.up != null) + Sim.canUpgrade(s, b).ok + (b.gest ? 1 : 0) + (s.ark.wake ? s.ark.wake.id : '') + s.ark.st + Sim.pop(s) + Sim.beds(s) + !!b.bairro + b.built + b.on + b.why + pl + b.off + (b.hp < 95) + (b.dust > 0.08) + (demo === b.id) + s.flags.unloaded + s.flags.inspected + (b.idle ? 1 : 0);
+      sig = 'b' + b.id + (b.fab ? 'f' : '') + JSON.stringify(s.arms) + s.al.nights + Sim.lvl(b) + (b.up != null) + Sim.canUpgrade(s, b).ok + (b.gest ? 1 : 0) + (s.ark.wake ? s.ark.wake.id : '') + s.ark.st + Sim.pop(s) + Sim.beds(s) + !!b.bairro + b.built + b.on + b.why + pl + b.off + (b.hp < 95) + (b.dust > 0.08) + (demo === b.id) + s.flags.unloaded + s.flags.inspected + (b.idle ? 1 : 0);
       html = '<span class="lb">' + (d.cat || 'Nave') + (b.built && b.type !== 'lander' ? ' · nível ' + Sim.lvl(b) : '') + '</span><h2>' + d.name + '</h2><div class="st ' + (!b.built ? 'mid' : b.on ? 'ok' : 'bad') + '">' + (!b.built ? 'Em obra' : b.on ? (b.idle ? 'Ligado, ocioso' : 'Funcionando') : 'Parado: ' + b.why) + '</div><p>' + d.desc + '</p>';
       var info = []; if (d.use) info.push('Consumo ' + d.use + '/h'); if (d.gen) info.push('Pico ' + d.gen + '/h'); if (d.cap) info.push('Guarda ' + d.cap); if (d.out) for (i in d.out) info.push('Produz ' + d.out[i] + ' ' + ({ o2: 'O₂', ice: 'gelo' })[i] + '/h'); if (d.store) for (i in d.store) info.push('+' + d.store[i] + ' de ' + ({ o2: 'O₂', water: 'água', mat: 'materiais' })[i]);
       if (info.length) html += '<div class="tags">' + info.map(function (t) { return '<span class="tag"><b>' + t + '</b></span>'; }).join('') + '</div>';
@@ -3256,6 +3513,13 @@ var UI = (function () {
       if (b.type === 'pad') html += '<div class="st">' + (s.ark.st === 2 ? 'A ' + D.lore.ark + ' está pousada aqui. ' + Sim.sleepers(s).length + ' em criogenia.' : 'Aguardando a ' + D.lore.ark + '.') + '</div>';
       if (b.type === 'cryo' && b.built) { if (s.ark.wake) { html += bar('wake', 'Despertando') + '<div class="st">' + esc(Sim.cinfo(s.ark.wake.id).name) + '</div>'; dyn.wake = [s.ark.wake.t / B.wakeHours * 100, 'g']; } else html += '<div class="st">' + (s.ark.st !== 2 ? 'Aguardando a ' + D.lore.ark + '.' : Sim.sleepers(s).length ? (Sim.freeBeds(s) > 0 ? 'Pronta para o próximo despertar.' : 'Sem leito livre: construa casas.') : 'Todos os colonos já despertaram.') + '</div>'; }
       if (b.type === 'berco' && b.built) { if (b.gest) { html += bar('gest', 'Gestação'); dyn.gest = [b.gest * 100, 'g']; } else html += '<div class="st">' + (Sim.sleepers(s).length || s.ark.st !== 2 ? 'Espera todos os colonos despertarem.' : Sim.freeBeds(s) > 0 ? 'Aguardando comida e água de sobra.' : 'Sem leito livre: mais casas, mais gente.') + '</div>'; }
+      if (b.type === 'arsenal' && b.built) { html += '<div class="st">Munição: <b data-txt="am"></b> (sai sozinha com metal e componentes)</div><div class="st">Estoque: ' + (Object.keys(s.arms).filter(function (k) { return s.arms[k] > 0; }).map(function (k) { return s.arms[k] + '× ' + D.weapons[k].short; }).join(', ') || 'nenhuma arma') + '</div>'; dyn.am = Math.floor(s.res.ammo);
+        if (b.fab) { html += bar('fab', 'Fabricando ' + D.weapons[b.fab.w].short); dyn.fab = [b.fab.t / 3 * 100, 'g']; }
+        html += '<h3>Encomendar arma</h3><div class="btns">' + Object.keys(D.weapons).map(function (k) { var w = D.weapons[k], lock = w.era > s.era; return '<button class="bt" data-act="fab" data-a="w" data-b="' + k + '" title="' + esc(w.name + ' — ' + w.desc + (lock ? '' : ' Custo: ' + Sim.costText(w.cost))) + '"' + (lock || b.fab ? ' disabled' : '') + '>' + w.short + (lock ? ' · Era ' + D.eras[w.era - 1].n : '') + '</button>'; }).join('') + '</div>'; }
+      if (b.type === 'garagem' && b.built) { if (b.fab) { html += bar('fab', 'Fabricando ' + D.vehicles[b.fab.v].short); dyn.fab = [b.fab.t / D.vehicles[b.fab.v].hours * 100, 'g']; }
+        html += '<div class="st">Veículos perto da Garagem recarregam a bateria e são consertados.</div><h3>Fabricar veículo</h3><div class="btns">' + Object.keys(D.vehicles).map(function (k) { var v = D.vehicles[k]; return '<button class="bt" data-act="fab" data-a="v" data-b="' + k + '" title="' + esc(v.desc + ' Custo: ' + Sim.costText(v.cost)) + '"' + (b.fab ? ' disabled' : '') + '>' + v.short + '</button>'; }).join('') + '</div>'; }
+      if (b.type === 'quartel' && b.built) { var gl = []; for (i in s.chars) if (s.chars[i].alive && s.chars[i].guard) gl.push(Sim.cinfo(i).short + ' (' + D.weapons[s.chars[i].guard].short + ')'); html += '<div class="st">Guarda: <b>' + (gl.length ? esc(gl.join(', ')) : 'ninguém ainda') + '</b></div><div class="st">Para armar alguém: selecione o colono e use Armar no painel dele. Guardas trabalham normalmente e só lutam quando há ataque.</div>' + (s.al.st >= 1 ? '<div class="st">Noites de ataque resistidas: <b>' + s.al.nights + '</b> · criaturas abatidas: <b>' + s.al.kills + '</b></div>' : ''); }
+      if (b.type === 'vigia' && b.built) html += '<div class="st">' + (s.res.ammo > 0 ? 'Vigiando. Atira sozinha num raio de 10 m.' : 'Sem munição: o Arsenal precisa fabricar.') + '</div>';
       if (b.type === 'escola' && b.built) html += '<div class="st">' + (b.on ? 'Aulas em andamento: todos aprendem mais rápido.' : 'Sem aulas.') + '</div>';
       if (b.type === 'pad' || b.type === 'cryo' || b.type === 'berco') html += '<div class="btns"><button class="bt" data-act="win" data-a="ark">Ver colonos</button></div>';
       var bt = ''; if (!b.built) bt += '<button class="bt pri" data-act="bo" data-a="build">Mandar construir</button>';
@@ -3342,6 +3606,7 @@ var UI = (function () {
       case 'arrival': playArrival(c); break;
       case 'firstAwake': playCut(focusCut({ x: c.x, z: c.z, dist: 14, pitch: 0.4, orbit: 0.04, music: 14, title: 'O Primeiro Despertar', lines: [chronText('firstAwake'), 'Os despertos trabalham por conta própria: constroem juntos, coletam e cuidam da base.'] })); break;
       case 'chapter2': playCut(focusCut({ x: C0, z: C0 + 2, dist: 52, pitch: 0.42, orbit: 0.05, music: 18, title: D.lore.chapter2, lines: [chronText('awake6'), 'Três casas vizinhas formam um bairro. Com seis despertos, o Berço pode ser erguido.'] })); break;
+      case 'signal': playCut(focusCut({ x: s.al.site.x, z: s.al.site.z, dist: 28, pitch: 0.3, orbit: 0.05, duck: true, music: 18, title: 'Era II — Sinais', lines: [chronText('sinal'), 'Algo esperou muito tempo debaixo do gelo. Agora sabe que estamos aqui. Construam o Quartel.'] })); break;
       case 'firstBorn': playCut(focusCut({ x: c.x, z: c.z, dist: 16, pitch: 0.36, orbit: 0.04, duck: true, music: 18, title: 'Nascido em Marte', lines: [chronText('firstBorn'), 'A primeira planta foi esperança. A primeira pessoa é futuro.'] })); break;
       case 'defeat': playCut({ dur: 8, steps: [{ t: 0, f: function () { black(1); } }, { t: 2.4, f: function () { cutTitle('O silêncio voltou a Marte', date()); } }], end: function () { openWin('defeat'); } }); break;
       case 'intro': playIntro(); break; } }
@@ -3393,6 +3658,8 @@ var UI = (function () {
       case 'bo': b = Sim.byId(s, sel.b); if (!b) break; c = bestChar(d.a === 'research' || d.a === 'build' || d.a === 'repair' || d.a === 'harvest' ? 'helena' : 'elias'); var o = { type: d.a, kind: 'b', id: b.id }; if (d.b != null) o.plot = +d.b; doOrder(c, o); break;
       case 'plant': r = Sim.plant(s, sel.b, +d.a, d.b); toast(r.msg); sfx(r.ok ? 'ok' : 'warn'); break;
       case 'toggle': b = Sim.byId(s, sel.b); if (b) b.off = !b.off; break;
+      case 'fab': r = Sim.orderItem(s, sel.b, d.a, d.b); toast(r.msg); sfx(r.ok ? 'ok' : 'warn'); break;
+      case 'arm': r = Sim.arm(s, sel.c[0]); toast(r.msg); sfx(r.ok ? 'ok' : 'warn'); break;
       case 'upgrade': r = Sim.upgrade(s, sel.b); toast(r.msg); sfx(r.ok ? 'ok' : 'warn'); break;
       case 'copy': copyB(sel.b); break;
       case 'shift': s.nightShift = !s.nightShift; toast(s.nightShift ? 'Turno da noite ligado: metade dos colonos trabalha à noite' : 'Turno da noite desligado: todos descansam à noite'); refreshModal(); break;
@@ -3414,7 +3681,7 @@ var UI = (function () {
     var tip = $('tip'), rc = $('app').getBoundingClientRect(); tip.hidden = false; tip.textContent = r.reason; tip.className = 'pn ' + (r.ok ? 'ok' : 'bad'); tip.style.left = Math.min(px - rc.left, rc.width - 260) + 'px'; tip.style.top = (py - rc.top) + 'px'; return { t: t, r: r }; }
   function clickAt(px, py, right, shift, touch) { if (mode !== 'play') return; var p;
     if (placing) { if (right) { setPlacing(null); return; } var h = hoverPlace(px, py); if (!h) return; if (!h.r.ok) { toast(h.r.reason); sfx('warn'); return; } var type = placing, res = Sim.place(s, type, h.t.x, h.t.z);
-      if (res.ok) { if (!(shift || type === 'solar' || type === 'corridor' || type === 'poste' || type === 'casa')) setPlacing(null); else hoverPlace(px, py); } return; }
+      if (res.ok) { if (!(shift || type === 'solar' || type === 'corridor' || type === 'poste' || type === 'casa' || type === 'estrada' || type === 'muro' || type === 'bastiao')) setPlacing(null); else hoverPlace(px, py); } return; }
     p = W.pick(px, py, s); if (!p) return;
     var orderNow = right || (touch && sel.c.length && p.kind !== 'c');
     if (orderNow) { if (!sel.c.length) { if (p.kind === 'b' && right) { copyB(p.id); return; } toast('Selecione alguém primeiro'); return; } sel.c.forEach(function (id, i) { if (!s.chars[id]) return; var tg = { kind: p.kind, id: p.id, x: p.x + (i % 4) * 0.9, z: p.z + Math.floor(i / 4) * 0.9 }; if (p.kind === 'c' && p.id === id) return; doOrder(s.chars[id], tg, shift); }); return; }
@@ -3458,7 +3725,7 @@ var UI = (function () {
   function refreshMenu() { var sv = latest(); $('mCont').disabled = !sv; $('menuNote').textContent = sv ? 'Missão salva no sol ' + sv.sol + '.' : 'Nenhuma missão salva neste navegador.'; }
   function drain() { var out = s.rt.out; if (!out.length) return; var list = out.slice(); out.length = 0; list.forEach(function (o) {
       if (o.type === 'alert') pushAlert(o); else if (o.type === 'sound') sfx(o.id); else if (o.type === 'dialogue') o.lines.forEach(function (l) { subsQ.push(l); }); else if (o.type === 'scene') scenes.push(o);
-      else if (o.type === 'event') { openWin('event', o.id); sfx('alarm'); } else if (o.type === 'chron') chronNew = true; else if (o.type === 'pop') crewSig = ''; else if (o.type === 'shake') W.shake = 0.6; else if (o.type === 'newSol') { save('auto'); toast('Sol ' + Sim.sol(s) + '. Missão salva'); } }); }
+      else if (o.type === 'event') { openWin('event', o.id); sfx('alarm'); } else if (o.type === 'chron') chronNew = true; else if (o.type === 'pop') crewSig = ''; else if (o.type === 'shake') W.shake = 0.6; else if (o.type === 'raid') { document.body.classList.toggle('raid', !!o.on); crewSig = ''; } else if (o.type === 'newSol') { save('auto'); toast('Sol ' + Sim.sol(s) + '. Missão salva'); } }); }
   function frame(ts) { requestAnimationFrame(frame); var dt = Math.min(0.1, (ts - last) / 1000 || 0); last = ts;
     try {
       if (mode === 'menu') { W.cam.yaw += dt * 0.025; }

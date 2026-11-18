@@ -12,7 +12,7 @@ O Genesis Mars é um app instalável (PWA). Com o GitHub Pages ligado, abra `htt
 - **Android (Chrome):** menu ⋮ → **Instalar app**.
 - **iPhone e iPad (Safari):** Compartilhar → **Adicionar à Tela de Início**.
 
-Depois de instalado, o jogo abre mesmo sem internet. Para mandar uma atualização aos jogadores, mude a versão em `sw.js` (`genesis-mars-v6.0`) a cada publicação.
+Depois de instalado, o jogo abre mesmo sem internet. Para mandar uma atualização aos jogadores, mude a versão em `sw.js` (`genesis-mars-v7.0`) a cada publicação.
 
 ## Jogar
 
@@ -54,6 +54,12 @@ node test.js         # tem de terminar com "won true" e nenhuma morte
 - Clique seleciona; arrastar seleciona vários; botão direito dá a ordem.
 - W A S D ou as setas movem a câmera, Q e E giram, a roda do mouse dá o zoom.
 - Espaço pausa; 1, 2 e 3 mudam a velocidade; C constrói outro igual ao prédio selecionado; N liga o modo Redes.
+
+## Era II — Sinais
+
+Depois do Marco, a antena capta um sinal vindo do gelo ao norte. Começam os ataques noturnos, que crescem a cada noite. Defesa: Quartel (botão Armar no painel do colono), Arsenal (munição automática e armas sob encomenda), Garagem (Explorador, Rover e Resgate), Torre de vigia, Muro de regolito (níveis 1 a 5), Bastião de tiro (guarda posicionado atira mais longe e sofre menos dano) e Estradas, que deixam o andar 40% mais rápido e mudam de visual a cada Era. O Posto avançado empurra a fronteira até a estrutura.
+
+![Defesa na Era II](docs/era2.png)
 
 ## Música
 

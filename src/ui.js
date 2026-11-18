@@ -80,7 +80,7 @@ var UI = (function () {
     chip('o2', r0(r.o2) + ' / ' + r0(cp.o2), 'dura ' + (alive ? (r.o2 / (alive * 10)).toFixed(1) : '0') + ' sóis parado', r.o2 < alive * 20, r.o2 < alive * 10);
     chip('water', r0(r.water) + ' / ' + r0(cp.water), 'gelo ' + r0(r.ice), r.water < 12, r.water < 4);
     chip('food', r0(r.food) + ' / ' + r0(cp.food), 'sementes ' + r0(r.seeds), r.food < 8, r.food < 3);
-    chip('metal', r0(r.metal), 'limite ' + r0(cp.mat), r.metal >= cp.mat, false); chip('comp', r0(r.comp), '', false, false); chip('reg', r0(r.reg), '', r.reg >= cp.mat, false); chip('research', r.research.toFixed(1), '', false, false);
+    chip('metal', r0(r.metal), 'limite ' + r0(cp.mat), r.metal >= cp.mat, false); chip('comp', r0(r.comp), '', false, false); chip('reg', r0(r.reg), '', r.reg >= cp.mat, false); chip('research', r.research.toFixed(1), '', false, false); chip('ammo', r0(r.ammo || 0), (s.al.attack ? 'ataque em andamento' : '') + ' · guardas ' + Sim.guards(s), false, s.res.ammo < 10 && s.era >= 2); $('c_ammo').hidden = s.era < 2;
     var h = Sim.hour(s), st = s.storm, day = h >= B.sunrise && h < B.sunset;
     $('ckSol').textContent = 'Sol ' + Sim.sol(s) + ' · ' + D.lore.year; $('ckTime').textContent = hhmm(h) + (day ? ' · dia' : ' · noite');
     var w = st.st === 2 ? 'Tempestade de poeira' : st.st === 1 ? 'Tempestade em ' + Math.ceil(st.start - s.t) + ' h' : (day ? 'Pôr do sol em ' + Math.ceil(B.sunset - h) : 'Nascer do sol em ' + Math.ceil((B.sunrise - h + 24) % 24)) + ' h'; $('ckW').textContent = w; $('ckW').style.color = st.st === 2 ? 'var(--crit)' : st.st === 1 ? 'var(--warn)' : '';
@@ -89,7 +89,7 @@ var UI = (function () {
     $('pause').hidden = !paused || !!modalKind; $('bNet').className = W.overlayOn ? 'on' : ''; $('bChron').innerHTML = 'Crônica' + (chronNew ? '<i class="dot"></i>' : '');
     // objetivos
     var ob = Sim.objectives(s), todo = ob.filter(function (o) { return !o.done; }).slice(0, 1), rq = Sim.requirements(s), nok = rq.filter(function (q) { return q.ok; }).length;
-    var html = '<h3>' + (s.won ? 'Capítulo I concluído' : 'Próximo passo') + '</h3>' + (todo.length ? todo.map(function (o) { return '<div class="obj"><i></i><span>' + esc(o.text) + '</span></div>'; }).join('') : '<div class="obj done"><i></i><span>A base é de vocês. Continuem construindo.</span></div>') +
+    var html = '<h3>Próximo passo</h3>' + (todo.length ? todo.map(function (o) { return '<div class="obj"><i></i><span>' + esc(o.text) + '</span></div>'; }).join('') : '<div class="obj done"><i></i><span>A base é de vocês. Continuem construindo.</span></div>') +
       '<button id="era" data-act="win" data-a="civ" style="text-align:left">Era <b>' + D.eras[s.era - 1].n + ' — ' + D.eras[s.era - 1].name + '</b>' + (s.won ? '' : ' · requisitos do Marco ' + nok + '/' + rq.length) + '</button>';
     if ($('left').dataset.h !== html) { $('left').dataset.h = html; $('left').innerHTML = html; }
     // tripulação
