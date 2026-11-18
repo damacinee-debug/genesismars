@@ -12,7 +12,7 @@ O Genesis Mars é um app instalável (PWA). Com o GitHub Pages ligado, abra `htt
 - **Android (Chrome):** menu ⋮ → **Instalar app**.
 - **iPhone e iPad (Safari):** Compartilhar → **Adicionar à Tela de Início**.
 
-Depois de instalado, o jogo abre mesmo sem internet. Para mandar uma atualização aos jogadores, mude a versão em `sw.js` (`genesis-mars-v7.1`) a cada publicação.
+Depois de instalado, o jogo abre mesmo sem internet. Para mandar uma atualização aos jogadores, mude a versão em `sw.js` (`genesis-mars-v8.0`) a cada publicação.
 
 ## Jogar
 
@@ -60,6 +60,15 @@ node test.js         # tem de terminar com "won true" e nenhuma morte
 Depois do Marco, a antena capta um sinal vindo do gelo ao norte. Começam os ataques noturnos, que crescem a cada noite. Defesa: Quartel (botão Armar no painel do colono), Arsenal (munição automática e armas sob encomenda), Garagem (Explorador, Rover e Resgate), Torre de vigia, Muro de regolito (níveis 1 a 5), Bastião de tiro (guarda posicionado atira mais longe e sofre menos dano) e Estradas, que deixam o andar 40% mais rápido e mudam de visual a cada Era. O Posto avançado empurra a fronteira até a estrutura.
 
 ![Defesa na Era II](docs/era2.png)
+
+## Eras III a V
+
+- **Era III — Os Outros:** a China (Missão Xuanyuan) e a Alemanha (Consórcio Kepler) pousam perto. Diplomacia com confiança, presentes, trocas, tratados, alianças e guerra; ataques humanos quando a confiança cai. Torreta pesada e Fábrica pesada (Rover armado).
+- **Era IV — Contato:** a estrutura desperta e vêm os Colossos. Domo de escudo, Tanque pressurizado, Artilharia móvel, lança-foguetes e rifle de energia. O objetivo é destruir o núcleo da estrutura.
+- **Era V — Marte:** três finais (unido, independente, dividido), conforme a diplomacia.
+- No menu, **Começar em outra Era** abre uma base pronta na Era II, III ou IV.
+
+![Era IV](docs/era4.png)
 
 ## Música
 
