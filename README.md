@@ -12,7 +12,7 @@ O Genesis Mars é um app instalável (PWA). Com o GitHub Pages ligado, abra `htt
 - **Android (Chrome):** menu ⋮ → **Instalar app**.
 - **iPhone e iPad (Safari):** Compartilhar → **Adicionar à Tela de Início**.
 
-Depois de instalado, o jogo abre mesmo sem internet. Para mandar uma atualização aos jogadores, mude a versão em `sw.js` (`genesis-mars-v5.0`) a cada publicação.
+Depois de instalado, o jogo abre mesmo sem internet. Para mandar uma atualização aos jogadores, mude a versão em `sw.js` (`genesis-mars-v5.1`) a cada publicação.
 
 ## Jogar
 
@@ -54,6 +54,10 @@ node test.js         # tem de terminar com "won true" e nenhuma morte
 - Clique seleciona; arrastar seleciona vários; botão direito dá a ordem.
 - W A S D ou as setas movem a câmera, Q e E giram, a roda do mouse dá o zoom.
 - Espaço pausa; 1, 2 e 3 mudam a velocidade; C constrói outro igual ao prédio selecionado; N liga o modo Redes.
+
+## Música
+
+Trilha: **God Particle**, de Out of Flux e Danny Shields (`music/god-particle.mp3`), tocando em loop. O volume fica em Menu → Configurações → Trilha sonora. Para trocar, substitua o arquivo ou defina `window.GM_MUSIC` com outro endereço; sem arquivo, o jogo volta a uma trilha ambiente gerada por código.
 
 ## Estado
 
