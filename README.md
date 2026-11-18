@@ -12,7 +12,7 @@ O Genesis Mars é um app instalável (PWA). Com o GitHub Pages ligado, abra `htt
 - **Android (Chrome):** menu ⋮ → **Instalar app**.
 - **iPhone e iPad (Safari):** Compartilhar → **Adicionar à Tela de Início**.
 
-Depois de instalado, o jogo abre mesmo sem internet. Para mandar uma atualização aos jogadores, mude a versão em `sw.js` (`genesis-mars-v7.0`) a cada publicação.
+Depois de instalado, o jogo abre mesmo sem internet. Para mandar uma atualização aos jogadores, mude a versão em `sw.js` (`genesis-mars-v7.1`) a cada publicação.
 
 ## Jogar
 
