@@ -274,18 +274,19 @@ var Models = (function () {
   // ---------- Níveis 1–5: design moderno, arestas vivas ----------
   // Do nível 2 em diante as construções principais trocam o módulo arredondado por arquitetura angular: volumes empilhados e girados,
   // fachadas de vidro escuro, aletas laranja, filetes de luz. Cada nível é um salto de tecnologia sobre o anterior.
-  function bx(k, m, w, h, d, x, y, z, r) { k.add(m, G.rbox(w, h, d, Math.min(0.025, w * 0.1, h * 0.1, d * 0.1)), { p: [x, y, z], r: r, uv: m === 'screenOn' || m === 'winOn' || m === 'visor' ? 'keep' : undefined }); }
+  function bx(k, m, w, h, d, x, y, z, r) { k.add(m, G.rbox(w, h, d, Math.min(0.025, w * 0.1, h * 0.1, d * 0.1)), { p: [x, y, z], r: r, uv: m === 'screenOn' || m === 'winOn' || m === 'visor' || m === 'facade' ? 'keep' : undefined }); }
   function strip(k, len, ax, x, y, z, m) { var s = 0.035; bx(k, m || 'screenOn', ax === 'x' ? len : s, ax === 'y' ? len : s, ax === 'z' ? len : s, x, y, z); }
   function glassF(k, w, h, x, y, z, face) { // fachada de vidro com caixilho e montantes; face: 'z' (frente/trás) ou 'x' (lados)
     var fz = face === 'x', n = Math.max(1, Math.round(w / 0.8)), i;
-    if (fz) { bx(k, 'dark', 0.06, h + 0.1, w + 0.1, x, y, z); bx(k, 'visor', 0.07, h, w, x, y, z); for (i = 1; i < n; i++) bx(k, 'metal', 0.09, h, 0.035, x, y, z - w / 2 + i * w / n); }
-    else { bx(k, 'dark', w + 0.1, h + 0.1, 0.06, x, y, z); bx(k, 'visor', w, h, 0.07, x, y, z); for (i = 1; i < n; i++) bx(k, 'metal', 0.035, h, 0.09, x - w / 2 + i * w / n, y, z); } }
+    if (fz) { bx(k, 'paint', 0.06, h + 0.12, w + 0.12, x, y, z); bx(k, 'facade', 0.07, h, w, x, y, z); for (i = 1; i < n; i++) bx(k, 'metal', 0.09, h, 0.035, x, y, z - w / 2 + i * w / n); }
+    else { bx(k, 'metal', w + 0.12, h + 0.12, 0.06, x, y, z); bx(k, 'facade', w, h, 0.07, x, y, z); for (i = 1; i < n; i++) bx(k, 'metal', 0.035, h, 0.09, x - w / 2 + i * w / n, y, z); } }
   function vol(k, w, h, d, x, y, z, ry, opt) { // volume branco com recorte de vidro na frente, faixa escura na base e filete de luz no topo
     var c = Math.cos(ry || 0), s = Math.sin(ry || 0), g = new G.Kit(), o = opt || {};
-    bx(g, 'hull', w, h, d, 0, h / 2, 0); bx(g, 'dark', w + 0.02, 0.12, d + 0.02, 0, 0.06, 0); bx(g, 'dark', w + 0.06, 0.08, d + 0.06, 0, h + 0.04, 0);
-    glassF(g, w * (o.gw || 0.7), h * 0.55, o.gx || 0, h * 0.55, d / 2 + 0.02); if (o.back) glassF(g, w * 0.5, h * 0.45, 0, h * 0.55, -d / 2 - 0.02);
+    bx(g, 'hull', w, h, d, 0, h / 2, 0); bx(g, 'dark', w + 0.02, 0.12, d + 0.02, 0, 0.06, 0); bx(g, 'metal', w + 0.08, 0.1, d + 0.08, 0, h + 0.05, 0); bx(g, 'hull', w - 0.2, 0.06, d - 0.2, 0, h + 0.1, 0);
+    bx(g, 'metal', 0.5, 0.25, 0.4, w * 0.25, h + 0.22, -d * 0.2); bx(g, 'dark', 0.36, 0.03, 0.28, w * 0.25, h + 0.36, -d * 0.2); bx(g, 'metal', 0.25, 0.18, 0.25, -w * 0.3, h + 0.18, -d * 0.25);
+    glassF(g, w * (o.gw || 0.7) * 0.85, h * 0.4, o.gx || 0, h * 0.58, d / 2 + 0.02); if (o.back) glassF(g, w * 0.45, h * 0.35, 0, h * 0.58, -d / 2 - 0.02); glassF(g, d * 0.45, h * 0.3, w / 2 + 0.02, h * 0.6, 0, 'x');
     strip(g, w + 0.06, 'x', 0, h + 0.09, d / 2 + 0.03); if (o.fin) { bx(g, 'paint', 0.1, h + 0.2, 0.5, w / 2 + 0.05, h / 2, d / 2 - 0.3); }
-    for (var i = 1; i < 4; i++) bx(g, 'dark', 0.02, h * 0.9, 0.02, -w / 2 - 0.005, h / 2, -d / 2 + i * d / 4); // juntas dos painéis
+    for (var i = 1; i < 4; i++) { bx(g, 'dark', 0.015, h * 0.92, 0.015, -w / 2 - 0.004, h / 2, -d / 2 + i * d / 4); bx(g, 'dark', 0.015, h * 0.92, 0.015, -w / 2 + i * w / 4, h / 2, -d / 2 - 0.004); } bx(g, 'dark', w + 0.01, 0.015, 0.015, 0, h * 0.28, d / 2 + 0.004); // juntas dos painéis
     var m4 = new T.Matrix4().makeRotationY(ry || 0).setPosition(x, y, z); for (var key in g.parts) g.parts[key].forEach(function (geo) { k.add(key, geo.clone().applyMatrix4(m4), { uv: 'keep' }); }); }
   function obelisk(k, x, z, hh, o) { // marco do nível 5: obelisco de vidro escuro com filetes de luz e quadros flutuantes
     k.add('visor', G.cyl(0.18, 0.42, hh, 4), { p: [x, hh / 2 + 0.1, z], r: [0, R / 4, 0], uv: 'keep' }); k.add('dark', G.cyl(0.5, 0.55, 0.25, 4), { p: [x, 0.12, z], r: [0, R / 4, 0] });

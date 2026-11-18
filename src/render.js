@@ -109,7 +109,7 @@ var World = (function () {
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;varying vec3 vWN;uniform sampler2D uFog;uniform sampler2D uPlay;uniform float uN,uTS;float gH=0.,gR=.95,gVis=1.;\n' + G.NOISE)
         .replace('#include <map_fragment>', [
           'vec2 q=vWP.xz/uTS;float lod=length(fwidth(q));vec4 fd=texture2D(uFog,q/uN);float ins=step(0.,q.x)*step(0.,q.y)*step(q.x,uN)*step(q.y,uN);',
-          'float pl=texture2D(uPlay,q/uN).r*ins;float outA=1.-smoothstep(.3,.62,pl+(fbm(q*.35,vec2(1e4),3.)-.5)*.25);gVis=mix(.62,fd.r,ins)*(1.-outA*.45);float ice=fd.g*ins,base=fd.b*ins,trod=fd.a*ins;',
+          'float pl=texture2D(uPlay,q/uN).r*ins;float outA=1.-smoothstep(.3,.62,pl+(fbm(q*.35,vec2(1e4),3.)-.5)*.25);gVis=mix(.62,fd.r,ins)*(1.-outA*.55);float ice=fd.g*ins,base=fd.b*ins,trod=fd.a*ins;',
           '#define AA(f) (1.-smoothstep(.12,.45,lod*(f)))',
           'float n1=fbm(q*.085,vec2(1e4),5.),n2=fbm(q*.42+7.3,vec2(1e4),5.),n3=fbm(q*2.6+3.1,vec2(1e4),3.);',
           'float slope=1.-clamp(vWN.y,0.,1.);',
@@ -128,7 +128,7 @@ var World = (function () {
           'c=mix(vec3(dot(c,vec3(.3,.59,.11))),c,.82);',
           'c=mix(c,c*.78+cDark*.08,base*.55);c=mix(c,cDark*1.05,trod*.32);',
           'float iceM=smoothstep(.3,.62,ice+(n2-.5)*.45+(n3-.5)*.5);vec3 fv=vor(q*2.2,vec2(1e4));float frc=(1.-smoothstep(.0,.06,fv.z-fv.x))*AA(6.);c=mix(c,s2l(vec3(.84,.88,.93))*(.8+.3*n3)*(1.-frc*.35),iceM*.9);',
-          'vec3 hz=mix(vec3(dot(c,vec3(.3,.59,.11))),c,.45)*vec3(.82,.72,.66);c=mix(c,hz*.7,outA*.85);float edge=smoothstep(.25,.45,pl)*(1.-smoothstep(.5,.66,pl));c=mix(c,cDust*1.15,edge*.35*(.6+.4*sin(q.x*.9+q.y*.7)));',
+          'vec3 hz=mix(vec3(dot(c,vec3(.3,.59,.11))),c,.35)*vec3(.78,.7,.66);c=mix(c,hz*.5,outA*.92);float edge=smoothstep(.25,.45,pl)*(1.-smoothstep(.5,.66,pl));c=mix(c,cDust*1.15,edge*.35*(.6+.4*sin(q.x*.9+q.y*.7)));',
           'diffuseColor.rgb=c;gH=((dune*.35+rp*.06+rp2*.01)*flt+n3*.05*AA(5.)+pk*clamp(1.-sh*sh,0.,1.)*pr*1.1+(g1-.5)*.012*AA(18.)+(tM1-.5)*.08)*mix(1.,.3,base)+n2*.05;gR=mix(.96,.5,iceM)-pk*.05;'].join('\n'))
         .replace('#include <roughnessmap_fragment>', 'float roughnessFactor=gR;')
         .replace('#include <normal_fragment_maps>', 'normal=bumpN(-vViewPosition,normal,gH);')

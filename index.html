@@ -1097,7 +1097,8 @@ var DATA = {
   lore: { game: 'Genesis Mars', year: 2032, company: 'SpaceZ', ship: 'Gênesis', ark: 'Alvorada', chapter: 'Capítulo I — A Contagem', chapter2: 'Capítulo II — Os Despertos' },
 
   bal: {
-    N: 112,             // mapa N x N tiles (múltiplo de 8: o terreno é carregado em blocos de 8)
+    N: 256,             // mapa N x N tiles (múltiplo de 8: o terreno é carregado em blocos de 8)
+    zone0: 46, outpostR: 30, // raio da bacia inicial e de cada Posto avançado (em tiles)
     solSec: 480,        // segundos reais por sol na velocidade 1x
     sunrise: 6, sunset: 18,
     start: { o2: 120, water: 60, food: 30, metal: 30, comp: 10, reg: 0, seeds: 0, ice: 0, research: 0, energy: 60 },
@@ -1149,6 +1150,7 @@ var DATA = {
     lander:  { name: 'Módulo de pouso', cat: null, w: 3, h: 3, desc: 'A nave Gênesis. Abrigo provisório e reserva inicial.', use: 2, prio: 10, press: true, beds: 2 },
     solar:   { name: 'Painel solar', cat: 'Energia', w: 2, h: 2, cost: { metal: 8, comp: 3 }, t: 12, gen: 14, desc: 'Gera energia de dia. A poeira reduz a eficiência.' },
     poste:   { name: 'Poste de energia', cat: 'Energia', w: 1, h: 1, cost: { metal: 4 }, t: 6, link: 30, desc: 'Leva a energia longe: alcança 30 m. Depois de colocar um, a ferramenta continua ativa para você ir puxando a linha até onde precisar.' },
+    posto:   { name: 'Posto avançado', cat: 'Infraestrutura', w: 2, h: 2, cost: { metal: 30, comp: 12, reg: 20 }, t: 30, gen: 4, cap: 40, need: 'era2', desc: 'Empurra a fronteira: abre uma nova área de cerca de 60 m em volta dele. Tem painel e bateria próprios. Liberado na Era II.' },
     torre:   { name: 'Torre de luz', cat: 'Energia', w: 1, h: 1, cost: { metal: 8, comp: 2 }, t: 10, use: 0.5, prio: 2, desc: 'Ilumina uma área grande à noite, para enxergar e trabalhar na base.' },
     battery: { name: 'Bateria', cat: 'Energia', w: 1, h: 1, cost: { metal: 10, comp: 5 }, t: 14, cap: 130, desc: 'Guarda energia para a noite.' },
     airlock: { name: 'Câmara de descompressão', cat: 'Infraestrutura', w: 1, h: 1, cost: { metal: 12, comp: 4 }, t: 16, press: true, desc: 'Entrada e saída da área pressurizada. Comece o complexo por ela.' },
@@ -1229,6 +1231,7 @@ var DATA = {
     awake6: 'Sol {sol}. Seis despertos. A base virou um lugar com gente demais para caber numa mesa só.',
     firstHouse: 'Sol {sol}. A primeira casa de Marte ficou pronta. Tinha dois leitos e uma porta que alguém podia chamar de sua.',
     bairro: 'Sol {sol}. Três casas vizinhas, e alguém deu nome ao lugar: {what}. O primeiro bairro marciano.',
+    posto: 'Sol {sol}. Um Posto avançado acendeu na fronteira, e Marte ficou um pouco maior.',
     bairroN: 'Sol {sol}. Nasceu mais um bairro: {what}.',
     berco: 'Sol {sol}. O Berço foi ligado. Ninguém disse em voz alta o que aquilo significava.',
     firstBorn: 'Sol {sol}. {who} nasceu no Berço: a primeira pessoa de Marte. Nunca verá a Terra, e não sentirá falta.',
@@ -1366,14 +1369,15 @@ var Sim = (function () {
       var a = hsh(i, j, k), b = hsh(i + 1, j, k), c = hsh(i, j + 1, k), d = hsh(i + 1, j + 1, k); return a + (b - a) * fx + (c - a) * fz + (a - b - c + d) * fx * fz; }
     var C = N / 2, V = N + 1, h = new Float32Array(V * V), rock = new Uint8Array(N * N), steep = new Uint8Array(N * N), ice = new Uint8Array(N * N);
     var craters = [], i, x, z;
-    for (i = 0; i < 16; i++) { var a = hsh(i, 9, 3) * 6.283, r = 17 + hsh(i, 4, 5) * (i < 6 ? 14 : N / 2 - 26); craters.push({ x: C + Math.cos(a) * r, z: C + Math.sin(a) * r, r: 3.5 + hsh(i, 2, 7) * 3.5, d: 1.2 + hsh(i, 8, 1) }); }
-    var iceC = [{ x: C - 11, z: C - 10, r: 3.2 }, { x: C + 19, z: C + 15, r: 3.6 }, { x: C - 31, z: C + 27, r: 4.6 }, { x: C + 35, z: C - 29, r: 4.2 }, { x: C + 5, z: C - 41, r: 3.8 }];
+    for (i = 0; i < 48; i++) { var a = hsh(i, 9, 3) * 6.283, r = 17 + hsh(i, 4, 5) * (i < 6 ? 14 : N / 2 - 26); craters.push({ x: C + Math.cos(a) * r, z: C + Math.sin(a) * r, r: 3.5 + hsh(i, 2, 7) * 3.5, d: 1.2 + hsh(i, 8, 1) }); }
+    var iceC = [{ x: C - 11, z: C - 10, r: 3.2 }, { x: C + 19, z: C + 15, r: 3.6 }, { x: C - 31, z: C + 27, r: 4.6 }, { x: C + 35, z: C - 29, r: 4.2 }, { x: C + 5, z: C - 41, r: 3.8 }, { x: C - 68, z: C - 40, r: 7 }, { x: C + 72, z: C + 52, r: 6 }, { x: C - 20, z: C + 84, r: 8 }, { x: C + 90, z: C - 70, r: 6.5 }, { x: C - 95, z: C + 30, r: 5.5 }];
     for (z = 0; z < V; z++) for (x = 0; x < V; x++) {
       var d = Math.hypot(x - C, z - C);
       var f = vn(x / 15, z / 15, 0) + vn(x / 6, z / 6, 1) * 0.4 + vn(x / 2.4, z / 2.4, 2) * 0.1;
-      var y = (f - 0.75) * 4.2 * smooth(7, 22, d) + smooth(24, 38, d) * vn(x / 9, z / 9, 4) * 3.2 + smooth(36, 46, d) * smooth(0.56, 0.68, vn(x / 13, z / 13, 9)) * 3.6;
+      var y = (f - 0.75) * 4.2 * smooth(7, 22, d) + smooth(24, 38, d) * vn(x / 9, z / 9, 4) * 3.2 + smooth(36, 46, d) * smooth(0.56, 0.68, vn(x / 13, z / 13, 9)) * 3.6 + smooth(46, 80, d) * (vn(x / 34, z / 34, 14) - 0.4) * 7 + smooth(60, 100, d) * smooth(0.6, 0.72, vn(x / 22, z / 22, 15)) * 6;
       // pequeno cânion a leste
       var cx = x - (C + 24 + Math.sin(z / 7) * 3); if (Math.abs(cx) < 3 && z > 8 && z < N - 8) y -= (1 - Math.abs(cx) / 3) * 2.6;
+      var cz2 = z - (C - 58 + Math.sin(x / 11) * 6); if (Math.abs(cz2) < 4.5 && x > C - 110 && x < C + 40) y -= (1 - Math.abs(cz2) / 4.5) * 4; // Vale Grande, ao norte
       for (i = 0; i < craters.length; i++) { var c = craters[i], dd = Math.hypot(x - c.x, z - c.z) / c.r; if (dd < 1) y -= c.d * (1 - dd * dd); if (dd < 1.35) y += 0.4 * c.d * Math.max(0, 1 - Math.abs(dd - 1) / 0.35); }
       for (i = 0; i < iceC.length; i++) { var q = Math.hypot(x - iceC[i].x, z - iceC[i].z); y *= smooth(2, 7, q) * 0.8 + 0.2; }
       h[z * V + x] = y;
@@ -1395,7 +1399,7 @@ var Sim = (function () {
   // ---------------- ESTADO ----------------
   function newGame(seed) {
     seed = seed || 2032;
-    var s = { v: 2, seed: seed, rs: seed * 7919, t: 7, speedNote: 0, era: 1, won: false, lost: false,
+    var s = { v: 3, seed: seed, zones: [{ x: N / 2, z: N / 2, r: B.zone0, k: 1 }], rs: seed * 7919, t: 7, speedNote: 0, era: 1, won: false, lost: false,
       res: JSON.parse(JSON.stringify(B.start)), b: [], nid: 1, deps: [], chars: {},
       storm: { st: 0, start: 0, end: 0 }, stormK: 0, flags: {}, stats: { o2Made: 0, waterMade: 0, trips: 0, harvests: 0 },
       tech: {}, trad: {}, axes: { origem: 0, comunidade: 0, planeta: 0 }, bond: 45, chron: [], cd: {}, said: {}, pending: null,
@@ -1407,7 +1411,7 @@ var Sim = (function () {
     s.b.push({ id: s.nid++, type: 'lander', x: C - 1, z: C - 1, prog: 1, built: true, hp: 100, on: true, why: '', dust: 0 });
     // depósitos: alguns perto, o resto espalhado
     var spots = [['metal', 7.5, 0.6], ['reg', 7, 2.4], ['metal', 9.5, 4.0], ['reg', 9, 5.4]], i;
-    for (i = 0; i < 56; i++) spots.push([i % 2 ? 'reg' : 'metal', 13 + rnd(s) * (i < 14 ? 18 : N / 2 - 18), rnd(s) * 6.283]);
+    for (i = 0; i < 150; i++) spots.push([i % 2 ? 'reg' : 'metal', 13 + rnd(s) * (i < 30 ? 26 : N / 2 - 18), rnd(s) * 6.283]);
     for (i = 0; i < spots.length; i++) { var sp = spots[i], tries = 0;
       while (tries++ < 30) { var x = Math.floor(C + Math.cos(sp[2]) * sp[1] + (tries - 1) * (rnd(s) - 0.5)), z = Math.floor(C + Math.sin(sp[2]) * sp[1] + (tries - 1) * (rnd(s) - 0.5));
         if (x < 2 || z < 2 || x > N - 3 || z > N - 3) continue; var k = z * N + x; if (s.rt.map.rock[k] || s.rt.map.ice[k] || s.rt.occ[k]) continue;
@@ -1418,15 +1422,24 @@ var Sim = (function () {
     return s;
   }
   function attach(s) { // dados de execução, recriados ao carregar
-    s.rt = { map: genMap(s.seed), occ: new Int16Array(N * N), fog: new Uint8Array(N * N), out: [], fogDirty: true };
+    s.rt = { map: genMap(s.seed), occ: new Int16Array(N * N), fog: new Uint8Array(N * N), play: new Uint8Array(N * N), out: [], fogDirty: true }; computePlay(s);
     if (s.fogStr) for (var i = 0; i < N * N; i++) s.rt.fog[i] = s.fogStr.charCodeAt(i) === 49 ? 1 : 0;
     rebuildOcc(s);
   }
+  // Área jogável: união de bolsões de borda irregular (sem quadrado). Cresce com cada Posto avançado.
+  function zoneR(z, ang) { return z.r * (1 + 0.15 * Math.sin(3 * ang + z.k * 1.7) + 0.08 * Math.sin(7 * ang + z.k * 4.1) + 0.045 * Math.sin(13 * ang + z.k * 2.3) + 0.025 * Math.sin(23 * ang + z.k)); }
+  function computePlay(s) { var P = s.rt.play, x, z, i; P.fill(0);
+    for (i = 0; i < s.zones.length; i++) { var zn = s.zones[i], R0 = zn.r * 1.35, x0 = Math.max(0, Math.floor(zn.x - R0)), x1 = Math.min(N - 1, Math.ceil(zn.x + R0)), z0 = Math.max(0, Math.floor(zn.z - R0)), z1 = Math.min(N - 1, Math.ceil(zn.z + R0));
+      for (z = z0; z <= z1; z++) for (x = x0; x <= x1; x++) { var dx = x + 0.5 - zn.x, dz = z + 0.5 - zn.z, d = Math.hypot(dx, dz), v = Math.max(0, Math.min(1, (zoneR(zn, Math.atan2(dz, dx)) - d) / 5 + 0.5)) * 255, k = z * N + x; if (v > P[k]) P[k] = v; } }
+    for (z = 0; z < N; z++) for (x = 0; x < N; x++) if (x < 3 || z < 3 || x > N - 4 || z > N - 4) P[z * N + x] = 0;
+    s.rt.playDirty = true; }
+  function playable(s, x, z) { x = Math.floor(x); z = Math.floor(z); return x >= 0 && z >= 0 && x < N && z < N && s.rt.play[z * N + x] >= 110; }
+  function addZone(s, x, z, r) { s.zones.push({ x: x, z: z, r: r, k: s.zones.length + 1 }); computePlay(s); emit(s, { type: 'zone' }); }
   function rebuildOcc(s) { var o = s.rt.occ; o.fill(0); var i, x, z;
     for (i = 0; i < s.b.length; i++) { var b = s.b[i], d = BD[b.type]; for (z = 0; z < d.h; z++) for (x = 0; x < d.w; x++) o[(b.z + z) * N + b.x + x] = b.id; }
     for (i = 0; i < s.deps.length; i++) o[s.deps[i].z * N + s.deps[i].x] = -1; }
   function serialize(s) { var rt = s.rt, f = ''; for (var i = 0; i < N * N; i++) f += rt.fog[i] ? '1' : '0'; s.fogStr = f; delete s.rt; var j = JSON.stringify(s); s.rt = rt; s.fogStr = null; return j; }
-  function deserialize(j) { var s = JSON.parse(j); if (s.v !== 2) throw new Error('versão antiga'); attach(s); s.fogStr = null; return s; }
+  function deserialize(j) { var s = JSON.parse(j); if (s.v !== 3) throw new Error('versão antiga'); attach(s); s.fogStr = null; return s; }
 
   function emit(s, o) { s.rt.out.push(o); }
   function alertK(s, lvl, msg, key, x, z, every) { key = key || msg; if (s.cd['a:' + key] != null && s.t - s.cd['a:' + key] < (every || 8)) return; s.cd['a:' + key] = s.t; emit(s, { type: 'alert', lvl: lvl, msg: msg, x: x, z: z }); }
@@ -1486,10 +1499,10 @@ var Sim = (function () {
     if (ch) s.rt.fogDirty = true; }
 
   // ---------------- CAMINHO (A*) ----------------
-  function freeTile(s, x, z) { return x >= 0 && z >= 0 && x < N && z < N && !s.rt.map.rock[z * N + x] && !s.rt.occ[z * N + x]; }
+  function freeTile(s, x, z) { return x >= 0 && z >= 0 && x < N && z < N && !s.rt.map.rock[z * N + x] && !s.rt.occ[z * N + x] && s.rt.play[z * N + x] >= 110; }
   function ring(s, x0, z0, w, h) { for (var r = 1; r <= 3; r++) { var g = []; for (var z = z0 - r; z < z0 + h + r; z++) for (var x = x0 - r; x < x0 + w + r; x++) { if (x >= x0 && x < x0 + w && z >= z0 && z < z0 + h) continue; if (freeTile(s, x, z)) g.push(z * N + x); } if (g.length) return g; } return []; }
   function findPath(s, sx, sz, goals, tx, tz, soft) {
-    function ok(x, z) { return freeTile(s, x, z) || (soft && x >= 0 && z >= 0 && x < N && z < N && !s.rt.map.rock[z * N + x] && s.rt.occ[z * N + x] > 0); }
+    function ok(x, z) { return freeTile(s, x, z) || (soft && x >= 0 && z >= 0 && x < N && z < N && !s.rt.map.rock[z * N + x] && s.rt.occ[z * N + x] > 0 && s.rt.play[z * N + x] >= 110); }
     var start = sz * N + sx, gs = {}, i; for (i = 0; i < goals.length; i++) gs[goals[i]] = 1; if (!goals.length) return null; if (gs[start]) return [];
     var g = new Float32Array(N * N).fill(1e9), from = new Int32Array(N * N).fill(-1), closed = new Uint8Array(N * N), heap = [];
     function push(f, k) { heap.push([f, k]); var i = heap.length - 1; while (i > 0) { var p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; var t = heap[p]; heap[p] = heap[i]; heap[i] = t; i = p; } }
@@ -1536,10 +1549,12 @@ var Sim = (function () {
     if (d.unique && ofType(s, type).length) return { ok: false, reason: 'Só pode existir uma construção deste tipo' };
     if (d.need === 'antenna' && !ofType(s, 'antenna', true).length) return { ok: false, reason: 'Precisa de uma antena pronta para guiar o pouso' };
     if (d.need === 'awake6' && s.ark.awake < 6) return { ok: false, reason: 'Precisa de 6 colonos despertos para operar' };
+    if (d.need === 'era2' && !s.won) return { ok: false, reason: 'Liberado na Era II: erga um Marco primeiro' };
     if (d.need === 'berco' && !ofType(s, 'berco', true).length) return { ok: false, reason: 'Construa o Berço primeiro' };
     var allIce = true;
     for (j = 0; j < d.h; j++) for (i = 0; i < d.w; i++) { k = (z + j) * N + x + i;
       if (!s.rt.fog[k]) return { ok: false, reason: 'Área ainda não explorada' };
+      if (s.rt.play[k] < 110) return { ok: false, reason: 'Fora da área explorável: avance a fronteira com um Posto avançado' };
       if (m.rock[k]) return { ok: false, reason: 'Bloqueado por rocha' };
       if (s.rt.occ[k]) return { ok: false, reason: 'Local ocupado' };
       if (m.steep[k]) return { ok: false, reason: 'Terreno inclinado demais' };
@@ -1561,7 +1576,7 @@ var Sim = (function () {
   // Uma veia esgotada nunca deixa o mapa vazio: a varredura geológica acha outra do mesmo tipo, mais longe da base
   function newVein(s, res, ox, oz) { var C = N / 2, tries = 0;
     while (tries++ < 80) { var a = rnd(s) * 6.283, r = 8 + rnd(s) * 14 + tries * 0.2, x = Math.floor(ox + Math.cos(a) * r), z = Math.floor(oz + Math.sin(a) * r);
-      if (x < 3 || z < 3 || x > N - 4 || z > N - 4 || Math.hypot(x - C, z - C) < 8) continue; var k = z * N + x; if (s.rt.map.rock[k] || s.rt.map.ice[k] || s.rt.occ[k]) continue;
+      if (x < 3 || z < 3 || x > N - 4 || z > N - 4 || Math.hypot(x - C, z - C) < 8) continue; var k = z * N + x; if (s.rt.map.rock[k] || s.rt.map.ice[k] || s.rt.occ[k] || s.rt.play[k] < 140) continue;
       var d = { id: s.nid++, res: res, x: x, z: z, left: (res === 'metal' ? 60 : 75) * (Math.hypot(x - C, z - C) > 30 ? 1.6 : 1) }; s.deps.push(d); rebuildOcc(s); reveal(s, { x: x + 0.5, z: z + 0.5, id: 'elias' }, 2);
       alertK(s, 'info', 'Varredura geológica: nova veia de ' + (res === 'metal' ? 'metal' : 'regolito') + ' encontrada', 'vein' + d.id, x, z, 0); return d; } return null; }
   function netAll(s) { // alcance da rede incluindo obras (para validar posição)
@@ -1575,7 +1590,7 @@ var Sim = (function () {
   function demolish(s, id) { var b = byId(s, id); if (!b || b.type === 'lander' || BD[b.type].landmark || b.id === s.ark.pad) return false; var d = BD[b.type];
     for (var k in d.cost) addRes(s, k, d.cost[k] * (b.built ? 0.5 : 1));
     s.b.splice(s.b.indexOf(b), 1); rebuildOcc(s); for (var c in s.chars) if (s.chars[c].act && s.chars[c].act.id === id) clearAct(s.chars[c]); return true; }
-  function finishBuilding(s, b, c) { var d = BD[b.type]; b.built = true; b.prog = 1; b.why = '';
+  function finishBuilding(s, b, c) { var d = BD[b.type]; b.built = true; b.prog = 1; b.why = ''; if (b.type === 'posto') { var cb = center(b); addZone(s, cb.x, cb.z, B.outpostR); alertK(s, 'info', 'Posto avançado pronto: a fronteira avançou', 'posto' + b.id, b.x, b.z, 0); chron(s, 'posto', {}); }
     if (b.type === 'greenhouse') b.plots = [null, null, null, null];
     if (b.type === 'solar' && !s.flags.firstPanel) { s.flags.firstPanel = true; chron(s, 'firstPanel', { who: cname(c.id) }); }
     if (b.type === 'casa' && !s.flags.firstHouse) { s.flags.firstHouse = true; chron(s, 'firstHouse', {}); }
@@ -1773,7 +1788,7 @@ var Sim = (function () {
     if (c.hero) return null;
     if (c.job === 'sci') for (i = 0; i < s.b.length; i++) { b = s.b[i]; if (b.type === 'lab' && b.on && !jobTaken(s, c, 'research', b.id)) return { type: 'research', kind: 'b', id: b.id }; }
     if (!storm && workTime(s, c) && c.needs.o2 > 45 && !(c.weak > s.t)) { var cp = caps(s), T = Math.min(cp.mat * 0.8, 170), want = s.res.metal <= s.res.reg ? 'metal' : 'reg'; if (s.res[want] >= T) return null;
-      for (var pass = 0; pass < 2 && !best; pass++) { for (i = 0; i < s.deps.length; i++) { var dp = s.deps[i]; if (dp.res !== want || !s.rt.fog[dp.z * N + dp.x] || workers(s, c, 'gather', dp.id) >= 2) continue; d = Math.hypot(dp.x - c.x, dp.z - c.z); if (d < bd) { bd = d; best = dp; } } if (!best) { want = want === 'metal' ? 'reg' : 'metal'; if (s.res[want] >= T) break; } }
+      for (var pass = 0; pass < 2 && !best; pass++) { for (i = 0; i < s.deps.length; i++) { var dp = s.deps[i]; if (dp.res !== want || !s.rt.fog[dp.z * N + dp.x] || s.rt.play[dp.z * N + dp.x] < 110 || workers(s, c, 'gather', dp.id) >= 2) continue; d = Math.hypot(dp.x - c.x, dp.z - c.z); if (d < bd) { bd = d; best = dp; } } if (!best) { want = want === 'metal' ? 'reg' : 'metal'; if (s.res[want] >= T) break; } }
       if (best) return { type: 'gather', kind: 'd', id: best.id }; }
     return null; }
   function sleepTime(s, c) { var hr = hour(s); return s.nightShift && c.shift ? hr >= 9 && hr < 17 : hr >= 21 || hr < 5; }
@@ -1969,7 +1984,7 @@ var Sim = (function () {
 
   return { newGame: newGame, tick: tick, canPlace: canPlace, place: place, demolish: demolish, order: order, plant: plant, buyTech: buyTech, choose: choose,
     serialize: serialize, deserialize: deserialize, requirements: requirements, readiness: readiness, cinfo: cinfo, pop: pop, beds: beds, freeBeds: freeBeds, wakeNext: wakeNext, sleepers: sleepers, reqOK: reqOK, objectives: objectives, signal: signal, caps: caps, byId: byId, depById: depById,
-    upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
+    playable: playable, addZone: addZone, zoneR: zoneR, upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
 })();
 if (typeof module !== 'undefined') module.exports = Sim;
 
@@ -2119,6 +2134,7 @@ var Gfx = (function () {
     M.ledO = std({ color: 0x1a0d05, emissive: 0xffa040, emissiveIntensity: 3 });
     M.grow = std({ color: 0x200a1a, emissive: 0xff5ad0, emissiveIntensity: 2.4 });
     M.soil = std({ color: 0x3a2418, roughness: 1 });
+    M.facade = std({ color: 0x3d5468, metalness: 0.7, roughness: 0.16, envMapIntensity: 1.8 }); // vidro de fachada azulado, reflexivo
     M.leaf = std({ color: 0x4f9a3c, roughness: 0.6, side: T.DoubleSide }); M.leaf2 = std({ color: 0x7cc24a, roughness: 0.55, side: T.DoubleSide });
     M.ice = std({ color: 0xe8f2fa, roughness: 0.25, metalness: 0, envMapIntensity: 1.5 });
     M.flag = std({ color: 0xff6a1a, roughness: 0.7, side: T.DoubleSide });
@@ -2396,6 +2412,14 @@ var Models = (function () {
     for (var i = 0; i < 3; i++) k.add('metal', G.cyl(0.24, 0.24, 0.7, 16), { p: [1.35 - i * 0.2, 0.35, 0.2 + i * 0.05], uv: 'scale', su: 2, sv: 1 }); return 2.1; };
 
   function dishGeo(Rd, depth) { var pts = [], i, n = 10; for (i = 0; i <= n; i++) { var r = i / n * Rd; pts.push([r, r * r / (Rd * Rd) * depth]); } for (i = n; i >= 0; i--) { r = i / n * Rd * 0.98; pts.push([r, r * r / (Rd * Rd) * depth - 0.07]); } return G.lathe(pts, 32); }
+  B.posto = function (k, o) { // Posto avançado: módulo angular com farol, mastro de sinal e painel próprio; marca a nova fronteira
+    k.add('dark', G.cyl(1.9, 2.0, 0.25, 6), { p: [0, 0.12, 0] }); k.add('screenOn', G.cyl(1.95, 1.95, 0.03, 6), { p: [0, 0.26, 0], uv: 'keep' });
+    vol(k, 2.0, 1.6, 1.6, -0.3, 0.25, 0.1, 0.2, { gw: 0.8, fin: true });
+    bx(k, 'dark', 0.22, 4.6, 0.22, 1.1, 2.55, -0.8); for (var i = 0; i < 4; i++) bx(k, 'metal', 0.6 - i * 0.1, 0.04, 0.04, 1.1, 2.0 + i * 0.8, -0.8); bx(k, 'hull', 0.5, 0.9, 0.06, 1.1, 4.3, -0.62, [0, 0, 0]); bx(k, 'visor', 0.4, 0.75, 0.03, 1.1, 4.3, -0.58);
+    k.add('dark', G.cyl(0.18, 0.24, 0.3, 6), { p: [1.1, 4.95, -0.8] }); k.add('winOn', G.cyl(0.14, 0.14, 0.18, 6), { p: [1.1, 5.18, -0.8], uv: 'keep' }); led(k, 'ledR', 1.1, 5.35, -0.8);
+    k.add('solar', G.rbox(1.4, 0.04, 0.9, 0.01), { p: [-0.4, 2.15, 0.1], r: [0.35, 0.2, 0], d: 1.25 }); k.add('metal', G.rod([-1.4, 0.25, 1.2], [-1.4, 2.6, 1.2], 0.02)); k.add('flag', G.rbox(0.6, 0.38, 0.01, 0.005), { p: [-1.1, 2.4, 1.2], uv: 'keep' });
+    o.lights = [[1.1, 5.1, -0.8, 0xfff1dc, 30, 1.8], [0, 1.4, 1.2]]; o.leds = true; return 5.5; };
+
   B.torre = function (k, o) { // Torre de luz: mastro alto com refletores voltados para baixo
     k.add('dark', G.rbox(0.9, 0.2, 0.9, 0.05), { p: [0, 0.1, 0] }); k.add('concrete', G.rbox(0.5, 0.35, 0.5, 0.06), { p: [0, 0.35, 0] });
     G.truss(k, 'dark', 5.0, 0.42, 6, 0.025, 0, 0, 0.5); k.add('metal', G.rbox(1.2, 0.12, 0.5, 0.04), { p: [0, 5.55, 0] });
@@ -2509,69 +2533,115 @@ var Models = (function () {
       for (var key in geo) { var m = new T.Mesh(geo[key], M[key]); m.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); m.scale.setScalar(s); m.rotation.y = i; m.castShadow = true; g.add(m); } } return g; }
 
   // ---------- montagem final de uma construção ----------
-  // Níveis 1–5. Cada nível muda a estrutura: 2 Reforçada (base de concreto, equipamentos), 3 Avançada (módulo extra, luz de contorno),
-  // 4 Tecnológica (sensores, radiadores, passarela), 5 Monumental (torre com anel de luz). Estufa, casa, painel, habitat, bateria e oficina têm formas próprias.
-  function glowBand(k, W, D, y) { k.add('screenOn', G.rbox(W, 0.035, 0.035, 0.015), { p: [0, y, D / 2], uv: 'keep' }); k.add('screenOn', G.rbox(W, 0.035, 0.035, 0.015), { p: [0, y, -D / 2], uv: 'keep' }); k.add('screenOn', G.rbox(0.035, 0.035, D, 0.015), { p: [W / 2, y, 0], uv: 'keep' }); k.add('screenOn', G.rbox(0.035, 0.035, D, 0.015), { p: [-W / 2, y, 0], uv: 'keep' }); }
-  function spire(k, x, z, y0, hh, o) { G.truss(k, 'dark', hh, 0.34, Math.max(3, Math.round(hh / 0.9)), 0.022, x, z, y0); k.add('metal', G.cyl(0.05, 0.02, 0.8, 8), { p: [x, y0 + hh + 0.4, z] });
-    k.add('screenOn', G.torus(0.42, 0.035, 6, 28), { p: [x, y0 + hh - 0.2, z], r: [R / 2, 0, 0], uv: 'keep' }); k.add('screenOn', G.torus(0.6, 0.025, 6, 32), { p: [x, y0 + hh * 0.6, z], r: [R / 2, 0, 0], uv: 'keep' }); led(k, 'ledR', x, y0 + hh + 0.82, z); o.lights.push([x, y0 + hh, z, 0x9ad8ff]); }
-  function floorMod(k, w, hgt, d, x, y, z, win) { k.add('hull', G.rbox(w, hgt, d, Math.min(0.35, hgt * 0.3), 3), { p: [x, y + hgt / 2, z], d: 2.2 }); band(k, 'paint', w + 0.04, 0.1, d + 0.04, 0.05, x, y + 0.08, z);
-    for (var i = 0; i < win; i++) { var wx = x - w / 2 + (i + 0.5) * w / win; k.add('dark', G.rbox(w / win * 0.62 + 0.08, hgt * 0.38 + 0.08, 0.06, 0.03), { p: [wx, y + hgt * 0.55, z + d / 2 + 0.01] }); k.add('winOn', G.rbox(w / win * 0.62, hgt * 0.38, 0.07, 0.02), { p: [wx, y + hgt * 0.55, z + d / 2 + 0.02], uv: 'keep' }); } }
-  var LVX = {
-    solar: function (k, o, W, D, h, lv) { var hd = o.dyn.panel, dk = new G.Kit();
-      if (lv >= 2) { dk.add('metal', G.rbox(3.7, 0.06, 2.6, 0.02), { p: [0, 0.32, 0] }); dk.add('solar', G.rbox(3.6, 0.05, 2.5, 0.02), { p: [0, 0.35, 0], d: 1.25 }); for (var i = -1; i <= 1; i += 2) for (var j = -1; j <= 1; j += 2) dk.add('metal', G.rod([i * 1.7, 0.02, j * 1.15], [i * 1.7, 0.32, j * 1.15], 0.025, 6)); k.add('dark', G.rbox(0.7, 0.55, 0.45, 0.08), { p: [1.3, 0.3, 1.3] }); led(k, 'ledG', 1.3, 0.62, 1.53); }
-      if (lv >= 3) { hd.position.y += 0.6; k.add('metal', G.cyl(0.14, 0.16, 0.7, 12), { p: [0, 1.95, 0] }); dk.add('screenOn', G.rbox(3.72, 0.03, 0.03, 0.01), { p: [0, 0.4, 1.31], uv: 'keep' }); dk.add('screenOn', G.rbox(3.72, 0.03, 0.03, 0.01), { p: [0, 0.4, -1.31], uv: 'keep' }); }
-      if (lv >= 4) for (var s = -1; s <= 1; s += 2) { k.add('metal', G.cyl(0.05, 0.06, 1.3, 8), { p: [s * 1.55, 0.65, -1.45] }); k.add('chrome', G.sphere(0.5, 18, 10, 0, R * 2, 0, R * 0.35), { p: [s * 1.55, 1.45, -1.45], r: [-0.6, 0, 0], uv: 'keep' }); led(k, 'ledO', s * 1.55, 1.32, -1.45); }
-      if (lv >= 5) { dk.add('metal', G.rbox(1.6, 0.06, 2.6, 0.02), { p: [2.65, 0.0, 0], r: [0, 0, -0.18] }); dk.add('solar', G.rbox(1.5, 0.05, 2.5, 0.02), { p: [2.65, 0.03, 0], r: [0, 0, -0.18], d: 1.25 }); dk.add('metal', G.rbox(1.6, 0.06, 2.6, 0.02), { p: [-2.65, 0.0, 0], r: [0, 0, 0.18] }); dk.add('solar', G.rbox(1.5, 0.05, 2.5, 0.02), { p: [-2.65, 0.03, 0], r: [0, 0, 0.18], d: 1.25 });
-        k.add('screenOn', G.cyl(0.2, 0.2, 0.5, 12), { p: [0, 0.6, 0], uv: 'keep' }); k.add('screenOn', G.torus(0.95, 0.03, 6, 32), { p: [0, 0.14, 0], r: [R / 2, 0, 0], uv: 'keep' }); }
-      dk.build(hd); return h + (lv >= 3 ? 0.6 : 0) + (lv >= 2 ? 0.35 : 0); },
-    casa: function (k, o, W, D, h, lv) { var top = 2.35;
-      if (lv >= 2) { floorMod(k, 2.2, 1.0, 1.9, -0.5, top, -0.15, 2); top += 1.0; }
-      if (lv >= 3) { k.add('metal', G.rbox(1.2, 0.07, 0.8, 0.02), { p: [-0.5, 2.4, 1.2] }); for (var i = -1; i <= 1; i++) k.add('metal', G.rod([-0.5 + i * 0.55, 2.4, 1.58], [-0.5 + i * 0.55, 2.85, 1.58], 0.015, 4)); k.add('metal', G.rod([-1.05, 2.85, 1.58], [0.05, 2.85, 1.58], 0.018, 4)); k.add('solar', G.rbox(1.6, 0.05, 1.1, 0.02), { p: [-0.5, top + 0.12, -0.2], r: [0.25, 0, 0], d: 1.25 }); glowBand(k, 3.02, 2.52, 0.62); }
-      if (lv >= 4) { floorMod(k, 1.6, 0.95, 1.5, -0.6, top, -0.2, 2); top += 0.95; k.add('dark', G.rbox(0.25, 1.9, 0.25, 0.06), { p: [0.75, 1.3 + top / 2, -0.95], s: [1, top / 1.9 / 1.5, 1] }); k.add('screenOn', G.rbox(0.05, top - 0.6, 0.05, 0.02), { p: [0.88, top / 2 + 0.3, -0.82], uv: 'keep' }); }
-      if (lv >= 5) { k.add('hull', G.cyl(0.95, 1.05, 0.2, 24), { p: [-0.6, top + 0.1, -0.2] }); k.add('glass', G.sphere(0.9, 22, 12, 0, R * 2, 0, R / 2), { p: [-0.6, top + 0.2, -0.2], uv: 'keep' }); k.add('screenOn', G.torus(0.97, 0.03, 6, 30), { p: [-0.6, top + 0.21, -0.2], r: [R / 2, 0, 0], uv: 'keep' }); k.add('leaf', G.sphere(0.35, 10, 8), { p: [-0.6, top + 0.45, -0.2] }); o.lights.push([-0.6, top + 0.6, -0.2, 0xffe2b8]); top += 0.9; }
-      return Math.max(h, top + 0.4); },
-    greenhouse: function (k, o, W, D, h, lv) { var i, s;
-      if (lv >= 2) for (s = -1; s <= 1; s += 2) for (i = -1; i <= 1; i++) { k.add('hull', G.cyl(0.32, 0.32, 0.9, 16), { p: [i * 1.6, 0.6, s * 2.25] }); k.add('screenOn', G.rbox(0.05, 0.6, 0.05, 0.02), { p: [i * 1.6, 0.6, s * 2.57], uv: 'keep' }); }
-      if (lv >= 3) { k.add('glass', new T.CylinderGeometry(0.9, 0.9, 3.4, 24, 1, true, 0, R), { p: [0, 2.25, 0], r: [0, 0, R / 2], uv: 'keep' }); for (i = 0; i <= 4; i++) k.add('metal', G.torus(0.92, 0.035, 6, 20, R), { p: [-1.7 + i * 0.85, 2.25, 0], r: [0, R / 2, 0] }); k.add('grow', G.rbox(3.2, 0.05, 0.12, 0.02), { p: [0, 3.0, 0], uv: 'keep' }); glowBand(k, 5.84, 3.84, 0.58); }
-      if (lv >= 4) { k.add('hull', G.cyl(1.25, 1.3, 0.3, 24), { p: [-3.6, 0.15, 0] }); k.add('glass', G.sphere(1.2, 22, 14, 0, R * 2, 0, R / 2), { p: [-3.6, 0.3, 0], uv: 'keep' }); for (i = 0; i < 6; i++) k.add('metal', G.torus(1.21, 0.025, 4, 22, R), { p: [-3.6, 0.3, 0], r: [0, i * R / 6, 0] }); k.add('leaf', G.sphere(0.55, 12, 8), { p: [-3.6, 0.7, 0] }); k.add('leaf2', G.sphere(0.4, 10, 8), { p: [-3.3, 1.1, 0.2] }); o.lights.push([-3.6, 1.2, 0, 0xff6ad8]); }
-      if (lv >= 5) { k.add('glass', G.sphere(3.4, 32, 16, 0, R * 2, 0, R / 2), { p: [0, 0.55, 0], s: [1, 1.05, 0.72], uv: 'keep' }); for (i = 0; i < 10; i++) k.add('metal', G.torus(3.42, 0.035, 4, 40, R), { p: [0, 0.55, 0], r: [0, i * R / 10, 0], s: [1, 1.05, 0.72] }); k.add('metal', G.torus(3.42, 0.06, 6, 48), { p: [0, 0.55, 0], r: [R / 2, 0, 0], s: [1, 0.72, 1] });
-        G.truss(k, 'dark', 3.0, 0.3, 4, 0.02, 0, 0, 0.55); for (i = 0; i < 4; i++) k.add('leaf', G.sphere(0.28, 10, 8), { p: [Math.cos(i * 1.57) * 0.3, 1.2 + i * 0.6, Math.sin(i * 1.57) * 0.3] }); k.add('screenOn', G.torus(3.45, 0.03, 6, 48), { p: [0, 0.6, 0], r: [R / 2, 0, 0], s: [1, 0.72, 1], uv: 'keep' }); return 4.2; }
-      return h + (lv >= 3 ? 0.9 : 0); },
-    habitat: function (k, o, W, D, h, lv) { var top = h - 0.2;
-      if (lv >= 2) { floorMod(k, W * 0.55, 1.1, D * 0.55, -W * 0.12, top - 0.1, 0, 3); top += 1.0; }
-      if (lv >= 3) { glowBand(k, W - 0.2, D - 0.2, 0.5); k.add('dark', G.rbox(0.9, 0.08, D * 0.5, 0.02), { p: [W * 0.3, top - 0.95, 0] }); for (var i = 0; i < 4; i++) k.add('metal', G.rbox(0.05, 0.6, D * 0.45, 0.01), { p: [W * 0.3 - 0.35 + i * 0.23, top - 0.65, 0] }); }
-      if (lv >= 4) { floorMod(k, W * 0.38, 0.9, D * 0.4, -W * 0.12, top - 0.1, 0, 2); top += 0.9; }
-      if (lv >= 5) { k.add('glass', G.sphere(0.95, 22, 12, 0, R * 2, 0, R / 2), { p: [-W * 0.12, top - 0.1, 0], uv: 'keep' }); k.add('screenOn', G.torus(1.0, 0.03, 6, 30), { p: [-W * 0.12, top - 0.08, 0], r: [R / 2, 0, 0], uv: 'keep' }); top += 0.9; }
-      return Math.max(h, top + 0.3); },
-    battery: function (k, o, W, D, h, lv) { var i;
-      if (lv >= 2) for (i = -1; i <= 1; i += 2) { k.add('hull', G.cyl(0.32, 0.32, 1.3, 16), { p: [i * 0.62, 0.75, -0.55] }); k.add('screenOn', G.rbox(0.05, 0.9, 0.05, 0.02), { p: [i * 0.62, 0.75, -0.22], uv: 'keep' }); }
-      if (lv >= 3) for (i = 0; i < 5; i++) k.add('metal', G.rbox(0.04, 0.9, 0.6, 0.01), { p: [-0.5 + i * 0.25, 0.65, 0.75] });
-      if (lv >= 4) { k.add('dark', G.cyl(0.55, 0.6, 0.25, 20), { p: [0, h + 0.1, 0] }); k.add('screenOn', G.cyl(0.45, 0.45, 0.4, 20), { p: [0, h + 0.4, 0], uv: 'keep' }); k.add('dark', G.cyl(0.55, 0.5, 0.12, 20), { p: [0, h + 0.65, 0] }); }
-      return h + (lv >= 4 ? 0.8 : 0); },
-    workshop: function (k, o, W, D, h, lv) { var i;
-      if (lv >= 2) { for (i = 0; i < 2; i++) k.add('metal', G.cyl(0.12, 0.14, 1.6, 10), { p: [W / 2 - 0.4 - i * 0.4, h + 0.3, -D / 2 + 0.45] }); }
-      if (lv >= 3) { floorMod(k, W * 0.45, 0.9, D * 0.5, -W * 0.18, h - 0.2, 0, 2); k.add('metal', G.rbox(W * 0.9, 0.12, 0.2, 0.04), { p: [0, h + 0.6, D / 2 - 0.2] }); k.add('dark', G.rbox(0.4, 0.3, 0.3, 0.06), { p: [0.2, h + 0.4, D / 2 - 0.2] }); }
-      if (lv >= 4) { k.add('dark', G.rbox(0.7, 0.9, 0.7, 0.1), { p: [W / 2 + 0.25, 0.45, D / 2 - 0.5] }); pipe(k, [[W / 2 + 0.25, 0.9, D / 2 - 0.5], [W / 2 - 0.2, 1.6, D / 2 - 0.7], [W / 2 - 0.6, h, D / 2 - 0.8]], 0.05, 'metal'); glowBand(k, W - 0.1, D - 0.1, 0.45); }
-      return h + (lv >= 3 ? 0.9 : 0.3); }
+  // ---------- Níveis 1–5: design moderno, arestas vivas ----------
+  // Do nível 2 em diante as construções principais trocam o módulo arredondado por arquitetura angular: volumes empilhados e girados,
+  // fachadas de vidro escuro, aletas laranja, filetes de luz. Cada nível é um salto de tecnologia sobre o anterior.
+  function bx(k, m, w, h, d, x, y, z, r) { k.add(m, G.rbox(w, h, d, Math.min(0.025, w * 0.1, h * 0.1, d * 0.1)), { p: [x, y, z], r: r, uv: m === 'screenOn' || m === 'winOn' || m === 'visor' || m === 'facade' ? 'keep' : undefined }); }
+  function strip(k, len, ax, x, y, z, m) { var s = 0.035; bx(k, m || 'screenOn', ax === 'x' ? len : s, ax === 'y' ? len : s, ax === 'z' ? len : s, x, y, z); }
+  function glassF(k, w, h, x, y, z, face) { // fachada de vidro com caixilho e montantes; face: 'z' (frente/trás) ou 'x' (lados)
+    var fz = face === 'x', n = Math.max(1, Math.round(w / 0.8)), i;
+    if (fz) { bx(k, 'paint', 0.06, h + 0.12, w + 0.12, x, y, z); bx(k, 'facade', 0.07, h, w, x, y, z); for (i = 1; i < n; i++) bx(k, 'metal', 0.09, h, 0.035, x, y, z - w / 2 + i * w / n); }
+    else { bx(k, 'metal', w + 0.12, h + 0.12, 0.06, x, y, z); bx(k, 'facade', w, h, 0.07, x, y, z); for (i = 1; i < n; i++) bx(k, 'metal', 0.035, h, 0.09, x - w / 2 + i * w / n, y, z); } }
+  function vol(k, w, h, d, x, y, z, ry, opt) { // volume branco com recorte de vidro na frente, faixa escura na base e filete de luz no topo
+    var c = Math.cos(ry || 0), s = Math.sin(ry || 0), g = new G.Kit(), o = opt || {};
+    bx(g, 'hull', w, h, d, 0, h / 2, 0); bx(g, 'dark', w + 0.02, 0.12, d + 0.02, 0, 0.06, 0); bx(g, 'metal', w + 0.08, 0.1, d + 0.08, 0, h + 0.05, 0); bx(g, 'hull', w - 0.2, 0.06, d - 0.2, 0, h + 0.1, 0);
+    bx(g, 'metal', 0.5, 0.25, 0.4, w * 0.25, h + 0.22, -d * 0.2); bx(g, 'dark', 0.36, 0.03, 0.28, w * 0.25, h + 0.36, -d * 0.2); bx(g, 'metal', 0.25, 0.18, 0.25, -w * 0.3, h + 0.18, -d * 0.25);
+    glassF(g, w * (o.gw || 0.7) * 0.85, h * 0.4, o.gx || 0, h * 0.58, d / 2 + 0.02); if (o.back) glassF(g, w * 0.45, h * 0.35, 0, h * 0.58, -d / 2 - 0.02); glassF(g, d * 0.45, h * 0.3, w / 2 + 0.02, h * 0.6, 0, 'x');
+    strip(g, w + 0.06, 'x', 0, h + 0.09, d / 2 + 0.03); if (o.fin) { bx(g, 'paint', 0.1, h + 0.2, 0.5, w / 2 + 0.05, h / 2, d / 2 - 0.3); }
+    for (var i = 1; i < 4; i++) { bx(g, 'dark', 0.015, h * 0.92, 0.015, -w / 2 - 0.004, h / 2, -d / 2 + i * d / 4); bx(g, 'dark', 0.015, h * 0.92, 0.015, -w / 2 + i * w / 4, h / 2, -d / 2 - 0.004); } bx(g, 'dark', w + 0.01, 0.015, 0.015, 0, h * 0.28, d / 2 + 0.004); // juntas dos painéis
+    var m4 = new T.Matrix4().makeRotationY(ry || 0).setPosition(x, y, z); for (var key in g.parts) g.parts[key].forEach(function (geo) { k.add(key, geo.clone().applyMatrix4(m4), { uv: 'keep' }); }); }
+  function obelisk(k, x, z, hh, o) { // marco do nível 5: obelisco de vidro escuro com filetes de luz e quadros flutuantes
+    k.add('visor', G.cyl(0.18, 0.42, hh, 4), { p: [x, hh / 2 + 0.1, z], r: [0, R / 4, 0], uv: 'keep' }); k.add('dark', G.cyl(0.5, 0.55, 0.25, 4), { p: [x, 0.12, z], r: [0, R / 4, 0] });
+    for (var s = -1; s <= 1; s += 2) { strip(k, hh * 0.85, 'y', x + s * 0.21, hh * 0.5, z); strip(k, hh * 0.85, 'y', x, hh * 0.5, z + s * 0.21); }
+    for (var i = 0; i < 2; i++) { var y = hh * (0.55 + i * 0.3), w = 1.1 - i * 0.3; strip(k, w, 'x', x, y, z + w / 2); strip(k, w, 'x', x, y, z - w / 2); strip(k, w, 'z', x + w / 2, y, z); strip(k, w, 'z', x - w / 2, y, z); }
+    led(k, 'ledR', x, hh + 0.2, z); o.lights.push([x, hh * 0.7, z, 0x9ad8ff, 22, 1.2]); }
+  var MOD = {
+    casa: function (k, o, W, D, lv) { var y = 0.3, i, tw = [0, 0.12, -0.1, 0.18];
+      bx(k, 'dark', 3.7, 0.3, 3.5, 0, 0.15, 0); strip(k, 3.7, 'x', 0, 0.3, 1.76); bx(k, 'concrete', 1.2, 0.08, 0.9, 1.1, 0.34, 1.9);
+      vol(k, 3.1, 1.9, 2.5, -0.15, y, -0.15, 0, { fin: true, back: true }); y += 1.9;
+      bx(k, 'hull', 0.9, 1.5, 1.2, 1.65, 0.3 + 0.75, -0.2); bx(k, 'dark', 0.6, 1.1, 0.05, 1.65, 0.85, 0.42); strip(k, 1.1, 'y', 1.98, 0.85, 0.42, 'paint');
+      if (lv === 2) { bx(k, 'hull', 3.5, 0.1, 2.9, -0.15, y + 0.05, -0.05); strip(k, 3.5, 'x', -0.15, y + 0.05, 1.42); k.add('solar', G.rbox(1.6, 0.04, 1.1, 0.01), { p: [-0.4, y + 0.3, -0.4], r: [0.3, 0, 0], d: 1.25 }); y += 0.35; }
+      if (lv >= 3) { for (i = 1; i <= (lv >= 5 ? 3 : lv >= 4 ? 2 : 1); i++) { var w = 2.9 - i * 0.25, d = 2.4 - i * 0.15; vol(k, w, 1.45, d, -0.15 + (i % 2 ? 0.25 : -0.1), y, -0.1 + (i % 2 ? 0.3 : 0), tw[i], { gw: 0.85, fin: i % 2 === 0 }); y += 1.45; } }
+      if (lv === 3) { for (i = -1; i <= 1; i++) bx(k, 'glass', 0.9, 0.5, 0.03, -0.15 + i * 0.92, 2.45, 1.3); bx(k, 'metal', 2.8, 0.04, 0.04, -0.15, 2.7, 1.3); bx(k, 'metal', 0.5, 0.06, 1.6, 1.2, 1.2, 1.05, [0.75, 0, 0]); }
+      if (lv >= 4) { for (var s = -1; s <= 1; s += 2) strip(k, y - 0.4, 'y', s * 1.45 - 0.15, 0.3 + (y - 0.4) / 2, 1.1); bx(k, 'dark', 0.08, 1.4, 0.08, 0.6, y + 0.7, -0.6); led(k, 'ledR', 0.6, y + 1.42, -0.6); }
+      if (lv >= 5) { k.add('glass', G.cyl(0.9, 1.05, 1.0, 8), { p: [-0.1, y + 0.5, 0.1], uv: 'keep' }); k.add('dark', G.cyl(1.08, 1.08, 0.08, 8), { p: [-0.1, y + 0.04, 0.1] }); k.add('screenOn', G.cyl(1.1, 1.1, 0.03, 8), { p: [-0.1, y + 0.1, 0.1], uv: 'keep' }); k.add('leaf', G.cyl(0.4, 0.5, 0.6, 7), { p: [-0.1, y + 0.4, 0.1] });
+        for (i = 0; i < 4; i++) { var a = i * R / 2 + R / 4; strip(k, 1.3, 'y', -0.1 + Math.cos(a) * 1.25, y + 0.9, 0.1 + Math.sin(a) * 1.25); } o.lights.push([-0.1, y + 0.6, 0.1, 0xffe2b8]); y += 1.1; }
+      o.lights.push([0.4, 1.6, 1.8]); return y + 0.3; },
+    habitat: function (k, o, W, D, lv) { var y = 0.35, i;
+      bx(k, 'dark', 5.8, 0.35, 4.1, 0, 0.17, 0); strip(k, 5.8, 'x', 0, 0.35, 2.06); strip(k, 4.1, 'z', 2.91, 0.35, 0);
+      vol(k, 5.2, 2.3, 3.6, 0, y, 0, 0, { gw: 0.8, back: true, fin: true }); bx(k, 'hull', 0.9, 2.0, 1.6, 2.95, y + 1.0, 0); bx(k, 'dark', 0.06, 1.5, 0.9, 3.41, y + 0.85, 0); strip(k, 1.5, 'y', 3.43, y + 0.85, 0.5, 'paint');
+      bx(k, 'hull', 2.4, 0.08, 1.2, 0.8, y + 2.2, 2.2); strip(k, 2.4, 'x', 0.8, y + 2.16, 2.8); y += 2.3;
+      if (lv >= 3) { vol(k, 3.8, 1.7, 3.0, -0.5, y, -0.15, 0.08, { gw: 0.9 }); for (i = 0; i < 6; i++) bx(k, 'metal', 0.04, 1.3, 0.7, 1.9 + i * 0.16, y + 0.75, 1.0); y += 1.7; }
+      if (lv >= 4) { vol(k, 2.8, 1.5, 2.4, -0.7, y, -0.25, -0.1, { gw: 0.85, fin: true }); for (i = 0; i < 3; i++) k.add('solar', G.rbox(1.5, 0.04, 0.7, 0.01), { p: [1.4, 2.75 + 0.05, -1.2 + i * 0.75], r: [0.45, 0, 0], d: 1.25 });
+        for (var s = -1; s <= 1; s += 2) { k.add('dark', G.rod([s * 2.75, 0.35, 1.95], [s * 2.75, y, 1.95], 0.05, 4)); k.add('dark', G.rod([s * 2.75, 0.35, -1.95], [s * 2.75, y, -1.95], 0.05, 4)); k.add('dark', G.rod([s * 2.75, 0.4, 1.95], [s * 2.75, y - 0.2, -1.95], 0.035, 4)); } y += 1.5; }
+      if (lv >= 5) { var tx = 1.9, tz = -1.0; bx(k, 'hull', 1.5, 6.5, 1.5, tx, 3.25, tz); glassF(k, 1.2, 5.6, tx, 3.3, tz + 0.77); glassF(k, 1.2, 5.6, tx + 0.77, 3.3, tz, 'x'); for (i = 0; i < 4; i++) strip(k, 6.4, 'y', tx + (i % 2 ? 0.76 : -0.76), 3.3, tz + (i < 2 ? 0.76 : -0.76));
+        bx(k, 'dark', 1.9, 0.15, 1.9, tx, 6.55, tz); bx(k, 'screenOn', 1.92, 0.05, 1.92, tx, 6.66, tz); k.add('metal', G.rod([tx, 6.6, tz], [tx, 8.0, tz], 0.04, 6)); led(k, 'ledR', tx, 8.05, tz); o.lights.push([tx, 6.4, tz, 0x9ad8ff, 24, 1.2]); y = Math.max(y, 8); }
+      o.lights.push([3.5, 2.0, 0], [0, 2.2, 2.6]); return y + 0.3; },
+    greenhouse: function (k, o, W, D, lv) { var i, L = 5.4, Wd = 3.6, H = lv >= 3 ? 2.6 : 2.2;
+      bx(k, 'dark', 6.0, 0.45, 4.0, 0, 0.22, 0); strip(k, 6.0, 'x', 0, 0.45, 2.01); strip(k, 6.0, 'x', 0, 0.45, -2.01);
+      var ridges = lv >= 3 ? 3 : 1, rw = L / ridges;
+      for (i = 0; i < ridges; i++) { var cx = -L / 2 + rw * (i + 0.5); // telhado em dente de serra / duas águas, vidro com caixilho
+        for (var s = -1; s <= 1; s += 2) { var ang = Math.atan2(0.9, Wd / 2); k.add('glass', G.rbox(rw - 0.04, 0.04, Wd / 2 / Math.cos(ang) + 0.05, 0.01), { p: [cx, H + 0.45, s * Wd / 4], r: [-s * ang, 0, 0], uv: 'keep' }); }
+        bx(k, 'dark', rw, 0.08, 0.08, cx, H + 0.9, 0); bx(k, 'dark', 0.06, 0.06, Wd, cx - rw / 2, H + 0.45, 0); }
+      for (var sd = -1; sd <= 1; sd += 2) { k.add('glass', G.rbox(L, H - 0.45, 0.04, 0.01), { p: [0, 0.45 + (H - 0.45) / 2, sd * Wd / 2], uv: 'keep' }); bx(k, 'dark', L + 0.06, 0.08, 0.08, 0, H, sd * Wd / 2); for (i = 0; i <= 6; i++) bx(k, 'dark', 0.06, H - 0.45, 0.06, -L / 2 + i * L / 6, 0.45 + (H - 0.45) / 2, sd * Wd / 2); }
+      k.add('glass', G.rbox(0.04, H - 0.45, Wd, 0.01), { p: [-L / 2, 0.45 + (H - 0.45) / 2, 0], uv: 'keep' }); bx(k, 'hull', 0.9, H, 1.6, L / 2 + 0.4, H / 2, 0); bx(k, 'visor', 0.06, 1.3, 0.8, L / 2 + 0.86, 1.0, 0); strip(k, H, 'y', L / 2 + 0.86, H / 2, 0.55, 'paint');
+      o.plots = []; for (i = 0; i < 4; i++) { var px = -1.85 + i * 1.2; bx(k, 'dark', 1.0, 0.3, 2.8, px, 0.6, 0); k.add('soil', G.rbox(0.9, 0.06, 2.7, 0.02), { p: [px, 0.76, 0], uv: 'keep' }); strip(k, 2.8, 'z', px - 0.5, 0.75, 0, 'grow'); var pg = grp(); pg.position.set(px, 0.78, 0); k.extra.push(pg); o.plots.push(pg); }
+      bx(k, 'grow', L - 0.4, 0.05, 0.1, 0, H - 0.1, 0.9); bx(k, 'grow', L - 0.4, 0.05, 0.1, 0, H - 0.1, -0.9);
+      if (lv >= 3) for (i = -1; i <= 1; i++) { k.add('hull', G.cyl(0.3, 0.3, 1.0, 6), { p: [i * 1.8, 0.5, 2.4] }); strip(k, 0.8, 'y', i * 1.8, 0.55, 2.68); }
+      var top = H + 0.9;
+      if (lv >= 4) { var y4 = top + 0.15; for (var s4 = -1; s4 <= 1; s4 += 2) for (var t4 = -1; t4 <= 1; t4 += 2) bx(k, 'dark', 0.12, 1.9, 0.12, s4 * 1.8, y4 + 0.95 - 0.9, t4 * 1.2);
+        bx(k, 'dark', 4.0, 0.12, 2.8, 0, y4 + 0.9, 0); k.add('glass', G.rbox(3.8, 1.6, 2.6, 0.02), { p: [0, y4 + 1.75, 0], uv: 'keep' }); bx(k, 'dark', 3.9, 0.08, 2.7, 0, y4 + 2.6, 0);
+        for (i = 0; i < 4; i++) { bx(k, 'metal', 0.06, 1.5, 2.2, -1.4 + i * 0.93, y4 + 1.7, 0); for (var j = 0; j < 3; j++) k.add('leaf', G.rbox(0.25, 0.22, 2.0, 0.08), { p: [-1.4 + i * 0.93 + 0.12, y4 + 1.15 + j * 0.45, 0] }); }
+        strip(k, 3.9, 'x', 0, y4 + 2.64, 1.36); o.lights.push([0, y4 + 1.6, 0, 0xff6ad8]); top = y4 + 2.7; }
+      if (lv >= 5) { var dome = G.sphere(3.6, 10, 5, 0, R * 2, 0, R / 2); k.add('glass', dome, { p: [0, 0.45, 0], s: [1, 1.15, 0.78], uv: 'keep' }); var wf = new T.EdgesGeometry(dome); var ln = new T.LineSegments(wf, new T.LineBasicMaterial({ color: 0x1a1a1e })); ln.position.y = 0.45; ln.scale.set(1.002, 1.152, 0.782); k.extra.push(ln);
+        k.add('hull', G.cyl(0.55, 0.65, 5.2, 6), { p: [-2.1, 2.6, 0] }); for (i = 0; i < 5; i++) { k.add('leaf', G.cyl(0.75, 0.75, 0.18, 6), { p: [-2.1, 1.0 + i * 0.85, 0] }); strip(k, 1.4, 'x', -2.1, 1.12 + i * 0.85, 0.7, 'grow'); }
+        bx(k, 'screenOn', 7.4, 0.04, 0.04, 0, 0.47, 2.8); bx(k, 'screenOn', 7.4, 0.04, 0.04, 0, 0.47, -2.8); top = Math.max(top, 4.6); }
+      o.lights.push([0, 1.8, 0, 0xff6ad8]); return top; },
+    solar: function (k, o, W, D, lv) { var ph = lv >= 5 ? 3.6 : lv >= 3 ? 2.6 : 2.0, i;
+      bx(k, 'dark', 1.2, 0.25, 1.2, 0, 0.12, 0); strip(k, 1.2, 'x', 0, 0.25, 0.61); k.add('metal', G.cyl(0.1, 0.22, ph, 4), { p: [0, ph / 2 + 0.2, 0], r: [0, R / 4, 0] }); bx(k, 'dark', 0.5, 0.35, 0.4, 0, ph + 0.2, 0);
+      bx(k, 'hull', 0.6, 0.8, 0.45, 1.25, 0.45, 1.25); bx(k, 'visor', 0.4, 0.25, 0.03, 1.25, 0.6, 1.48); strip(k, 0.6, 'x', 1.25, 0.85, 1.48);
+      var head = grp(); head.position.y = ph + 0.32; var dk = new G.Kit(), pw = lv >= 5 ? 5.0 : lv >= 4 ? 4.4 : 3.8, pd = lv >= 5 ? 3.4 : lv >= 4 ? 3.0 : 2.6;
+      function panel(x, w, d, ry, rz) { dk.add('dark', G.rbox(w + 0.08, 0.06, d + 0.08, 0.01), { p: [x, 0, 0], r: [0, ry || 0, rz || 0] }); dk.add('solar', G.rbox(w, 0.05, d, 0.01), { p: [x, 0.025, 0], r: [0, ry || 0, rz || 0], d: 1.25 }); }
+      if (lv === 2) panel(0, pw, pd); else { panel(-pw / 4 - 0.06, pw / 2, pd, 0, 0.12); panel(pw / 4 + 0.06, pw / 2, pd, 0, -0.12); }
+      dk.add('screenOn', G.rbox(pw + 0.1, 0.03, 0.03, 0.01), { p: [0, 0.03, pd / 2 + 0.05], uv: 'keep' }); dk.add('screenOn', G.rbox(pw + 0.1, 0.03, 0.03, 0.01), { p: [0, 0.03, -pd / 2 - 0.05], uv: 'keep' }); dk.add('dark', G.rbox(0.3, 0.16, pd * 0.8, 0.02), { p: [0, -0.1, 0] });
+      if (lv >= 4) for (i = -1; i <= 1; i += 2) dk.add('metal', G.rbox(0.05, 0.05, pd, 0.01), { p: [i * pw * 0.25, 0.06, 0] });
+      dk.build(head); o.dyn.panel = head; k.extra.push(head);
+      if (lv >= 4) for (var s = -1; s <= 1; s += 2) { bx(k, 'dark', 0.12, 1.0, 0.12, s * 1.5, 0.5, -1.5); bx(k, 'hull', 0.5, 0.06, 0.5, s * 1.5, 1.05, -1.5, [0.5, 0, 0]); led(k, 'ledG', s * 1.5, 1.12, -1.5); }
+      if (lv >= 5) { k.add('dark', G.cyl(0.3, 0.3, 0.6, 6), { p: [0, ph - 0.5, 0] }); k.add('screenOn', G.cyl(0.24, 0.24, 0.62, 6), { p: [0, ph - 0.5, 0], uv: 'keep' }); o.lights.push([0, ph - 0.5, 0, 0x9ad8ff]); }
+      return ph + 0.9; },
+    battery: function (k, o, W, D, lv) { var i, h = 1.8;
+      bx(k, 'dark', 1.8, 0.2, 1.6, 0, 0.1, 0); strip(k, 1.8, 'x', 0, 0.2, 0.81);
+      if (lv <= 3) { var n = lv === 2 ? 1 : 2; for (i = 0; i < n; i++) { var x = n === 1 ? 0 : -0.42 + i * 0.84; bx(k, 'hull', n === 1 ? 1.2 : 0.72, 1.7, 1.0, x, 1.05, 0); bx(k, 'visor', n === 1 ? 0.8 : 0.45, 1.2, 0.03, x, 1.05, 0.51); for (var j = 0; j < 5; j++) bx(k, 'screenOn', n === 1 ? 0.6 : 0.32, 0.1, 0.035, x, 0.6 + j * 0.2, 0.53); bx(k, 'paint', n === 1 ? 1.22 : 0.74, 0.08, 1.02, x, 1.9, 0); } h = 2.0;
+        if (lv === 3) for (i = 0; i < 7; i++) bx(k, 'metal', 0.03, 1.4, 0.4, -0.75 + i * 0.25, 1.0, -0.72); }
+      else { k.add('dark', G.cyl(0.75, 0.8, 0.3, 6), { p: [0, 0.35, 0] }); var hh = lv >= 5 ? 3.6 : 2.2; k.add('glass', G.cyl(0.5, 0.5, hh, 6), { p: [0, 0.5 + hh / 2, 0], uv: 'keep' }); k.add('screenOn', G.cyl(0.24, 0.24, hh - 0.2, 6), { p: [0, 0.5 + hh / 2, 0], uv: 'keep' });
+        for (i = 0; i < 6; i++) { var a = i * R / 3; bx(k, 'hull', 0.12, hh, 0.12, Math.cos(a) * 0.62, 0.5 + hh / 2, Math.sin(a) * 0.62); } k.add('dark', G.cyl(0.75, 0.6, 0.25, 6), { p: [0, 0.6 + hh, 0] }); o.lights.push([0, 0.5 + hh / 2, 0, 0x9ad8ff]); h = hh + 0.9;
+        if (lv >= 5) for (i = 0; i < 3; i++) { var y = 1.0 + i * 1.0, w = 1.5 - i * 0.2; strip(k, w, 'x', 0, y, w / 2); strip(k, w, 'x', 0, y, -w / 2); strip(k, w, 'z', w / 2, y, 0); strip(k, w, 'z', -w / 2, y, 0); } }
+      return h; },
+    workshop: function (k, o, W, D, lv) { var i, h = 2.4;
+      bx(k, 'dark', 3.8, 0.3, 3.6, 0, 0.15, 0); strip(k, 3.8, 'x', 0, 0.3, 1.81);
+      bx(k, 'hull', 3.4, h, 3.0, 0, 0.3 + h / 2, -0.1); bx(k, 'dark', 2.0, 1.7, 0.06, 0.4, 1.2, 1.42); for (i = 0; i < 9; i++) bx(k, 'metal', 1.95, 0.03, 0.08, 0.4, 0.45 + i * 0.18, 1.45); bx(k, 'paint', 0.12, h, 0.4, -1.75, 0.3 + h / 2, 1.2); glassF(k, 0.9, 1.0, -1.1, 1.8, 1.42);
+      for (i = 0; i < 3; i++) { var x = -1.2 + i * 1.15; bx(k, 'hull', 1.1, 0.05, 3.0, x, 0.3 + h + 0.35, -0.1, [0, 0, 0.55]); bx(k, 'visor', 0.04, 0.55, 2.9, x + 0.32, 0.3 + h + 0.3, -0.1); } h += 0.9;
+      if (lv >= 3) { G.truss(k, 'dark', 3.6, 0.3, 4, 0.02, 1.95, -1.4, 0.3); G.truss(k, 'dark', 3.6, 0.3, 4, 0.02, -1.95, -1.4, 0.3); bx(k, 'paint', 4.2, 0.3, 0.3, 0, 3.95, -1.4); bx(k, 'dark', 0.4, 0.3, 0.4, 0.6, 3.7, -1.4); k.add('metal', G.rod([0.6, 3.55, -1.4], [0.6, 2.9, -1.4], 0.015, 4)); }
+      if (lv >= 4) { bx(k, 'dark', 0.6, 4.2, 0.6, -1.4, 2.1 + 0.3, -1.0); strip(k, 4, 'y', -1.09, 2.3, -0.69, 'paint'); bx(k, 'dark', 0.5, 0.5, 0.5, 1.4, 0.55, 2.0); k.add('metal', G.rod([1.4, 0.8, 2.0], [1.2, 1.7, 1.9], 0.06, 6)); k.add('metal', G.rod([1.2, 1.7, 1.9], [0.7, 1.5, 2.1], 0.05, 6)); bx(k, 'paint', 0.16, 0.16, 0.3, 0.7, 1.45, 2.1); o.vent = [-1.4, 4.7, -1.0]; }
+      if (lv >= 5) { vol(k, 2.6, 1.4, 2.2, 0.3, h + 0.05, 0, 0.1, { gw: 0.9, fin: true }); bx(k, 'winOn', 2.0, 0.06, 0.06, 0.4, 0.5, 1.47); o.lights.push([0.3, h + 0.8, 1.4, 0xffb070]); h += 1.5; }
+      o.lights.push([0.4, 2.3, 2.3]); return h; },
+    posto: function (k, o, W, D, lv) { return B.posto(k, o, W, D); }
   };
-  function levelKit(k, type, def, W, D, h, lv, o) { var hx = W / 2 - 0.3, hz = D / 2 - 0.3, i, s, own = LVX[type];
-    // 2 · Reforçada: base de concreto mais larga e equipamentos nos cantos
-    k.add('concrete', G.rbox(W + 0.5, 0.1, D + 0.5, 0.05), { p: [0, 0.05, 0] });
-    if (!own || type === 'casa') for (s = -1; s <= 1; s += 2) { k.add('dark', G.rbox(0.45, 0.4, 0.45, 0.08), { p: [s * hx, 0.3, -hz] }); k.add('metal', G.cyl(0.045, 0.045, 0.5, 8), { p: [s * hx, 0.75, -hz] }); led(k, 'ledG', s * hx, 1.02, -hz); }
-    if (own) h = own(k, o, W, D, h, lv);
-    else { // demais construções: módulos genéricos, mas cada nível acrescenta algo visível
-      if (lv >= 3) { floorMod(k, Math.min(1.5, W * 0.4), 0.9, Math.min(1.1, D * 0.4), -W / 2 + Math.min(1.5, W * 0.4) / 2 + 0.1, 0.1, D / 2 - 0.65, 1); glowBand(k, W + 0.3, D + 0.3, 0.14); }
-      if (lv >= 4) { for (i = 0; i < 4; i++) k.add('metal', G.rbox(0.04, 0.8, 0.5, 0.01), { p: [W / 2 + 0.15, 0.6, -0.4 + i * 0.27] }); k.add('dark', G.cyl(0.05, 0.05, 0.8, 8), { p: [-hx, h + 0.1, -hz] }); k.add('chrome', G.sphere(0.35, 14, 8, 0, R * 2, 0, R * 0.4), { p: [-hx, h + 0.55, -hz], r: [-0.7, 0.6, 0], uv: 'keep' }); }
-      if (lv >= 5) { k.add('hull', G.sphere(0.5, 16, 10, 0, R * 2, 0, R / 2), { p: [hx - 0.3, h - 0.05, hz - 0.3], uv: 'keep' }); k.add('screenOn', G.torus(0.52, 0.03, 6, 24), { p: [hx - 0.3, h - 0.03, hz - 0.3], r: [R / 2, 0, 0], uv: 'keep' }); h += 0.5; } }
-    // 3 · Avançada: luz de contorno na base
-    if (lv >= 3) glowBand(k, W + 0.48, D + 0.48, 0.11);
-    // 4 · Tecnológica: postes de luz nos cantos e passarela
-    if (lv >= 4) for (s = -1; s <= 1; s += 2) for (var t2 = -1; t2 <= 1; t2 += 2) { k.add('dark', G.cyl(0.035, 0.045, 1.4, 6), { p: [s * (W / 2 + 0.18), 0.75, t2 * (D / 2 + 0.18)] }); k.add('winOn', G.rbox(0.12, 0.06, 0.12, 0.02), { p: [s * (W / 2 + 0.18), 1.47, t2 * (D / 2 + 0.18)], uv: 'keep' }); }
-    // 5 · Monumental: torre com anéis de luz e anel no chão
-    if (lv >= 5) { spire(k, W / 2 - 0.1, -D / 2 + 0.1, 0.1, h + 2.2, o); k.add('paint', G.torus(Math.max(W, D) * 0.6, 0.05, 6, 48), { p: [0, 0.1, 0], r: [R / 2, 0, 0] }); for (i = 0; i < 10; i++) { var a = i * R / 5; led(k, 'ledO', Math.cos(a) * Math.max(W, D) * 0.6, 0.17, Math.sin(a) * Math.max(W, D) * 0.6); } h += 2.6; }
+  function levelKit(k, type, def, W, D, h, lv, o) { var i, s, t2, M = Math.max(W, D);
+    // 2 · base escura com filete de luz (vale para todas)
+    if (!MOD[type]) { bx(k, 'dark', W + 0.5, 0.12, D + 0.5, 0, 0.06, 0); strip(k, W + 0.5, 'x', 0, 0.12, D / 2 + 0.26); }
+    if (!MOD[type] && lv >= 3) { // demais construções: anexo angular com vidro e aletas
+      vol(k, Math.min(1.6, W * 0.45), 1.1, Math.min(1.2, D * 0.4), -W / 2 + Math.min(1.6, W * 0.45) / 2 + 0.05, 0.12, D / 2 - 0.65, 0, { gw: 0.8 }); for (i = 0; i < 4; i++) bx(k, 'metal', 0.03, 0.8, 0.5, W / 2 + 0.12, 0.6, -0.4 + i * 0.25); }
+    if (!MOD[type] && lv >= 4) { bx(k, 'dark', 0.1, 1.6, 0.1, -W / 2 + 0.2, h + 0.7, -D / 2 + 0.2); bx(k, 'hull', 0.7, 0.05, 0.5, -W / 2 + 0.2, h + 1.5, -D / 2 + 0.2, [0.5, 0, 0]); led(k, 'ledG', -W / 2 + 0.2, h + 1.56, -D / 2 + 0.2); }
+    // 3 · moldura de luz no chão
+    if (lv >= 3) { strip(k, W + 0.8, 'x', 0, 0.05, D / 2 + 0.4); strip(k, W + 0.8, 'x', 0, 0.05, -D / 2 - 0.4); strip(k, D + 0.8, 'z', W / 2 + 0.4, 0.05, 0); strip(k, D + 0.8, 'z', -W / 2 - 0.4, 0.05, 0); }
+    // 4 · postes de luz angulares nos cantos
+    if (lv >= 4) for (s = -1; s <= 1; s += 2) for (t2 = -1; t2 <= 1; t2 += 2) { bx(k, 'dark', 0.08, 1.5, 0.08, s * (W / 2 + 0.4), 0.75, t2 * (D / 2 + 0.4)); bx(k, 'winOn', 0.3, 0.04, 0.08, s * (W / 2 + 0.4) - s * 0.12, 1.5, t2 * (D / 2 + 0.4)); }
+    // 5 · obelisco de vidro escuro com quadros de luz
+    if (lv >= 5) { obelisk(k, W / 2 + 0.4, -D / 2 - 0.4, Math.max(5.5, h + 2.5), o); h = Math.max(h, 6); }
     return h; }
   function building(type, def, opts) { var g = grp(), k = new G.Kit(), o = { dyn: {}, lights: [] }; k.extra = []; for (var x in opts || {}) o[x] = opts[x];
-    var W = def.w * TS, D = def.h * TS, h = B[type](k, o, W, D), lv = o.lv || 1; if (lv > 1) h = levelKit(k, type, def, W, D, h, lv, o); k.build(g); if (lv > 1) g.scale.setScalar(1 + 0.03 * (lv - 1)); k.extra.forEach(function (e) { g.add(e); }); if (o.garden) o.garden.add(garden());
+    var W = def.w * TS, D = def.h * TS, lv = o.lv || 1, h = lv > 1 && MOD[type] ? MOD[type](k, o, W, D, lv) : B[type](k, o, W, D); if (lv > 1) h = levelKit(k, type, def, W, D, h, lv, o); k.build(g);  k.extra.forEach(function (e) { g.add(e); }); if (o.garden) o.garden.add(garden());
     g.userData.h = h; g.userData.o = o; g.traverse(function (m) { if (m.isMesh) { m.castShadow = m.castShadow && m.material !== M.glass; } }); return g; }
 
   // ---------- depósitos e rochas ----------
@@ -2687,7 +2757,7 @@ var Models = (function () {
 var World = (function () {
   var T = THREE, G = Gfx, TS = G.TS, N = Sim.N, BD = DATA.buildings, MD = Models;
   var W = { cam: { x: N / 2, z: N / 2 + 1, dist: 34, yaw: 0.5, pitch: 0.82, lookUp: 0 }, landerY: 0, flame: false, arkY: 0, arkFlame: false, loading: 0, hideChars: false, shake: 0, overlayOn: false, selected: {}, selB: null, nf: 0, q: 'high' };
-  var renderer, scene, cam, composer, bloom, grade, sunL, hemi, skyMat, envScene, pmrem, envRT = null, envAt = { h: -99, k: -1 }, terrMat, terrain, outer, fogTex, fogData, trod, hTex;
+  var renderer, scene, cam, composer, bloom, grade, sunL, hemi, skyMat, envScene, pmrem, envRT = null, envAt = { h: -99, k: -1 }, terrMat, terrain, outer, fogTex, fogData, trod, hTex, playTex, playData;
   var ghost = null, ghostType = null, arkMesh = null, ghostHolo, footDecal, selDecal, overlay, pool = [], spots = [], dust, glow, flameMesh, mapSeed = null, map = null;
   var bMesh = {}, cRig = {}, dMesh = {}, pickables = [], time = 0, occSig = '', lastFog = 0, sunDir = new T.Vector3(0, 1, 0);
 
@@ -2712,7 +2782,7 @@ var World = (function () {
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.localClippingEnabled = true;
     scene = new T.Scene(); scene.fog = new T.FogExp2(0xc9a27a, 0.004); cam = new T.PerspectiveCamera(36, 1, 0.3, 3000);
     G.init(renderer, W.q);
-    G.U.uFog = { value: null }; G.U.uN = { value: N }; G.U.uTS = { value: TS };
+    G.U.uFog = { value: null }; G.U.uPlay = { value: null }; G.U.uN = { value: N }; G.U.uTS = { value: TS };
     hemi = new T.HemisphereLight(0xffe2c4, 0x5a3220, 0.25); scene.add(hemi);
     sunL = new T.DirectionalLight(0xfff0dc, 3); sunL.castShadow = true; var ss = W.q === 'high' ? 4096 : W.q === 'mid' ? 2048 : 1024; sunL.shadow.mapSize.set(ss, ss);
     sunL.shadow.bias = -0.0004; sunL.shadow.normalBias = 0.04; scene.add(sunL); scene.add(sunL.target);
@@ -2788,10 +2858,10 @@ var World = (function () {
   function terrainMaterial() { var m = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, envMapIntensity: 0.55 }); m.extensions = { derivatives: true };
     m.onBeforeCompile = function (sh) { for (var k in G.U) sh.uniforms[k] = G.U[k];
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;varying vec3 vWN;').replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWP=(modelMatrix*vec4(transformed,1.)).xyz;vWN=normalize(mat3(modelMatrix)*objectNormal);');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;varying vec3 vWN;uniform sampler2D uFog;uniform float uN,uTS;float gH=0.,gR=.95,gVis=1.;\n' + G.NOISE)
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;varying vec3 vWN;uniform sampler2D uFog;uniform sampler2D uPlay;uniform float uN,uTS;float gH=0.,gR=.95,gVis=1.;\n' + G.NOISE)
         .replace('#include <map_fragment>', [
           'vec2 q=vWP.xz/uTS;float lod=length(fwidth(q));vec4 fd=texture2D(uFog,q/uN);float ins=step(0.,q.x)*step(0.,q.y)*step(q.x,uN)*step(q.y,uN);',
-          'gVis=mix(.62,fd.r,ins);float ice=fd.g*ins,base=fd.b*ins,trod=fd.a*ins;',
+          'float pl=texture2D(uPlay,q/uN).r*ins;float outA=1.-smoothstep(.3,.62,pl+(fbm(q*.35,vec2(1e4),3.)-.5)*.25);gVis=mix(.62,fd.r,ins)*(1.-outA*.55);float ice=fd.g*ins,base=fd.b*ins,trod=fd.a*ins;',
           '#define AA(f) (1.-smoothstep(.12,.45,lod*(f)))',
           'float n1=fbm(q*.085,vec2(1e4),5.),n2=fbm(q*.42+7.3,vec2(1e4),5.),n3=fbm(q*2.6+3.1,vec2(1e4),3.);',
           'float slope=1.-clamp(vWN.y,0.,1.);',
@@ -2810,6 +2880,7 @@ var World = (function () {
           'c=mix(vec3(dot(c,vec3(.3,.59,.11))),c,.82);',
           'c=mix(c,c*.78+cDark*.08,base*.55);c=mix(c,cDark*1.05,trod*.32);',
           'float iceM=smoothstep(.3,.62,ice+(n2-.5)*.45+(n3-.5)*.5);vec3 fv=vor(q*2.2,vec2(1e4));float frc=(1.-smoothstep(.0,.06,fv.z-fv.x))*AA(6.);c=mix(c,s2l(vec3(.84,.88,.93))*(.8+.3*n3)*(1.-frc*.35),iceM*.9);',
+          'vec3 hz=mix(vec3(dot(c,vec3(.3,.59,.11))),c,.35)*vec3(.78,.7,.66);c=mix(c,hz*.5,outA*.92);float edge=smoothstep(.25,.45,pl)*(1.-smoothstep(.5,.66,pl));c=mix(c,cDust*1.15,edge*.35*(.6+.4*sin(q.x*.9+q.y*.7)));',
           'diffuseColor.rgb=c;gH=((dune*.35+rp*.06+rp2*.01)*flt+n3*.05*AA(5.)+pk*clamp(1.-sh*sh,0.,1.)*pr*1.1+(g1-.5)*.012*AA(18.)+(tM1-.5)*.08)*mix(1.,.3,base)+n2*.05;gR=mix(.96,.5,iceM)-pk*.05;'].join('\n'))
         .replace('#include <roughnessmap_fragment>', 'float roughnessFactor=gR;')
         .replace('#include <normal_fragment_maps>', 'normal=bumpN(-vViewPosition,normal,gH);')
@@ -2850,7 +2921,7 @@ var World = (function () {
   function buildTerrain(s) { map = s.rt.map; var i, v;
     chunks.forEach(function (c) { scene.remove(c.terr); c.terr.geometry.dispose(); c.inst.forEach(function (m) { scene.remove(m); }); if (c.peb) scene.remove(c.peb); }); chunks = []; if (outer) { scene.remove(outer); outer.geometry.dispose(); }
     // textura de dados por tile: névoa, gelo, base compactada, trilhas
-    fogData = new Uint8Array(N * N * 4); trod = new Float32Array(N * N); fogTex = new T.DataTexture(fogData, N, N, T.RGBAFormat); fogTex.magFilter = T.LinearFilter; fogTex.minFilter = T.LinearFilter; G.U.uFog.value = fogTex;
+    fogData = new Uint8Array(N * N * 4); trod = new Float32Array(N * N); fogTex = new T.DataTexture(fogData, N, N, T.RGBAFormat); fogTex.magFilter = T.LinearFilter; fogTex.minFilter = T.LinearFilter; G.U.uFog.value = fogTex; playData = new Uint8Array(N * N * 4); playTex = new T.DataTexture(playData, N, N, T.RGBAFormat); playTex.magFilter = T.LinearFilter; playTex.minFilter = T.LinearFilter; G.U.uPlay.value = playTex;
     for (i = 0; i < N * N; i++) fogData[i * 4 + 1] = map.ice[i] ? 255 : 0;
     // textura de altura (para sujeira na base de tudo que toca o chão)
     var V = N + 1, hd = new Uint8Array(V * V * 4), mn = -10, rg = 30; for (i = 0; i < V * V; i++) { var hv = clamp((map.h[i] - mn) / rg * 256, 0, 255.99), r = Math.floor(hv); hd[i * 4] = r; hd[i * 4 + 1] = Math.round((hv - r) * 255); hd[i * 4 + 3] = 255; }
@@ -2871,7 +2942,8 @@ var World = (function () {
     var sig = s.b.map(function (b) { return b.id + ':' + b.x + ',' + b.z; }).join('|');
     if (sig !== occSig) { occSig = sig; for (i = 0; i < N * N; i++) fogData[i * 4 + 2] = 0;
       s.b.forEach(function (b) { var d = BD[b.type]; for (var z = b.z - 1; z <= b.z + d.h; z++) for (var x = b.x - 1; x <= b.x + d.w; x++) { if (x < 0 || z < 0 || x >= N || z >= N) continue; var inn = x >= b.x && x < b.x + d.w && z >= b.z && z < b.z + d.h; fogData[(z * N + x) * 4 + 2] = Math.max(fogData[(z * N + x) * 4 + 2], inn ? 255 : 140); } }); ch = true; }
-    if (ch || force) fogTex.needsUpdate = true; }
+    if (ch || force) fogTex.needsUpdate = true;
+    if (s.rt.playDirty || force) { s.rt.playDirty = false; var P = s.rt.play; for (i = 0; i < N * N; i++) playData[i * 4] = P[i]; playTex.needsUpdate = true; } }
 
   function ensureRig(k) { var rig = MD.astronaut(k, Sim.cinfo(k)); rig.root.userData.kind = 'c'; rig.root.userData.id = k; rig.ph = h2(k.length * 3.3 + k.charCodeAt(k.length - 1), 1.7) * 6;
     var pk = new T.Mesh(new T.CylinderGeometry(0.6, 0.6, 2.2, 8), new T.MeshBasicMaterial({ visible: false })); pk.position.y = 1.1; rig.root.add(pk);
@@ -2928,7 +3000,7 @@ var World = (function () {
   // ---------------- quadro a quadro ----------------
   var lightT = 0, dataT = 0, fxT = 0;
   W.sync = function (s, dt) { time += dt; G.U.uTime.value = time; grade.uniforms.uTime.value = time; var i, k, b, d, nf;
-    dataT += dt; if (s.rt.fogDirty || dataT > 0.5) { updateData(s, s.rt.fogDirty); s.rt.fogDirty = false; dataT = 0; }
+    dataT += dt; if (s.rt.fogDirty || s.rt.playDirty || dataT > 0.5) { updateData(s, s.rt.fogDirty); s.rt.fogDirty = false; dataT = 0; }
     atmosphere(s); nf = W.nf; var seen = {}; var GM = G.mats; GM.winOn.emissiveIntensity = 0.25 + 1.7 * nf; GM.grow.emissiveIntensity = 0.8 + 1.8 * nf; GM.screenOn.emissiveIntensity = 0.9 + 1.4 * nf;
     for (i = 0; i < s.b.length; i++) { b = s.b[i]; d = BD[b.type]; seen[b.id] = 1; var o = bMesh[b.id];
       if (o && b.type === 'corridor') { var mk = corridorMask(s, b); if (mk !== o.mask) { removeB(b.id); o = null; } }
@@ -2988,7 +3060,8 @@ var World = (function () {
     // destaque da construção selecionada
     var sb = W.selB != null ? Sim.byId(s, W.selB) : null; selDecal.visible = !!sb; if (sb) { var sd = BD[sb.type]; selDecal.position.set((sb.x + sd.w / 2) * TS, Hr(sb.x + sd.w / 2, sb.z + sd.h / 2) + 0.12, (sb.z + sd.h / 2) * TS); selDecal.scale.set(sd.w * TS + 0.4, sd.h * TS + 0.4, 1); selDecal.material.uniforms.uAsp.value.set(sd.w * TS + 0.4, sd.h * TS + 0.4); }
     // câmera de estratégia
-    var cs = W.cam; cs.x = clamp(cs.x, 2, N - 2); cs.z = clamp(cs.z, 2, N - 2); cs.dist = clamp(cs.dist, 7, 120); cs.pitch = clamp(cs.pitch, 0.1, 1.45);
+    var cs = W.cam, zb = W.zb || (W.zb = [0, 0, N, N]); if (W.zbN !== s.zones.length) { W.zbN = s.zones.length; zb = W.zb = [N, N, 0, 0]; s.zones.forEach(function (z) { var r = z.r * 1.3 + 10; zb[0] = Math.min(zb[0], z.x - r); zb[1] = Math.min(zb[1], z.z - r); zb[2] = Math.max(zb[2], z.x + r); zb[3] = Math.max(zb[3], z.z + r); }); }
+    cs.x = clamp(cs.x, Math.max(2, zb[0]), Math.min(N - 2, zb[2])); cs.z = clamp(cs.z, Math.max(2, zb[1]), Math.min(N - 2, zb[3])); cs.dist = clamp(cs.dist, 7, 120); cs.pitch = clamp(cs.pitch, 0.1, 1.45);
     var ty = Hr(cs.x, cs.z) + 1, cp = Math.cos(cs.pitch), sh = W.shake > 0.001 ? W.shake : 0; W.shake *= Math.pow(0.02, dt);
     cam.position.set(cs.x * TS + Math.sin(cs.yaw) * cp * cs.dist + (Math.random() - 0.5) * sh, ty + Math.sin(cs.pitch) * cs.dist + (Math.random() - 0.5) * sh, cs.z * TS + Math.cos(cs.yaw) * cp * cs.dist);
     var gyc = (cam.position.x / TS > 0 && cam.position.x / TS < N && cam.position.z / TS > 0 && cam.position.z / TS < N ? Hr(cam.position.x / TS, cam.position.z / TS) : Hout(cam.position.x / TS, cam.position.z / TS)) + 1.2; if (cam.position.y < gyc) cam.position.y = gyc;

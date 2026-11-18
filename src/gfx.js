@@ -144,6 +144,7 @@ var Gfx = (function () {
     M.ledO = std({ color: 0x1a0d05, emissive: 0xffa040, emissiveIntensity: 3 });
     M.grow = std({ color: 0x200a1a, emissive: 0xff5ad0, emissiveIntensity: 2.4 });
     M.soil = std({ color: 0x3a2418, roughness: 1 });
+    M.facade = std({ color: 0x3d5468, metalness: 0.7, roughness: 0.16, envMapIntensity: 1.8 }); // vidro de fachada azulado, reflexivo
     M.leaf = std({ color: 0x4f9a3c, roughness: 0.6, side: T.DoubleSide }); M.leaf2 = std({ color: 0x7cc24a, roughness: 0.55, side: T.DoubleSide });
     M.ice = std({ color: 0xe8f2fa, roughness: 0.25, metalness: 0, envMapIntensity: 1.5 });
     M.flag = std({ color: 0xff6a1a, roughness: 0.7, side: T.DoubleSide });
