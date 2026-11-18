@@ -34,23 +34,23 @@ var Gfx = (function () {
       'float ex=min(f.x,1.-f.x)/cols,ey=min(f.y,1.-f.y)/4.;float e=min(ex,ey);float seam=1.-smoothstep(.0015,.0045,e);',
       'float rv=1.-smoothstep(.12,.22,length(vec2(fract(uv.x*96.)-.5,(ey-.008)*96.)));rv*=step(ey,.013)*step(.004,ey)*step(.5,fract(uv.x*12.));',
       'float st=smoothstep(.5,.85,fbm(vec2(uv.x*40.,uv.y*3.),vec2(40.,3.),4.));float gr=fbm(uv*16.,vec2(16.),5.);',
-      'float pan=h21(cell+1.);c=vec3(.86,.85,.82)*(.93+.08*pan);c*=1.-.13*st;c*=.95+.08*gr;c=mix(c,vec3(.55,.42,.32),smoothstep(.62,.8,fbm(uv*6.+3.,vec2(6.),5.))*.25);',
+      'float pan=h21(cell+1.);c=vec3(.86,.85,.82)*(.93+.08*pan);c=vec3(.92,.92,.9)*(.96+.04*pan);c*=1.-.025*st;c*=.985+.03*gr;',
       'c*=1.-.6*seam;c=mix(c,vec3(.6,.6,.62),rv);float bul=(1.-smoothstep(.0,.06,e))*.0;',
-      'h=-seam+rv*.7+gr*.08+(pan-.5)*.1;r=.42+.22*st+.2*seam;m=rv*.8;'] },
+      'h=-seam+rv*.7+gr*.03+(pan-.5)*.06;r=.3+.06*st+.2*seam;m=rv*.8;'] },
     paint: { ns: 0.005, code: [
       'float n=fbm(uv*10.,vec2(10.),6.);float chip=smoothstep(.66,.70,n);float rim=smoothstep(.61,.66,n)-chip;',
       'float sc=smoothstep(.78,.86,fbm(vec2(uv.x*90.,uv.y*3.),vec2(90.,3.),3.));float gr=fbm(uv*24.,vec2(24.),4.);',
-      'c=vec3(.86,.34,.08)*(.9+.15*gr);c=mix(c,vec3(.95,.86,.76),rim*.8);c=mix(c,vec3(.5,.5,.52),chip);c=mix(c,vec3(.9,.7,.55),sc*.5);',
-      'h=-chip*.8+gr*.1;r=mix(.45,.32,chip)+sc*.1;m=chip*.85;'] },
+      'c=vec3(.9,.36,.07)*(.96+.06*gr);c=mix(c,vec3(.95,.6,.4),sc*.06);',
+      'h=gr*.04;r=.28+sc*.04;m=.1;'] },
     fabric: { ns: 0.004, code: [
       'float w=.5+.5*sin(uv.x*6.2832*192.)*sin(uv.y*6.2832*192.);float d1=abs(fract((uv.x+uv.y)*6.)-.5),d2=abs(fract((uv.x-uv.y)*6.)-.5);',
       'float sm=1.-smoothstep(.0,.035,min(d1,d2));float stch=sm*step(.5,fract((uv.x*3.+uv.y)*80.));float pf=min(d1,d2);',
-      'float dirt=fbm(uv*8.,vec2(8.),5.);c=vec3(.82,.80,.75)*(.92+.08*w);c=mix(c,vec3(.58,.42,.30),smoothstep(.5,.8,dirt)*.45);c*=1.-.25*sm;',
+      'float dirt=fbm(uv*8.,vec2(8.),5.);c=vec3(.86,.85,.82)*(.94+.06*w);c=mix(c,vec3(.58,.42,.30),smoothstep(.55,.85,dirt)*.12);c*=1.-.25*sm;',
       'h=w*.15+pf*1.4-sm*.6;r=.92;m=0.;'] },
     dark: { ns: 0.005, code: [
       'vec2 q=uv*vec2(2.,3.);vec2 f=fract(q);float e=min(min(f.x,1.-f.x)/2.,min(f.y,1.-f.y)/3.);float seam=1.-smoothstep(.002,.005,e);',
       'float n=fbm(uv*20.,vec2(20.),5.);float wear=smoothstep(.72,.8,fbm(uv*7.+5.,vec2(7.),5.));',
-      'c=vec3(.15,.15,.16)*(.85+.3*n);c=mix(c,vec3(.42,.42,.44),wear*.6);c*=1.-.5*seam;h=-seam+n*.1;r=.42+.1*n-wear*.1;m=.65;'] },
+      'c=vec3(.13,.13,.145)*(.92+.14*n);c=mix(c,vec3(.32,.32,.34),wear*.1);c*=1.-.5*seam;h=-seam+n*.1;r=.42+.1*n-wear*.1;m=.65;'] },
     rubber: { ns: 0.006, code: [
       'float n=fbm(uv*30.,vec2(30.),4.);float tr=step(.5,fract(uv.y*24.+step(.5,fract(uv.x*6.))*.5));',
       'c=vec3(.13,.10,.08)*(.8+.4*n);h=tr*.4+n*.2;r=.85;m=0.;'] },
@@ -72,7 +72,7 @@ var Gfx = (function () {
     concrete: { ns: 0.006, code: [
       'float n=fbm(uv*6.,vec2(6.),6.);float g=fbm(uv*60.,vec2(60.),3.);vec2 q=fract(uv*4.);float e=min(min(q.x,1.-q.x),min(q.y,1.-q.y));float j=1.-smoothstep(.004,.01,e);',
       'vec3 cr=vor(uv*9.,vec2(9.));float crack=(1.-smoothstep(.0,.02,cr.z-cr.x))*step(.72,fbm(uv*5.+2.,vec2(5.),4.));',
-      'c=vec3(.42,.38,.35)*(.8+.35*n)*(.9+.15*g);c=mix(c,vec3(.6,.38,.24),smoothstep(.55,.8,fbm(uv*4.+7.,vec2(4.),5.))*.5);c*=1.-.5*j-.5*crack;',
+      'c=vec3(.62,.6,.57)*(.92+.14*n)*(.96+.06*g);c*=1.-.45*j-.12*crack;',
       'h=-j-crack+g*.2;r=.9;m=0.;'] }
   };
   var bake = { scene: null, cam: null, quad: null };
@@ -98,17 +98,18 @@ var Gfx = (function () {
   var HFUN = 'uniform sampler2D uHeight;uniform vec4 uHInfo;float th(vec2 i){vec4 t=texture2D(uHeight,(i+.5)/uHInfo.x);return uHInfo.y+(t.r*255.+t.g)/256.*uHInfo.z;}' +
     'float terrainH(vec2 xz){vec2 p=clamp(xz/uHInfo.w,vec2(0.),vec2(uHInfo.x-1.001));vec2 i=floor(p),f=fract(p);return mix(mix(th(i),th(i+vec2(1.,0.)),f.x),mix(th(i+vec2(0.,1.)),th(i+vec2(1.,1.)),f.x),f.y);}';
   var VERT_WP = '#include <worldpos_vertex>\nvec4 gwp=vec4(transformed,1.);\n#ifdef USE_INSTANCING\ngwp=instanceMatrix*gwp;\n#endif\ngwp=modelMatrix*gwp;vWP=gwp.xyz;vec3 gn=objectNormal;\n#ifdef USE_INSTANCING\ngn=mat3(instanceMatrix)*gn;\n#endif\nvWN=normalize(mat3(modelMatrix)*gn);';
-  function vertPatch(sh) { sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;varying vec3 vWN;').replace('#include <worldpos_vertex>', VERT_WP); }
-  G.dusty = function (mat, top, low, grimeH) {
-    var o = { top: top == null ? 0.55 : top, low: low == null ? 0.7 : low, gh: grimeH || 0.9 };
+  function vertPatch(sh) { sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;varying vec3 vWN;attribute float aWear;varying float vWear;').replace('#include <worldpos_vertex>', VERT_WP + '\nvWear=aWear;'); }
+  // Pó e sujeira dependem do desgaste (aWear, por construção): tudo nasce novo e envelhece devagar.
+  G.dusty = function (mat, top, low, grimeH, wb) {
+    var o = { top: top == null ? 0.55 : top, low: low == null ? 0.7 : low, gh: grimeH || 0.9, wb: wb == null ? 0.1 : wb };
     mat.onBeforeCompile = function (sh) { for (var k in G.U) sh.uniforms[k] = G.U[k]; vertPatch(sh);
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;varying vec3 vWN;uniform vec3 uDustCol;uniform float uDustAmt;float gDust=0.;\n' + G.NOISE + '\n' + HFUN)
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;varying vec3 vWN;varying float vWear;uniform vec3 uDustCol;uniform float uDustAmt;float gDust=0.;\n' + G.NOISE + '\n' + HFUN)
         .replace('#include <color_fragment>', '#include <color_fragment>\n{float above=vWP.y-terrainH(vWP.xz);float up=clamp(vWN.y,0.,1.);float nz=fbm3(vWP*1.3,4.);float nz2=vn3(vWP*7.);' +
-          'gDust=smoothstep(.45,.95,up)*smoothstep(.35,.75,nz+.15)*' + o.top.toFixed(2) + '+(1.-smoothstep(0.,' + o.gh.toFixed(2) + ',above-nz*.35))*(.5+.5*nz2)*' + o.low.toFixed(2) + ';gDust=clamp(gDust*uDustAmt,0.,.92);' +
+          'gDust=smoothstep(.45,.95,up)*smoothstep(.35,.75,nz+.15)*' + o.top.toFixed(2) + '+(1.-smoothstep(0.,' + o.gh.toFixed(2) + ',above-nz*.35))*(.5+.5*nz2)*' + o.low.toFixed(2) + ';gDust=clamp(gDust*uDustAmt*(' + o.wb.toFixed(2) + '+' + (1 - o.wb).toFixed(2) + '*clamp(vWear,0.,1.)),0.,.92);' +
           'diffuseColor.rgb=mix(diffuseColor.rgb,uDustCol*(.8+.4*nz2),gDust);}')
         .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=mix(roughnessFactor,.95,gDust);')
         .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor*=1.-gDust;'); };
-    mat.customProgramCacheKey = function () { return 'dusty' + o.top + o.low + o.gh; };
+    mat.customProgramCacheKey = function () { return 'dusty' + o.top + o.low + o.gh + o.wb; };
     return mat;
   };
 
@@ -221,7 +222,7 @@ var Gfx = (function () {
   G.SuitKit = SuitKit;
   G.lin = function (hex) { var c = new T.Color(hex).convertSRGBToLinear(); return [c.r, c.g, c.b]; };
   G.suitMat = function () { var m = new T.MeshStandardMaterial({ vertexColors: true, normalMap: G.tex.fabric.normal, normalScale: new T.Vector2(0.55, 0.55), roughness: 1, metalness: 0, envMapIntensity: 1 });
-    G.dusty(m, 0.22, 0.9, 0.6); var base = m.onBeforeCompile;
+    G.dusty(m, 0.22, 0.9, 0.6, 0.55); var base = m.onBeforeCompile;
     m.onBeforeCompile = function (sh) { base(sh);
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 aPbr;varying vec2 vPbr;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvPbr=aPbr;');
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vPbr;').replace('#include <roughnessmap_fragment>', 'float roughnessFactor=vPbr.x;').replace('#include <metalnessmap_fragment>', 'float metalnessFactor=vPbr.y;'); };

@@ -254,7 +254,8 @@ var World = (function () {
       if (o && b.type === 'corridor') { var mk = corridorMask(s, b); if (mk !== o.mask) { removeB(b.id); o = null; } }
       if (o && o.lv !== (b.lv || 1)) { removeB(b.id); o = null; }
       if (BD[b.type].floor) continue;
-      if (!o) o = makeB(s, b); setBuilt(o, b.built); var u = o.g.userData.o;
+      if (!o) o = makeB(s, b);
+      if (b.built) { var wr = Math.min(0.35, Math.max(0, s.t - (b.bt || 0)) / 24 * 0.015) + (100 - b.hp) / 100 * 0.6; if (o.wear == null || Math.abs(wr - o.wear) > 0.02) { o.wear = wr; setWear(o.g, wr); } } setBuilt(o, b.built); var u = o.g.userData.o;
       if (!b.built) { var cut = o.base + 0.05 + b.prog * (o.h + 0.1); o.clip.constant = cut; o.clipH.constant = -cut; o.holo.position.copy(o.g.position);
         for (k in s.chars) { var cc = s.chars[k]; if (cc.act && cc.act.type === 'build' && cc.act.id === b.id && cc.act.phase === 'work' && Math.random() < dt * 30) { var a = Math.random() * 6.28, rr = Math.min(d.w, d.h) * TS * 0.4; glow.emit(o.g.position.x + Math.cos(a) * rr, cut, o.g.position.z + Math.sin(a) * rr, (Math.random() - 0.5) * 3, Math.random() * 3, (Math.random() - 0.5) * 3, 0.09, 0.5 + Math.random() * 0.4, 1, 0.6, 0.25, 1, 0, 1, 6); } } }
       else setPower(o, b.on);
@@ -286,7 +287,9 @@ var World = (function () {
       var gy = Hr(c.x, c.z); m.position.set(c.x * TS, gy, c.z * TS); rig.ring.position.set(c.x * TS, gy + 0.06, c.z * TS);
       if (rig.veh) { var mv = rig.lx != null ? Math.hypot(c.x - rig.lx, c.z - rig.lz) : 0; rig.lx = c.x; rig.lz = c.z; rig.wheels.forEach(function (w) { w.rotation.x += mv * TS / 0.55; });
         if (c.face != null) { var dfv = c.face - m.rotation.y; while (dfv > Math.PI) dfv -= 6.283; while (dfv < -Math.PI) dfv += 6.283; m.rotation.y += dfv * Math.min(1, dt * 4); }
-        var hx = Hr(c.x + Math.sin(m.rotation.y) * 1.2, c.z + Math.cos(m.rotation.y) * 1.2) - Hr(c.x - Math.sin(m.rotation.y) * 1.2, c.z - Math.cos(m.rotation.y) * 1.2); rig.body.rotation.x = -Math.atan2(hx, 4.8);
+        var ry = m.rotation.y, VL = c.veh === 'rover' ? 2.35 : c.veh === 'scout' ? 1.3 : 1.9, VW = c.veh === 'rover' ? 1.35 : c.veh === 'scout' ? 0.75 : 1.15, fx_ = Math.sin(ry), fz_ = Math.cos(ry), rx_ = Math.cos(ry), rz_ = -Math.sin(ry);
+        var hF = Hr(c.x + fx_ * VL / TS, c.z + fz_ * VL / TS), hB = Hr(c.x - fx_ * VL / TS, c.z - fz_ * VL / TS), hR = Hr(c.x + rx_ * VW / TS, c.z + rz_ * VW / TS), hL = Hr(c.x - rx_ * VW / TS, c.z - rz_ * VW / TS);
+        var hc = Math.max((hF + hB) / 2, (hR + hL) / 2, gy); m.position.y = hc + 0.03; rig.body.rotation.x = -Math.atan2(hF - hB, 2 * VL); rig.body.rotation.z = Math.atan2(hR - hL, 2 * VW);
         if (mv > 0.001 && Math.random() < dt * 14) dust.emit(m.position.x - Math.sin(m.rotation.y) * 2.4, gy + 0.3, m.position.z - Math.cos(m.rotation.y) * 2.4, (Math.random() - 0.5) * 1.5, 0.5 + Math.random() * 0.6, (Math.random() - 0.5) * 1.5, 0.9, 2.2, 0.62, 0.4, 0.26, 0.4, 1.2, 1.2, 0.1); continue; }
       if (c.guard && !rig.gun) { rig.gun = MD.rifle(c.guard); rig.gun.rotation.x = Math.PI / 2; rig.gun.position.set(0, -0.3, 0.06); rig.fore[0].add(rig.gun); } if (rig.gun) { rig.gun.visible = !!c.guard; if (!c.guard) { rig.fore[0].remove(rig.gun); rig.gun = null; } }
       var a2 = c.act, st = 'idle'; if (c.critical > 0) st = 'lie'; else if (a2 && a2.phase === 'go') st = c.carry ? 'carry' : 'walk'; else if (a2 && a2.phase === 'work') { st = { gather: 'mine', plant: 'crouch', harvest: 'crouch', build: 'work', repair: 'work', clean: 'work', inspect: 'work', unload: 'work', contemplate: 'look', rescue: 'crouch' }[a2.type] || 'idle'; }
@@ -385,6 +388,9 @@ var World = (function () {
       if (era >= 4) { if (!nN) k.add('screenOn', G.rbox(TS, 0.1, 0.04, 0.01), { p: [cx, y + 0.02, cz - TS * 0.49], uv: 'keep' }); if (!nS) k.add('screenOn', G.rbox(TS, 0.1, 0.04, 0.01), { p: [cx, y + 0.02, cz + TS * 0.49], uv: 'keep' }); if (!nE) k.add('screenOn', G.rbox(0.04, 0.1, TS, 0.01), { p: [cx + TS * 0.49, y + 0.02, cz], uv: 'keep' }); if (!nW) k.add('screenOn', G.rbox(0.04, 0.1, TS, 0.01), { p: [cx - TS * 0.49, y + 0.02, cz], uv: 'keep' }); } });
     roadM = new T.Group(); k.build(roadM, true); roadM.traverse(function (m) { if (m.isMesh) { m.receiveShadow = true; m.castShadow = false; } }); scene.add(roadM); }
 
+  // desgaste: atributo por vértice lido pelo shader de pó (constrói novo, envelhece pouco)
+  function setWear(g, w) { g.traverse(function (m) { if (!m.isMesh || !m.geometry || !m.geometry.attributes.position) return; var n = m.geometry.attributes.position.count, a = m.geometry.attributes.aWear;
+      if (!a || a.count !== n) { a = new T.BufferAttribute(new Float32Array(n), 1); m.geometry.setAttribute('aWear', a); } a.array.fill(w); a.needsUpdate = true; }); }
   function drawOverlay(s) { while (overlay.children.length) { var ch = overlay.children[0]; overlay.remove(ch); ch.geometry.dispose(); } if (!W.overlayOn) return;
     var pe = [], pp = [], po = [], i, j; function c3v(b) { var c = Sim.center(b); return new T.Vector3(c.x * TS, Hr(c.x, c.z) + 1.4, c.z * TS); }
     for (i = 0; i < s.b.length; i++) { var b = s.b[i], d = BD[b.type]; if (!b.built) continue;
