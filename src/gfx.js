@@ -145,6 +145,9 @@ var Gfx = (function () {
     M.grow = std({ color: 0x200a1a, emissive: 0xff5ad0, emissiveIntensity: 2.4 });
     M.soil = std({ color: 0x3a2418, roughness: 1 });
     M.facade = std({ color: 0x3d5468, metalness: 0.7, roughness: 0.16, envMapIntensity: 1.8 }); // vidro de fachada azulado, reflexivo
+    M.chitin = std({ color: 0x17121a, metalness: 0.35, roughness: 0.32, envMapIntensity: 1.4 }); M.alienGlow = std({ color: 0x050a10, emissive: 0x3cf0e0, emissiveIntensity: 3.0, roughness: 0.4 });
+    M.alienGlow2 = std({ color: 0x0a0510, emissive: 0xb45cff, emissiveIntensity: 3.0, roughness: 0.4 }); M.relic = std({ color: 0x0c0c10, metalness: 0.9, roughness: 0.22, envMapIntensity: 2.0 });
+    M.redX = std({ color: 0x8a0d10, roughness: 0.5 }); M.tire = std({ color: 0x1b1918, roughness: 0.92 });
     M.leaf = std({ color: 0x4f9a3c, roughness: 0.6, side: T.DoubleSide }); M.leaf2 = std({ color: 0x7cc24a, roughness: 0.55, side: T.DoubleSide });
     M.ice = std({ color: 0xe8f2fa, roughness: 0.25, metalness: 0, envMapIntensity: 1.5 });
     M.flag = std({ color: 0xff6a1a, roughness: 0.7, side: T.DoubleSide });

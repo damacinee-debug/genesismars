@@ -34,6 +34,19 @@ need('escola', { x: C - 6, z: C + 16 }, 10); need('lab', al, 10);
 waitFor(function () { upkeep(); return Sim.reqOK(s); }, 12000, 'requisitos');
 log.push('requisitos: ' + JSON.stringify(Sim.requirements(s).map(function (r) { return r.ok; })));
 for (var tries = 0; tries < 6 && !s.won; tries++) { waitFor(function () { upkeep(); power(); return Sim.reqOK(s) && afford('jardim'); }, 6000, 'requisitos+materiais jardim'); var jb = build('jardim', { x: C + 10, z: C + 12 }, 20); if (jb) waitFor(function () { upkeep(); return jb.built; }, 1800, 'obra jardim'); }
+// ---- Era II: sinal, defesa e três noites de ataque ----
+if (s.won) { var E2 = { x: C - 10, z: C - 20 };
+  waitFor(function () { upkeep(); return s.al.st >= 1; }, 400, 'sinal'); log.push('sol ' + Sim.sol(s) + ' sinal: estrutura em ' + JSON.stringify(s.al.site));
+  var qb = need('quartel', al, 16), ab = need('arsenal', al, 16);
+  ['rifle', 'rifle', 'smg'].forEach(function (w) { waitFor(function () { upkeep(); return !ab.fab && afford2(D.weapons[w].cost); }, 3000, 'arma'); Sim.orderItem(s, ab.id, 'w', w); });
+  waitFor(function () { upkeep(); return (s.arms.rifle || 0) + (s.arms.smg || 0) >= 3; }, 3000, 'armas prontas');
+  ['c1', 'c2', 'c3'].forEach(function (k) { if (s.chars[k] && s.chars[k].alive) log.push('armar ' + k + ': ' + Sim.arm(s, k).msg); });
+  need('vigia', { x: C - 4, z: C - 12 }, 8); need('vigia', { x: C + 4, z: C - 12 }, 8); for (var wi = 0; wi < 10; wi++) need('muro', { x: C - 6 + wi, z: C - 15 }, 4);
+  var gb = need('garagem', al, 18); if (gb) { waitFor(function () { upkeep(); return afford2(D.vehicles.rover.cost); }, 3000, 'rover'); Sim.orderItem(s, gb.id, 'v', 'rover'); }
+  waitFor(function () { upkeep(); power(); return s.al.nights >= 3; }, 30000, '3 noites');
+  log.push('sol ' + Sim.sol(s) + ' noites ' + s.al.nights + ' ondas ' + s.al.wave + ' abatidos ' + s.al.kills + ' munição ' + Math.round(s.res.ammo) + ' veículos ' + Object.keys(s.chars).filter(function (k) { return s.chars[k].veh; }).length + ' guardas ' + Sim.guards(s));
+}
+function afford2(c) { for (var k in c) if (s.res[k] < c[k]) return false; return true; }
 var j = Sim.serialize(s), s2 = Sim.deserialize(j); Sim.tick(s2, 0.25);
 var R0 = function (k, v) { return typeof v === 'number' ? Math.round(v) : v; };
 console.log(log.join('\n')); console.log('--- alertas distintos (' + alerts.length + ') ---\n' + alerts.slice(0, 70).join('\n'));

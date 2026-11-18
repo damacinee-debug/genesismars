@@ -10,7 +10,7 @@ var DATA = {
     zone0: 46, outpostR: 30, // raio da bacia inicial e de cada Posto avançado (em tiles)
     solSec: 480,        // segundos reais por sol na velocidade 1x
     sunrise: 6, sunset: 18,
-    start: { o2: 120, water: 60, food: 30, metal: 30, comp: 10, reg: 0, seeds: 0, ice: 0, research: 0, energy: 60 },
+    start: { o2: 120, water: 60, food: 30, metal: 30, comp: 10, reg: 0, seeds: 0, ice: 0, research: 0, energy: 60, ammo: 0 },
     cargo: { metal: 50, comp: 34, seeds: 12 },
     caps: { o2: 150, water: 80, food: 80, ice: 40, mat: 160, energy: 60 },
     landerUse: 2, netRadius: 9, revealR: 7, revealRGeo: 12,
@@ -60,6 +60,13 @@ var DATA = {
     solar:   { name: 'Painel solar', cat: 'Energia', w: 2, h: 2, cost: { metal: 8, comp: 3 }, t: 12, gen: 14, desc: 'Gera energia de dia. A poeira reduz a eficiência.' },
     poste:   { name: 'Poste de energia', cat: 'Energia', w: 1, h: 1, cost: { metal: 4 }, t: 6, link: 30, desc: 'Leva a energia longe: alcança 30 m. Depois de colocar um, a ferramenta continua ativa para você ir puxando a linha até onde precisar.' },
     posto:   { name: 'Posto avançado', cat: 'Infraestrutura', w: 2, h: 2, cost: { metal: 30, comp: 12, reg: 20 }, t: 30, gen: 4, cap: 40, need: 'era2', desc: 'Empurra a fronteira: abre uma nova área de cerca de 60 m em volta dele. Tem painel e bateria próprios. Liberado na Era II.' },
+    quartel: { name: 'Quartel', cat: 'Defesa', w: 3, h: 2, cost: { metal: 30, comp: 10, reg: 20 }, t: 30, use: 1, need: 'era2', desc: 'Treina a Guarda: selecione um colono e use Armar no painel dele. Cada guarda precisa de uma arma do Arsenal.' },
+    arsenal: { name: 'Arsenal', cat: 'Defesa', w: 2, h: 2, cost: { metal: 25, comp: 12 }, t: 28, use: 2, need: 'quartel', desc: 'Fabrica armas e munição. A munição sai sozinha (metal e componentes); as armas você encomenda no painel.' },
+    garagem: { name: 'Garagem', cat: 'Defesa', w: 3, h: 3, cost: { metal: 35, comp: 15, reg: 10 }, t: 34, use: 2, need: 'arsenal', desc: 'Fabrica e recarrega veículos: Explorador leve, Rover de exploração e Veículo de resgate.' },
+    estrada: { name: 'Estrada', cat: 'Infraestrutura', w: 1, h: 1, cost: { reg: 2 }, t: 1.5, floor: true, desc: 'Caminho compactado: quem anda por ela vai 40% mais rápido. Evolui sozinha com as Eras (trilha, placas de concreto, pista iluminada, via de luz). Continue clicando para traçar.' },
+    bastiao: { name: 'Bastião de tiro', cat: 'Defesa', w: 1, h: 1, cost: { reg: 10, metal: 8 }, t: 10, wall: true, need: 'quartel', desc: 'Plataforma elevada para a linha de muros. Um guarda posicionado nela (botão direito com o guarda selecionado) atira 50% mais longe e recebe 60% menos dano.' },
+    muro:    { name: 'Muro de regolito', cat: 'Defesa', w: 1, h: 1, cost: { reg: 6 }, t: 3, wall: true, need: 'era2', desc: 'Bloco de regolito compactado. Segura os ataques; continue clicando para erguer uma linha. Melhore para concreto armado, blindagem e, no nível 5, muro de energia.' },
+    vigia:   { name: 'Torre de vigia', cat: 'Defesa', w: 1, h: 1, cost: { metal: 12, comp: 6 }, t: 14, use: 0.6, need: 'arsenal', range: 10, dps: 7, desc: 'Atira sozinha em tudo que se aproximar (10 m) e enxerga longe. Gasta munição.' },
     torre:   { name: 'Torre de luz', cat: 'Energia', w: 1, h: 1, cost: { metal: 8, comp: 2 }, t: 10, use: 0.5, prio: 2, desc: 'Ilumina uma área grande à noite, para enxergar e trabalhar na base.' },
     battery: { name: 'Bateria', cat: 'Energia', w: 1, h: 1, cost: { metal: 10, comp: 5 }, t: 14, cap: 130, desc: 'Guarda energia para a noite.' },
     airlock: { name: 'Câmara de descompressão', cat: 'Infraestrutura', w: 1, h: 1, cost: { metal: 12, comp: 4 }, t: 16, press: true, desc: 'Entrada e saída da área pressurizada. Comece o complexo por ela.' },
@@ -83,7 +90,7 @@ var DATA = {
     jardim:  { name: 'Jardim Selado', cat: 'Marco', w: 4, h: 4, cost: { metal: 60, comp: 30, reg: 40 }, t: 80, landmark: true, desc: 'Marco de Era. Uma estufa monumental: a vida como fundação. Empurra para Marte e para a Vida.' },
     farol:   { name: 'Farol Profundo', cat: 'Marco', w: 4, h: 4, cost: { metal: 60, comp: 30, reg: 40 }, t: 80, landmark: true, desc: 'Marco de Era. Uma antena de longo alcance: a Terra nunca fica longe. Empurra para a Terra e a Ciência.' }
   },
-  cats: ['Energia', 'Infraestrutura', 'Habitação', 'Sociedade', 'Oxigênio', 'Água', 'Agricultura', 'Pesquisa', 'Produção', 'Armazenamento', 'Comunicação', 'Marco'],
+  cats: ['Energia', 'Infraestrutura', 'Habitação', 'Sociedade', 'Defesa', 'Oxigênio', 'Água', 'Agricultura', 'Pesquisa', 'Produção', 'Armazenamento', 'Comunicação', 'Marco'],
 
   crops: {
     batata: { name: 'Batata', hours: 40, water: 0.12, food: 12, o2: 0.05, desc: 'Lenta, rende muito.' },
@@ -101,8 +108,8 @@ var DATA = {
   lockedResearch: ['Pequeno reator nuclear', 'Drone de transporte', 'Rover de exploração', 'Impressão 3D com regolito', 'Habitat subterrâneo', 'Busca por sinais de vida'],
 
   eras: [
-    { n: 'I', name: 'Pouso', theme: 'Sobreviver' }, { n: 'II', name: 'Posto Avançado', theme: 'Permanecer' },
-    { n: 'III', name: 'Assentamento', theme: 'Pertencer' }, { n: 'IV', name: 'Colônia', theme: 'Governar' }, { n: 'V', name: 'Civilização', theme: 'Transformar' }
+    { n: 'I', name: 'Pouso', theme: 'Sobreviver' }, { n: 'II', name: 'Sinais', theme: 'Resistir' },
+    { n: 'III', name: 'Os Outros', theme: 'Negociar' }, { n: 'IV', name: 'Contato', theme: 'Sobreviver juntos' }, { n: 'V', name: 'Marte', theme: 'Decidir' }
   ],
   axes: { origem: ['Terra', 'Marte'], comunidade: ['Coletivo', 'Indivíduo'], planeta: ['Preservar', 'Transformar'] },
   traditions: [
@@ -140,6 +147,11 @@ var DATA = {
     awake6: 'Sol {sol}. Seis despertos. A base virou um lugar com gente demais para caber numa mesa só.',
     firstHouse: 'Sol {sol}. A primeira casa de Marte ficou pronta. Tinha dois leitos e uma porta que alguém podia chamar de sua.',
     bairro: 'Sol {sol}. Três casas vizinhas, e alguém deu nome ao lugar: {what}. O primeiro bairro marciano.',
+    sinal: 'Sol {sol}. A antena captou um sinal regular vindo de baixo do gelo. Não é natural, e não é nosso.',
+    ataque: 'Sol {sol}. Algo saiu do escuro e atacou a base. Pela primeira vez, Marte respondeu.',
+    guarda: 'Sol {sol}. {who} pegou em armas. A colônia agora tem uma Guarda.',
+    estrutura: 'Sol {sol}. {who} tocou a estrutura. Ela é antiga, muito mais antiga que nós, e está acordando.',
+    noites: 'Sol {sol}. Três noites de ataque, e a base continua de pé.',
     posto: 'Sol {sol}. Um Posto avançado acendeu na fronteira, e Marte ficou um pouco maior.',
     bairroN: 'Sol {sol}. Nasceu mais um bairro: {what}.',
     berco: 'Sol {sol}. O Berço foi ligado. Ninguém disse em voz alta o que aquilo significava.',
@@ -155,6 +167,27 @@ var DATA = {
     agua: ['A primeira água', 'Segurou Marte derretido nas mãos.'],
     despertou: ['Dormiu na Terra', 'Fechou os olhos em um planeta e abriu em outro.'],
     nascido: ['Nascido em Marte', 'Marte é o único chão que conhece.']
+  },
+
+  // ---------- Era II: armas, veículos e o que vem do gelo ----------
+  weapons: {
+    smg:     { name: 'Submetralhadora MK-III', short: 'Submetralhadora', era: 2, range: 5.5, dps: 9, cost: { metal: 8, comp: 4 }, desc: 'Barata e rápida. Curto alcance.' },
+    shotgun: { name: 'Escopeta tática MK-I', short: 'Escopeta', era: 2, range: 3.2, dps: 16, cost: { metal: 10, comp: 4 }, desc: 'Muito dano de perto. Boa para defender portas.' },
+    rifle:   { name: 'Fuzil de assalto marciano MK-III', short: 'Fuzil de assalto', era: 2, range: 8.5, dps: 8, cost: { metal: 12, comp: 6 }, desc: 'A arma padrão da Guarda: alcance e dano equilibrados.' },
+    sniper:  { name: 'Fuzil de precisão MK-II', short: 'Fuzil de precisão', era: 3, range: 14, dps: 7, cost: { metal: 16, comp: 10 }, desc: 'Alcance muito longo. Era III.' },
+    lmg:     { name: 'Metralhadora leve MK-II', short: 'Metralhadora', era: 3, range: 8, dps: 15, cost: { metal: 20, comp: 10 }, desc: 'Suprime grupos. Era III.' },
+    grenade: { name: 'Lançador de granadas MK-II', short: 'Lança-granadas', era: 3, range: 7, dps: 12, area: true, cost: { metal: 18, comp: 12 }, desc: 'Dano em área. Era III.' },
+    rocket:  { name: 'Lançador de foguetes MK-I', short: 'Lança-foguetes', era: 4, range: 10, dps: 22, cost: { metal: 24, comp: 16 }, desc: 'Contra veículos e criaturas grandes. Era IV.' },
+    energy:  { name: 'Rifle de energia MK-II', short: 'Rifle de energia', era: 4, range: 10, dps: 20, cost: { metal: 20, comp: 20 }, desc: 'O mais forte contra os aliens. Era IV.' }
+  },
+  vehicles: {
+    scout:  { name: 'Explorador leve', short: 'Explorador', era: 2, speed: 3.4, hp: 70, reveal: 10, cost: { metal: 25, comp: 10 }, hours: 4, desc: 'Batedor: o mais rápido, revela o mapa por onde passa.' },
+    rover:  { name: 'Rover de exploração', short: 'Rover', era: 2, speed: 2.4, hp: 160, reveal: 7, carry: 10, cost: { metal: 40, comp: 15 }, hours: 6, desc: 'Coleta sozinho e carrega 10 vezes mais que um colono.' },
+    rescue: { name: 'Veículo de resgate', short: 'Resgate', era: 2, speed: 2.8, hp: 140, reveal: 6, cost: { metal: 35, comp: 14 }, hours: 5, desc: 'Busca feridos e quem está sem oxigênio e leva para dentro.' }
+  },
+  aliens: {
+    crawler: { name: 'Rastejador', hp: 34, dps: 5, speed: 1.5, range: 0.9 },
+    spitter: { name: 'Cuspidor', hp: 26, dps: 4, speed: 1.2, range: 5 }
   },
 
   // Verbetes da Crônica: os recursos do jogo e o que eles são de verdade
@@ -196,7 +229,16 @@ var DATA = {
     { id: 'berco', text: 'Construa o Berço (menu Sociedade)' },
     { id: 'born', text: 'Mantenha leito, comida e água até nascer o primeiro marciano' },
     { id: 'escola', text: 'Construa a Escola' },
-    { id: 'landmark', text: 'Cumpra os requisitos da Era e erga um Marco' }
+    { id: 'landmark', text: 'Cumpra os requisitos da Era e erga um Marco' },
+    { id: 'sinal', text: 'Era II: espere o sinal. A antena está captando algo vindo do gelo' },
+    { id: 'quartel', text: 'Construa o Quartel (menu Defesa)' },
+    { id: 'arsenal', text: 'Construa o Arsenal e encomende armas' },
+    { id: 'guarda', text: 'Arme dois colonos: selecione um e use Armar no painel' },
+    { id: 'muro', text: 'Erga muros de regolito e uma Torre de vigia do lado de onde vêm os ataques' },
+    { id: 'noites', text: 'Resista a 3 noites de ataque' },
+    { id: 'garagem', text: 'Construa a Garagem e fabrique um Rover' },
+    { id: 'posto2', text: 'Construa um Posto avançado na direção do sinal' },
+    { id: 'estrutura', text: 'Leve alguém até a estrutura enterrada (marcada no mapa)' },
   ],
 
   dialogues: [

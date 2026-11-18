@@ -54,7 +54,7 @@ var Sim = (function () {
       tech: {}, trad: {}, axes: { origem: 0, comunidade: 0, planeta: 0 }, bond: 45, chron: [], cd: {}, said: {}, pending: null,
       stableH: 0, shed: false, lifeSupport: true, rate: { o2: 0, energy: 0 }, lastHour: 7, auto: true, fogStr: null, nborn: 0, nbairro: 0, school: false,
       ark: { st: 0, pods: D.colonists.map(function (c) { return { id: c.id, st: 'sleep' }; }), wake: null, lostT: 0, awake: 0, pad: null } };
-    var C = N / 2;
+    warInit(s); var C = N / 2;
     for (var id in D.chars) mkChar(s, id, C + D.chars[id].dx, C + D.chars[id].dz);
     attach(s);
     s.b.push({ id: s.nid++, type: 'lander', x: C - 1, z: C - 1, prog: 1, built: true, hp: 100, on: true, why: '', dust: 0 });
@@ -72,6 +72,7 @@ var Sim = (function () {
   }
   function attach(s) { // dados de execução, recriados ao carregar
     s.rt = { map: genMap(s.seed), occ: new Int16Array(N * N), fog: new Uint8Array(N * N), play: new Uint8Array(N * N), out: [], fogDirty: true }; computePlay(s);
+    warInit(s); s.rt.fx = []; for (var vk in s.chars) if (s.chars[vk].veh) regVeh(vk, s.chars[vk].veh);
     if (s.fogStr) for (var i = 0; i < N * N; i++) s.rt.fog[i] = s.fogStr.charCodeAt(i) === 49 ? 1 : 0;
     rebuildOcc(s);
   }
@@ -84,8 +85,8 @@ var Sim = (function () {
     s.rt.playDirty = true; }
   function playable(s, x, z) { x = Math.floor(x); z = Math.floor(z); return x >= 0 && z >= 0 && x < N && z < N && s.rt.play[z * N + x] >= 110; }
   function addZone(s, x, z, r) { s.zones.push({ x: x, z: z, r: r, k: s.zones.length + 1 }); computePlay(s); emit(s, { type: 'zone' }); }
-  function rebuildOcc(s) { var o = s.rt.occ; o.fill(0); var i, x, z;
-    for (i = 0; i < s.b.length; i++) { var b = s.b[i], d = BD[b.type]; for (z = 0; z < d.h; z++) for (x = 0; x < d.w; x++) o[(b.z + z) * N + b.x + x] = b.id; }
+  function rebuildOcc(s) { var o = s.rt.occ; o.fill(0); var i, x, z; if (!s.rt.road) s.rt.road = new Uint8Array(N * N); s.rt.road.fill(0);
+    for (i = 0; i < s.b.length; i++) { var b = s.b[i], d = BD[b.type]; if (d.floor) { s.rt.road[b.z * N + b.x] = b.built ? 2 : 1; continue; } for (z = 0; z < d.h; z++) for (x = 0; x < d.w; x++) o[(b.z + z) * N + b.x + x] = b.id; }
     for (i = 0; i < s.deps.length; i++) o[s.deps[i].z * N + s.deps[i].x] = -1; }
   function serialize(s) { var rt = s.rt, f = ''; for (var i = 0; i < N * N; i++) f += rt.fog[i] ? '1' : '0'; s.fogStr = f; delete s.rt; var j = JSON.stringify(s); s.rt = rt; s.fogStr = null; return j; }
   function deserialize(j) { var s = JSON.parse(j); if (s.v !== 3) throw new Error('versão antiga'); attach(s); s.fogStr = null; return s; }
@@ -97,13 +98,14 @@ var Sim = (function () {
   function chron(s, key, v) { v = v || {}; v.sol = sol(s); v.year = D.lore.year; v.ship = D.lore.ship; v.company = D.lore.company; v.ark = D.lore.ark; s.chron.push({ sol: v.sol, text: fmt(D.chronicle[key], v), key: key }); emit(s, { type: 'chron' }); }
   // ---- pessoas: os dois da Gênesis, os doze da Alvorada e os nascidos em Marte
   var COL = {}; D.colonists.forEach(function (c) { COL[c.id] = c; });
-  function cinfo(id) { if (D.chars[id]) return D.chars[id]; if (COL[id]) return COL[id]; var n = +id.slice(1) || 1, nm = D.bornNames[(n - 1) % D.bornNames.length];
+  var VEH = {}; function regVeh(id, ty) { var V = D.vehicles[ty]; VEH[id] = { id: id, name: V.name + ' ' + id.slice(1), short: V.short + ' ' + id.slice(1), role: 'Veículo', job: 'pil', veh: ty, trait: [V.short, V.desc], why: 'Fabricado na Garagem.' }; }
+  function cinfo(id) { if (D.chars[id]) return D.chars[id]; if (COL[id]) return COL[id]; if (VEH[id]) return VEH[id]; var n = +id.slice(1) || 1, nm = D.bornNames[(n - 1) % D.bornNames.length];
     return { id: id, name: nm, short: nm, role: 'Nascido em Marte', job: D.jobKeys[(n - 1) % D.jobKeys.length], born: true, trait: ['Nascido em Marte', 'Nunca viu a Terra. Marte é o único chão que conhece.'], why: 'Não veio de lugar nenhum. É daqui.' }; }
   function cname(id) { return cinfo(id).short; }
   function mkChar(s, id, x, z) { var inf = cinfo(id), sk = inf.skills ? JSON.parse(JSON.stringify(inf.skills)) : { eng: 1, bot: 1, geo: 1, pil: 1, med: 1, sci: 1 };
     return (s.chars[id] = { id: id, x: x, z: z, inside: null, alive: true, critical: 0, sleeping: false, carry: null, act: null, queue: [], mem: [], lastTalk: -99, lastCont: -99, job: inf.job || null, home: null, hero: !!D.chars[id], shift: D.chars[id] ? 0 : Object.keys(s.chars).length % 2,
       needs: { health: 100, o2: 100, hunger: 20, thirst: 20, energy: 85, temp: 90, stress: 25, morale: 65, rad: 0 }, skills: sk, xp: {} }); }
-  function pop(s) { var n = 0; for (var id in s.chars) if (s.chars[id].alive) n++; return n; }
+  function pop(s) { var n = 0; for (var id in s.chars) if (s.chars[id].alive && !s.chars[id].veh) n++; return n; }
   function isShelter(b) { return b.built && (b.type === 'lander' || (!!BD[b.type].beds && b.on)); }
   // Níveis 1–4: cada melhoria multiplica produção, geração e armazenamento, e soma leitos
   var LVM = [1, 1.5, 2.1, 3, 4.2];
@@ -112,7 +114,7 @@ var Sim = (function () {
   function useOf(b) { return (BD[b.type].use || 0) * (1 + 0.25 * (lvl(b) - 1)); }
   function upCost(b) { var c = BD[b.type].cost, k = [0, 1.5, 2.5, 4, 6][lvl(b)], o = {}; for (var r in c) o[r] = Math.ceil(c[r] * k); return o; }
   function canUpgrade(s, b) { var d = BD[b.type], L = lvl(b); if (!b.built || b.up != null) return { ok: false, msg: b.up != null ? 'Melhoria em andamento' : 'Termine a obra primeiro' };
-    if (b.type === 'lander' || d.landmark || b.type === 'corridor' || b.type === 'pad' || b.type === 'airlock') return { ok: false, msg: 'Esta construção não tem níveis' };
+    if (b.type === 'lander' || d.landmark || d.floor || b.type === 'corridor' || b.type === 'pad' || b.type === 'airlock') return { ok: false, msg: 'Esta construção não tem níveis' };
     if (L >= 5) return { ok: false, msg: 'Nível máximo' };
     if (L === 2 && Object.keys(s.tech).filter(function (k) { return s.tech[k]; }).length < 2) return { ok: false, msg: 'Nível 3 pede 2 pesquisas concluídas' };
     if (L === 3 && !s.won) return { ok: false, msg: 'Nível 4 pede a Era II (erga um Marco)' };
@@ -124,9 +126,9 @@ var Sim = (function () {
   function reserved(s) { var n = s.ark.wake ? 1 : 0; for (var i = 0; i < s.b.length; i++) if (s.b[i].gest) n++; return n; }
   function freeBeds(s) { return beds(s) - pop(s) - reserved(s); }
   function sleepers(s) { return s.ark.pods.filter(function (p) { return p.st === 'sleep'; }); }
-  function nearestOther(s, c, pred) { var best = null, bd = 1e9; for (var id in s.chars) { var o = s.chars[id]; if (o === c || !o.alive || (pred && !pred(o))) continue; var d = Math.hypot(o.x - c.x, o.z - c.z); if (d < bd) { bd = d; best = o; } } return best; }
+  function nearestOther(s, c, pred) { var best = null, bd = 1e9; for (var id in s.chars) { var o = s.chars[id]; if (o === c || !o.alive || o.veh || (pred && !pred(o))) continue; var d = Math.hypot(o.x - c.x, o.z - c.z); if (d < bd) { bd = d; best = o; } } return best; }
   function workers(s, c, type, id, plot) { var n = 0; for (var k in s.chars) { var o = s.chars[k], a = o.act; if (o !== c && o.alive && a && (a.type === type || (type === 'gather' && a.type === 'haul' && a.back === id)) && (a.id === id || a.back === id) && (plot == null || a.plot === plot)) n++; } return n; }
-  function rescueTarget(s, c) { for (var id in s.chars) { var o = s.chars[id]; if (o === c || !o.alive || o.critical <= 0) continue; if (!workers(s, c, 'rescue', o.id)) return o; } return null; }
+  function rescueTarget(s, c) { for (var id in s.chars) { var o = s.chars[id]; if (o === c || !o.alive || o.veh || o.critical <= 0) continue; if (!workers(s, c, 'rescue', o.id)) return o; } return null; }
   function byId(s, id) { for (var i = 0; i < s.b.length; i++) if (s.b[i].id === id) return s.b[i]; return null; }
   function depById(s, id) { for (var i = 0; i < s.deps.length; i++) if (s.deps[i].id === id) return s.deps[i]; return null; }
   function ofType(s, t, builtOnly) { var r = []; for (var i = 0; i < s.b.length; i++) if (s.b[i].type === t && (!builtOnly || s.b[i].built)) r.push(s.b[i]); return r; }
@@ -199,11 +201,14 @@ var Sim = (function () {
     if (d.need === 'antenna' && !ofType(s, 'antenna', true).length) return { ok: false, reason: 'Precisa de uma antena pronta para guiar o pouso' };
     if (d.need === 'awake6' && s.ark.awake < 6) return { ok: false, reason: 'Precisa de 6 colonos despertos para operar' };
     if (d.need === 'era2' && !s.won) return { ok: false, reason: 'Liberado na Era II: erga um Marco primeiro' };
+    if (d.need === 'quartel' && !ofType(s, 'quartel', true).length) return { ok: false, reason: 'Construa o Quartel primeiro' };
+    if (d.need === 'arsenal' && !ofType(s, 'arsenal', true).length) return { ok: false, reason: 'Construa o Arsenal primeiro' };
     if (d.need === 'berco' && !ofType(s, 'berco', true).length) return { ok: false, reason: 'Construa o Berço primeiro' };
     var allIce = true;
     for (j = 0; j < d.h; j++) for (i = 0; i < d.w; i++) { k = (z + j) * N + x + i;
       if (!s.rt.fog[k]) return { ok: false, reason: 'Área ainda não explorada' };
       if (s.rt.play[k] < 110) return { ok: false, reason: 'Fora da área explorável: avance a fronteira com um Posto avançado' };
+      if (s.rt.road && s.rt.road[k]) return { ok: false, reason: d.floor ? 'Já tem estrada aqui' : 'Tem uma estrada aqui' };
       if (m.rock[k]) return { ok: false, reason: 'Bloqueado por rocha' };
       if (s.rt.occ[k]) return { ok: false, reason: 'Local ocupado' };
       if (m.steep[k]) return { ok: false, reason: 'Terreno inclinado demais' };
@@ -239,7 +244,7 @@ var Sim = (function () {
   function demolish(s, id) { var b = byId(s, id); if (!b || b.type === 'lander' || BD[b.type].landmark || b.id === s.ark.pad) return false; var d = BD[b.type];
     for (var k in d.cost) addRes(s, k, d.cost[k] * (b.built ? 0.5 : 1));
     s.b.splice(s.b.indexOf(b), 1); rebuildOcc(s); for (var c in s.chars) if (s.chars[c].act && s.chars[c].act.id === id) clearAct(s.chars[c]); return true; }
-  function finishBuilding(s, b, c) { var d = BD[b.type]; b.built = true; b.prog = 1; b.why = ''; if (b.type === 'posto') { var cb = center(b); addZone(s, cb.x, cb.z, B.outpostR); alertK(s, 'info', 'Posto avançado pronto: a fronteira avançou', 'posto' + b.id, b.x, b.z, 0); chron(s, 'posto', {}); }
+  function finishBuilding(s, b, c) { var d = BD[b.type]; b.built = true; b.prog = 1; b.why = ''; if (d.floor) rebuildOcc(s); if (b.type === 'posto') { var cb = center(b); addZone(s, cb.x, cb.z, B.outpostR); alertK(s, 'info', 'Posto avançado pronto: a fronteira avançou', 'posto' + b.id, b.x, b.z, 0); chron(s, 'posto', {}); }
     if (b.type === 'greenhouse') b.plots = [null, null, null, null];
     if (b.type === 'solar' && !s.flags.firstPanel) { s.flags.firstPanel = true; chron(s, 'firstPanel', { who: cname(c.id) }); }
     if (b.type === 'casa' && !s.flags.firstHouse) { s.flags.firstHouse = true; chron(s, 'firstHouse', {}); }
@@ -292,6 +297,7 @@ var Sim = (function () {
     var i, b, d, o2Before = s.res.o2;
     for (i = 0; i < s.b.length; i++) { b = s.b[i]; d = BD[b.type];
       if (b.type === 'greenhouse' && b.built) plots(s, b, dtH);
+      if ((b.type === 'arsenal' || b.type === 'garagem') && b.built) factory(s, b, dtH);
       if (b.leak && b.built) s.res.o2 = Math.max(0, s.res.o2 - 2 * dtH);
       if (!b.on) continue;
       if (b.type === 'o2ext') { var g = Math.min(cp.o2 - s.res.o2, d.out.o2 * mul(b) * dtH); if (g > 0) { s.res.o2 += g; s.stats.o2Made += g; if (!s.flags.firstO2 && s.stats.o2Made > 1) { s.flags.firstO2 = true; chron(s, 'firstO2', {}); } } }
@@ -327,10 +333,10 @@ var Sim = (function () {
   function homeOf(s, c) { var b = c.home != null ? byId(s, c.home) : null; return b && isShelter(b) ? b : shelter(s, c); }
   // Casas: cada colono ganha a sua (prefere Casa; o habitat fica para Elias e Helena) e dorme nela
   function assignHomes(s) { var occ = {}, id, c, i, ids = Object.keys(s.chars);
-    for (i = 0; i < ids.length; i++) { c = s.chars[ids[i]]; if (!c.alive) continue; var hb = c.home != null ? byId(s, c.home) : null; if (hb && isShelter(hb)) occ[hb.id] = (occ[hb.id] || 0) + 1; else c.home = null; }
+    for (i = 0; i < ids.length; i++) { c = s.chars[ids[i]]; if (!c.alive || c.veh) continue; var hb = c.home != null ? byId(s, c.home) : null; if (hb && isShelter(hb)) occ[hb.id] = (occ[hb.id] || 0) + 1; else c.home = null; }
     function free(b) { return isShelter(b) && b.type !== 'lander' && (occ[b.id] || 0) < bedsOf(b); }
     function pick(pref) { for (var j = 0; j < s.b.length; j++) if (s.b[j].type === pref && free(s.b[j])) return s.b[j]; return null; }
-    for (i = 0; i < ids.length; i++) { c = s.chars[ids[i]]; if (!c.alive) continue; var cur = c.home != null ? byId(s, c.home) : null;
+    for (i = 0; i < ids.length; i++) { c = s.chars[ids[i]]; if (!c.alive || c.veh) continue; var cur = c.home != null ? byId(s, c.home) : null;
       var want = c.hero ? ['habitat', 'casa'] : ['casa', 'habitat']; if (cur && cur.type === want[0]) continue;
       var nb = pick(want[0]) || (!cur || cur.type === 'lander' ? pick(want[1]) : null);
       if (!nb && !cur) { for (var j = 0; j < s.b.length; j++) if (free(s.b[j])) { nb = s.b[j]; break; } }
@@ -398,7 +404,7 @@ var Sim = (function () {
       case 'warm': return c.needs.temp >= 85 || a.t > 40;
       case 'inspect': if (a.t >= 3) { s.flags.inspected = true; return true; } return false;
       case 'unload': if (a.t >= 6) { s.flags.unloaded = true; for (var r in B.cargo) s.res[r] += B.cargo[r]; alertK(s, 'info', 'Suprimentos retirados: metal, componentes e sementes', 'unl', c.x, c.z, 0); emit(s, { type: 'sound', id: 'built' }); return true; } return false;
-      case 'gather': var dp = depById(s, a.id); if (!dp) return true; if (a.t >= 5) { var n = Math.min(B.carry, dp.left); dp.left -= n; c.carry = { res: dp.res, n: n * (s.tech.geologia ? 1.25 : 1) };
+      case 'gather': var dp = depById(s, a.id); if (!dp) return true; if (a.t >= 5) { var n = Math.min(B.carry * (c.veh ? D.vehicles[c.veh].carry || 1 : 1), dp.left); dp.left -= n; c.carry = { res: dp.res, n: n * (s.tech.geologia ? 1.25 : 1) };
           if (dp.left <= 0) { s.deps.splice(s.deps.indexOf(dp), 1); rebuildOcc(s); newVein(s, dp.res, dp.x, dp.z); emit(s, { type: 'deps' }); }
           var dr = dropoff(s, c); if (!start(s, c, { type: 'haul', kind: 'b', id: dr.id, back: a.id }, a.player)) return true; return false; } return false;
       case 'haul': if (c.carry) { if (!a.player) a.back = null; var got = addRes(s, c.carry.res, c.carry.n); if (got < c.carry.n - 0.01) alertK(s, 'warn', 'Armazém cheio: construa um armazém', 'full', c.x, c.z, 6); c.carry = null; s.stats.trips++; s.flags.gathered = true; emit(s, { type: 'sound', id: 'drop' }); }
@@ -460,19 +466,20 @@ var Sim = (function () {
 
   function charTick(s, c, dtS, dtH) {
     if (!c.alive) return;
+    if (c.veh) { vehNeeds(s, c, dtH); if (!c.alive) return; } else if (fightOrFlee(s, c, dtS)) return;
     if (c.critical > 0) { c.critical -= dtH; if (c.critical <= 0) die(s, c); return; }
-    needs(s, c, dtH); if (c.critical > 0 || !c.alive) return;
+    if (!c.veh) needs(s, c, dtH); if (c.critical > 0 || !c.alive) return;
     var a = c.act, n = c.needs;
     if (a) { // interrupções de sobrevivência
       var urgent = a.type === 'warm' || a.type === 'refill' || a.type === 'rescue' || a.type === 'sleep' || a.type === 'eat' || a.type === 'drink';
       if (!urgent && ((c.inside == null && n.o2 < 20) || (c.inside == null && n.temp < 32) || n.energy < 6 || (n.thirst >= 88 && s.res.water > 0.5) || (n.hunger >= 88 && s.res.food >= B.mealFood) || rescueTarget(s, c))) { requeue(c); a = null; }
     }
-    if (!c.act) { if (c.wait > s.t) return; decide(s, c); a = c.act; if (!a) return; }
-    if (a.phase === 'go') { var v = B.walk * (1 + 0.03 * c.skills.pil) * (s.stormK > 0.3 ? 0.6 : 1) * (n.energy < 12 ? 0.7 : 1) * (c.weak > s.t ? 0.65 : 1), left = v * dtS;
+    if (!c.act) { if (c.wait > s.t) return; if (c.veh) vehDecide(s, c); else decide(s, c); a = c.act; if (!a) return; }
+    if (a.phase === 'go') { var v = c.veh ? B.walk * D.vehicles[c.veh].speed * (c.bat > 0 ? 1 : 0.3) : B.walk * (1 + 0.03 * c.skills.pil) * (s.stormK > 0.3 ? 0.6 : 1) * (n.energy < 12 ? 0.7 : 1) * (c.weak > s.t ? 0.65 : 1); if (s.rt.road && s.rt.road[Math.floor(c.z) * N + Math.floor(c.x)] === 2) v *= 1.4 + 0.1 * Math.max(0, s.era - 1); var left = v * dtS;
       if (a.kind === 'c' && a.pi === 0 && a.t === 0) a.t = 0;
       while (left > 0 && a.pi < a.path.length) { var p = a.path[a.pi], dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz);
         if (d <= left) { c.x = p.x; c.z = p.z; left -= d; a.pi++; } else { c.x += dx / d * left; c.z += dz / d * left; c.face = Math.atan2(dx, dz); left = 0; } }
-      var tx = Math.floor(c.x), tz = Math.floor(c.z); if (c.lt !== tz * N + tx) { c.lt = tz * N + tx; reveal(s, c, s.tech.geologia ? B.revealRGeo : B.revealR); }
+      var tx = Math.floor(c.x), tz = Math.floor(c.z); if (c.lt !== tz * N + tx) { c.lt = tz * N + tx; reveal(s, c, c.veh ? D.vehicles[c.veh].reveal : s.tech.geologia ? B.revealRGeo : B.revealR); if (c.veh) c.bat = Math.max(0, c.bat - 0.02); }
       xp(s, c, 'pil', dtS * 0.3);
       if (a.pi >= a.path.length) { a.phase = 'work'; a.t = 0; }
       else return; }
@@ -491,6 +498,7 @@ var Sim = (function () {
       else if (b.type === 'solar') o.type = b.dust > 0.08 ? 'clean' : 'move';
       else if (BD[b.type].beds) o.type = c.needs.energy < 70 ? 'sleep' : 'shelter';
       else if (b.type === 'lab') o.type = 'research';
+      else if (b.type === 'bastiao' && c.guard) { c.post = b.id; o.type = 'move'; }
       else if (b.type === 'greenhouse') { o.type = 'shelter'; for (var p = 0; p < 4; p++) { var pl = b.plots[p]; if (pl && pl.crop && pl.g >= 1) { o.type = 'harvest'; o.plot = p; break; } if (pl && pl.order) { o.type = 'plant'; o.plot = p; } } }
       else o.type = 'move';
       return o; }
@@ -498,7 +506,7 @@ var Sim = (function () {
   function order(s, cid, tg, queue) { var c = s.chars[cid]; if (!c || !c.alive || c.critical > 0) return { ok: false, msg: 'Não pode receber ordens agora' };
     var o = tg.type ? tg : orderFor(s, c, tg); if (!o) return { ok: false, msg: 'Nada a fazer aqui' };
     if (queue && c.act) { c.queue.push(o); return { ok: true, msg: 'Na fila: ' + LABEL[o.type] }; }
-    c.queue = []; c.hold = null; var prev = c.act; clearAct(c);
+    c.queue = []; c.hold = null; if (!(tg && tg.kind === 'b' && byId(s, tg.id) && byId(s, tg.id).type === 'bastiao')) c.post = null; var prev = c.act; clearAct(c);
     if (!start(s, c, o, true)) { c.act = prev; return { ok: false, msg: 'Caminho bloqueado' }; }
     return { ok: true, msg: LABEL[o.type] }; }
   function plant(s, bid, plot, crop) { var b = byId(s, bid); if (!b || !b.plots) return { ok: false, msg: 'Estufa indisponível' }; if (b.plots[plot]) return { ok: false, msg: 'Canteiro ocupado' };
@@ -577,11 +585,94 @@ var Sim = (function () {
     var dtH = dtS / HS; s.t += dtH;
     var st = s.storm, k = 0; if (!B.storm && st.st) st.st = 0; if (st.st === 2) k = clamp(Math.min(s.t - st.start, st.end - s.t) / 3, 0, 1); s.stormK = k;
     var cp = networks(s, dtH); production(s, dtH, cp); society(s, dtH);
-    var alive = 0; for (var id in s.chars) { charTick(s, s.chars[id], dtS, dtH); if (s.chars[id].alive) alive++; }
+    var alive = 0; for (var id in s.chars) { charTick(s, s.chars[id], dtS, dtH); if (s.chars[id].alive && !s.chars[id].veh) alive++; }
+    war(s, dtS, dtH);
     for (var r in s.res) if (s.res[r] < 0) s.res[r] = 0;
     if (Math.floor(s.t) !== s.lastHour) { s.lastHour = Math.floor(s.t); hourly(s); if (s.lastHour % 24 === 0) emit(s, { type: 'newSol' }); }
     if (!alive && !s.lost) { s.lost = true; chron(s, 'lost', {}); emit(s, { type: 'scene', id: 'defeat' }); }
   }
+
+  // ---------------- ERA II: SINAIS, ATAQUES, GUARDA E VEÍCULOS ----------------
+  function warInit(s) { s.arms = s.arms || {}; s.al = s.al || { st: 0, t0: 0, wave: 0, next: 0, nights: 0, attack: false, found: false, site: null, kills: 0 }; s.foes = s.foes || []; s.fid = s.fid || 1; s.nv = s.nv || 0; if (s.res.ammo == null) s.res.ammo = 0; }
+  function fx(s, o) { if (s.rt.fx && s.rt.fx.length < 300) s.rt.fx.push(o); }
+  function nightAt(t) { var d = Math.floor(t / 24) * 24 + 21; return d > t ? d : d + 24; }
+  function foesNear(s, x, z, r) { var best = null, bd = r; for (var i = 0; i < s.foes.length; i++) { var f = s.foes[i]; if (f.hp <= 0 || f.flee) continue; var d = Math.hypot(f.x - x, f.z - z); if (d < bd) { bd = d; best = f; } } return best ? { f: best, d: bd } : null; }
+  function spawnWave(s) { var A = s.al, C = N / 2, n = Math.min(14, 2 + Math.floor(A.wave * 1.6)), sp = A.wave >= 2 ? Math.floor(n / 3) : 0, base = Math.atan2(A.site.z - C, A.site.x - C) + (rnd(s) - 0.5) * 1.6, r = 10, x, z;
+    while (r < N / 2 - 4) { x = Math.floor(C + Math.cos(base) * r); z = Math.floor(C + Math.sin(base) * r); if (s.rt.play[z * N + x] < 40) break; r += 1; } r += 4;
+    var ox = C + Math.cos(base) * r, oz = C + Math.sin(base) * r;
+    for (var i = 0; i < n; i++) s.foes.push({ id: s.fid++, type: i < sp ? 'spitter' : 'crawler', x: ox + (rnd(s) - 0.5) * 5, z: oz + (rnd(s) - 0.5) * 5, sx: ox, sz: oz, hp: D.aliens[i < sp ? 'spitter' : 'crawler'].hp * (1 + A.wave * 0.08), cd: 0 });
+    A.wave++; A.attack = true; if (A.wave === 1) chron(s, 'ataque', {}); alertK(s, 'crit', 'Ataque! ' + n + ' criaturas vindo do escuro. Os colonos se abrigam; a Guarda vai ao combate', 'wave' + A.wave, ox, oz, 0); emit(s, { type: 'sound', id: 'alarm' }); emit(s, { type: 'raid', on: true }); }
+  function postOf(s, c) { if (c.post == null) return null; var b = byId(s, c.post); if (!b || !b.built || b.hp <= 0) { c.post = null; return null; } return b; }
+  function hitChar(s, c, dmg) { var pb = postOf(s, c); if (pb && Math.hypot(pb.x + 0.5 - c.x, pb.z + 0.5 - c.z) < 1.2) dmg *= 0.4; c.needs.health = Math.max(0, c.needs.health - dmg); if (c.veh && c.needs.health <= 0) { c.alive = false; alertK(s, 'crit', cname(c.id) + ' foi destruído', 'vd' + c.id, c.x, c.z, 0); } }
+  function hitBuilding(s, b, dmg) { if (!b.built) dmg *= 1.5; b.hp = Math.max(0, b.hp - dmg); if (b.hp <= 0 && BD[b.type].wall) { s.b.splice(s.b.indexOf(b), 1); rebuildOcc(s); fx(s, { k: 'boom', x: b.x + 0.5, z: b.z + 0.5 }); } else if (b.hp < 40) alertK(s, 'warn', BD[b.type].name + ' sob ataque', 'atk' + b.id, b.x, b.z, 8); }
+  function foeTick(s, f, dtS) { var A = D.aliens[f.type], C = N / 2, i;
+    if (f.flee) { var dx = f.sx - f.x, dz = f.sz - f.z, d = Math.hypot(dx, dz); if (d < 1) { f.gone = true; return; } f.x += dx / d * A.speed * 1.3 * dtS; f.z += dz / d * A.speed * 1.3 * dtS; return; }
+    if (!f.tg || f.rt < s.t) { f.rt = s.t + 0.08; f.tg = null; var bd = 13;
+      for (var id in s.chars) { var c = s.chars[id]; if (!c.alive || c.inside != null || c.critical > 0) continue; var d0 = Math.hypot(c.x - f.x, c.z - f.z); if (d0 < bd) { bd = d0; f.tg = { k: 'c', id: id }; } }
+      if (!f.tg) { bd = 1e9; for (i = 0; i < s.b.length; i++) { var b0 = s.b[i]; if (b0.hp <= 0 || BD[b0.type].floor) continue; var cb0 = center(b0), d1 = Math.hypot(cb0.x - f.x, cb0.z - f.z) + (BD[b0.type].wall ? 6 : 0); if (d1 < bd) { bd = d1; f.tg = { k: 'b', id: b0.id }; } } } }
+    if (!f.tg) return; var tx, tz, reach = A.range, tc = null, tb = null;
+    if (f.tg.k === 'c') { tc = s.chars[f.tg.id]; if (!tc || !tc.alive || tc.inside != null) { f.tg = null; return; } tx = tc.x; tz = tc.z; }
+    else { tb = byId(s, f.tg.id); if (!tb || tb.hp <= 0) { f.tg = null; return; } var cb = center(tb); tx = cb.x; tz = cb.z; reach += Math.max(BD[tb.type].w, BD[tb.type].h) / 2; }
+    var ddx = tx - f.x, ddz = tz - f.z, dd = Math.hypot(ddx, ddz); f.face = Math.atan2(ddx, ddz); f.cd -= dtS;
+    if (dd > reach) { var st = A.speed * dtS, nx = f.x + ddx / dd * st, nz = f.z + ddz / dd * st, k = Math.floor(nz) * N + Math.floor(nx), oc = (k >= 0 && k < N * N) ? s.rt.occ[k] : 0;
+      if (oc > 0 && (!tb || oc !== tb.id)) { var blk = byId(s, oc); if (blk) { if (f.cd <= 0) { f.cd = 0.5; hitBuilding(s, blk, A.dps * 0.5 * (BD[blk.type].wall ? 0.35 / mul(blk) : 0.7)); fx(s, { k: 'claw', x: f.x, z: f.z }); } return; } }
+      f.x = nx; f.z = nz; f.mv = true; return; }
+    f.mv = false; if (f.cd > 0) return; f.cd = 0.5;
+    if (f.type === 'spitter') fx(s, { k: 'spit', x: f.x, z: f.z, tx: tx, tz: tz });
+    if (tc) hitChar(s, tc, A.dps * 0.5); else hitBuilding(s, tb, A.dps * 0.5 * (BD[tb.type].wall ? 0.35 / mul(tb) : 0.7)); }
+  function shoot(s, x, z, f, dps, dtS, who) { var dmg = dps * dtS; if (s.res.ammo <= 0) dmg *= 0.15; else s.res.ammo = Math.max(0, s.res.ammo - 0.3 * dtS); f.hp -= dmg;
+    who.sh = (who.sh || 0) - dtS; if (who.sh <= 0) { who.sh = 0.18 + Math.random() * 0.12; fx(s, { k: 'shot', x: x, z: z, tx: f.x, tz: f.z, w: who.guard || 'tower' }); } }
+  function fightOrFlee(s, c, dtS) { if (!s.foes.length || c.critical > 0) return false;
+    if (c.guard) { if (c.needs.health < 25) return false; var nf = foesNear(s, c.x, c.z, c.post != null ? 22 : 16); if (!nf) return false; var W = D.weapons[c.guard];
+      if (c.act && !c.act.fight) { requeue(c); clearAct(c); } c.act = null; c.sleeping = false; c.inside = null; c.hold = null; c.fighting = true; c.face = Math.atan2(nf.f.x - c.x, nf.f.z - c.z);
+      var pb = postOf(s, c), rng = W.range * (pb ? 1.5 : 1); if (pb) { var pd = Math.hypot(pb.x + 0.5 - c.x, pb.z + 0.5 - c.z); if (pd > 0.4) { var pv = Math.min(pd, B.walk * 1.2 * dtS); c.x += (pb.x + 0.5 - c.x) / pd * pv; c.z += (pb.z + 0.5 - c.z) / pd * pv; c.firing = false; return true; } if (nf.d > rng) { c.firing = false; return true; } }
+      if (!pb && nf.d > W.range * 0.9) { var v = B.walk * 1.1 * dtS, nx = c.x + (nf.f.x - c.x) / nf.d * v, nz = c.z + (nf.f.z - c.z) / nf.d * v; if (freeTile(s, Math.floor(nx), Math.floor(nz))) { c.x = nx; c.z = nz; } else if (freeTile(s, Math.floor(nx), Math.floor(c.z))) c.x = nx; else if (freeTile(s, Math.floor(c.x), Math.floor(nz))) c.z = nz; c.firing = false; }
+      else { shoot(s, c.x, c.z, nf.f, W.dps * (1 + 0.04 * (c.skills.pil || 0)), dtS, c); c.firing = true; }
+      return true; }
+    c.fighting = false; c.firing = false;
+    if (c.inside == null && !c.veh) { var near = foesNear(s, c.x, c.z, 9); if (near && !(c.act && c.act.type === 'warm' && c.act.flee)) { var sh = shelter(s, c); if (sh) { requeue(c); clearAct(c); c.queue = []; c.hold = null; if (start(s, c, { type: 'warm', kind: 'b', id: sh.id })) c.act.flee = true; alertK(s, 'warn', 'Colonos correndo para se abrigar', 'flee', c.x, c.z, 12); } } }
+    else if (c.inside != null && !c.act && s.al.attack) { c.wait = s.t + 0.5; return true; }
+    return false; }
+  function war(s, dtS, dtH) { var A = s.al, i;
+    if (s.won && A.st === 0) { if (!A.t0) A.t0 = s.t; if (s.t - A.t0 >= 6) { A.st = 1; A.site = { x: N / 2 - 18, z: N / 2 - 74 }; for (var dz = -4; dz <= 4; dz++) for (var dx = -4; dx <= 4; dx++) { var kk = (A.site.z + dz) * N + A.site.x + dx; if (kk >= 0 && kk < N * N) s.rt.fog[kk] = 1; } s.rt.fogDirty = true;
+        A.next = nightAt(s.t + 18); chron(s, 'sinal', {}); alertK(s, 'crit', 'A antena captou um sinal regular vindo de baixo do gelo, ao norte. Prepare a defesa', 'sinal', A.site.x, A.site.z, 0); emit(s, { type: 'sound', id: 'discover' }); emit(s, { type: 'scene', id: 'signal' }); } }
+    if (A.st >= 1 && !A.attack && s.t >= A.next) spawnWave(s);
+    if (A.attack && !isNight(s)) for (i = 0; i < s.foes.length; i++) s.foes[i].flee = true;
+    for (i = 0; i < s.foes.length; i++) foeTick(s, s.foes[i], dtS);
+    // torres de vigia
+    for (i = 0; i < s.b.length; i++) { var b = s.b[i]; if (b.type !== 'vigia' || !b.built || !b.on) continue; var cb = center(b), nf = foesNear(s, cb.x, cb.z, BD.vigia.range); if (nf) shoot(s, cb.x, cb.z, nf.f, BD.vigia.dps * mul(b), dtS, b); }
+    for (i = s.foes.length - 1; i >= 0; i--) { var f = s.foes[i]; if (f.hp <= 0) { A.kills++; fx(s, { k: 'die', x: f.x, z: f.z }); s.foes.splice(i, 1); } else if (f.gone) s.foes.splice(i, 1); }
+    if (A.attack && !s.foes.length) { A.attack = false; A.nights++; A.next = nightAt(s.t + 4); alertK(s, 'info', 'O ataque acabou. Confira os estragos e repare', 'endw' + A.wave, null, null, 0); emit(s, { type: 'raid', on: false }); if (A.nights === 3) chron(s, 'noites', {}); }
+    // estrutura: alguém chega perto
+    if (A.st === 1 && !A.found && A.site) for (var id in s.chars) { var c = s.chars[id]; if (c.alive && Math.hypot(c.x - A.site.x, c.z - A.site.z) < 4) { A.found = true; chron(s, 'estrutura', { who: cname(id) }); alertK(s, 'crit', cname(id) + ' chegou à estrutura. Ela pulsa, e algo no céu responde', 'found', A.site.x, A.site.z, 0); emit(s, { type: 'sound', id: 'discover' }); break; } }
+    // veículos recarregam perto da Garagem
+    for (var vid in s.chars) { var v = s.chars[vid]; if (!v.veh || !v.alive) continue; for (i = 0; i < s.b.length; i++) { var g = s.b[i]; if (g.type === 'garagem' && g.built && g.on) { var cg = center(g); if (Math.hypot(cg.x - v.x, cg.z - v.z) < 4) { v.bat = Math.min(100, v.bat + 30 * dtH); v.needs.health = Math.min(100, v.needs.health + 15 * dtH); } } } } }
+  function factory(s, b, dtH) { if (!b.on) return;
+    if (b.type === 'arsenal' && s.res.ammo < 200 && s.res.metal >= 1 && s.res.comp >= 0.5) { b.ap = (b.ap || 0) + dtH * 6 * mul(b); while (b.ap >= 3 && s.res.metal >= 1 && s.res.comp >= 0.5) { b.ap -= 3; s.res.metal -= 1; s.res.comp -= 0.5; s.res.ammo += 3; } }
+    if (!b.fab) return; b.fab.t += dtH * mul(b); var need = b.fab.w ? 3 : D.vehicles[b.fab.v].hours;
+    if (b.fab.t >= need) { if (b.fab.w) { s.arms[b.fab.w] = (s.arms[b.fab.w] || 0) + 1; alertK(s, 'info', D.weapons[b.fab.w].short + ' pronta no Arsenal', 'arm' + b.id + s.t, b.x, b.z, 0); }
+      else { var sp = spotNear(s, b), id = 'v' + (++s.nv); regVeh(id, b.fab.v); var c = mkChar(s, id, sp.x, sp.z); c.veh = b.fab.v; c.bat = 100; c.needs = { health: 100, o2: 100, hunger: 0, thirst: 0, energy: 100, temp: 90, stress: 0, morale: 80, rad: 0 }; c.vtype = b.fab.v; alertK(s, 'info', D.vehicles[b.fab.v].name + ' pronto na Garagem', 'veh' + id, c.x, c.z, 0); emit(s, { type: 'pop' }); }
+      emit(s, { type: 'sound', id: 'built' }); b.fab = null; } }
+  function orderItem(s, bid, kind, key) { var b = byId(s, bid); if (!b || !b.built) return { ok: false, msg: 'Termine a obra primeiro' }; if (b.fab) return { ok: false, msg: 'Já está fabricando' };
+    var it = kind === 'w' ? D.weapons[key] : D.vehicles[key]; if (!it) return { ok: false, msg: '?' }; if (it.era > s.era) return { ok: false, msg: 'Liberado na Era ' + D.eras[it.era - 1].n };
+    for (var r in it.cost) if (s.res[r] < it.cost[r]) return { ok: false, msg: 'Faltam materiais: ' + costText(it.cost) }; for (r in it.cost) s.res[r] -= it.cost[r];
+    b.fab = kind === 'w' ? { w: key, t: 0 } : { v: key, t: 0 }; return { ok: true, msg: 'Encomendado: ' + it.name }; }
+  function arm(s, cid, w) { var c = s.chars[cid]; if (!c || !c.alive || c.veh) return { ok: false, msg: 'Selecione um colono' }; if (!ofType(s, 'quartel', true).length) return { ok: false, msg: 'Construa o Quartel primeiro' };
+    if (c.guard) { s.arms[c.guard] = (s.arms[c.guard] || 0) + 1; c.guard = null; return { ok: true, msg: cname(cid) + ' entregou a arma e voltou ao trabalho' }; }
+    var order = w ? [w] : ['rifle', 'smg', 'shotgun', 'lmg', 'sniper', 'grenade', 'energy', 'rocket'], pick = null; for (var i = 0; i < order.length; i++) if (s.arms[order[i]] > 0) { pick = order[i]; break; }
+    if (!pick) return { ok: false, msg: 'Sem armas no estoque: encomende no Arsenal' }; s.arms[pick]--; c.guard = pick;
+    if (!s.flags.guarda) { s.flags.guarda = 1; chron(s, 'guarda', { who: cname(cid) }); } return { ok: true, msg: cname(cid) + ' agora é da Guarda (' + D.weapons[pick].short + ')' }; }
+  function guards(s) { var n = 0; for (var id in s.chars) if (s.chars[id].alive && s.chars[id].guard) n++; return n; }
+  function vehNeeds(s, c, dtH) { var n = c.needs; n.o2 = 100; n.hunger = 0; n.thirst = 0; n.energy = 100; n.temp = 90; n.stress = 0; n.morale = 80; c.inside = null; c.critical = 0;
+    if (c.bat < 15 && !c.lowBat) { c.lowBat = 1; alertK(s, 'warn', cname(c.id) + ' com pouca bateria: volte para a Garagem', 'bat' + c.id, c.x, c.z, 20); } if (c.bat > 40) c.lowBat = 0; if (n.health <= 0) { c.alive = false; } }
+  function vehDecide(s, c) { var V = c.veh, o, i;
+    while (c.queue.length) { var q = c.queue.shift(); if (start(s, c, q, true)) return true; }
+    if (c.hold) { c.wait = s.t + 0.5; return false; }
+    if (c.carry) { var dp0 = dropoff(s, c); return start(s, c, { type: 'haul', kind: 'b', id: dp0.id }); }
+    if (c.bat < 20) { for (i = 0; i < s.b.length; i++) if (s.b[i].type === 'garagem' && s.b[i].built) return start(s, c, { type: 'move', kind: 'b', id: s.b[i].id }); }
+    if (V === 'rescue') { o = rescueTarget(s, c); if (o) return start(s, c, { type: 'rescue', kind: 'c', id: o.id }); }
+    if (V === 'rover' && !s.al.attack) { var want = s.res.metal < s.res.reg ? 'metal' : 'reg', best = null, bd = 1e9; for (i = 0; i < s.deps.length; i++) { var d = s.deps[i]; if (d.res !== want || !s.rt.fog[d.z * N + d.x] || s.rt.play[d.z * N + d.x] < 110 || workers(s, c, 'gather', d.id) >= 2) continue; var dd = Math.hypot(d.x - c.x, d.z - c.z); if (dd < bd) { bd = dd; best = d; } } if (best) return start(s, c, { type: 'gather', kind: 'd', id: best.id }); }
+    c.wait = s.t + 1; return false; }
 
   // ---------------- SOCIEDADE: a Alvorada, o despertar, o Berço, os bairros ----------------
   function spotNear(s, b) { var d = BD[b.type], g = ring(s, b.x, b.z, d.w, d.h); if (!g.length) return { x: b.x + d.w + 0.5, z: b.z + 0.5 }; var k = g[Math.floor(rnd(s) * g.length)]; return { x: (k % N) + 0.5, z: Math.floor(k / N) + 0.5 }; }
@@ -618,7 +709,7 @@ var Sim = (function () {
 
   function objectives(s) { var f = s.flags, has = function (t, n) { return ofType(s, t, true).length >= (n || 1); };
     var done = { inspect: f.inspected, unload: f.unloaded, solar: has('solar', 2), battery: has('battery'), gather: f.gathered, airlock: has('airlock'), habitat: has('habitat'), workshop: has('workshop'), ice: f.iceFound, drill: has('drill'), water: f.firstWater, o2: has('o2ext'), greenhouse: has('greenhouse'), plant: f.potato || f.firstHarvest, storm: f.stormSurvived, landmark: s.won,
-      antenna: has('antenna'), pad: has('pad'), cryo: has('cryo'), arrival: s.ark.st === 2, wake: s.ark.awake >= 6, bairro: f.bairro, berco: has('berco'), born: f.firstBorn, escola: has('escola'), casas: has('casa', 6) || (s.ark.st === 2 && !sleepers(s).length) };
+      antenna: has('antenna'), pad: has('pad'), cryo: has('cryo'), arrival: s.ark.st === 2, wake: s.ark.awake >= 6, bairro: f.bairro, berco: has('berco'), born: f.firstBorn, escola: has('escola'), sinal: s.al.st >= 1, quartel: has('quartel'), arsenal: has('arsenal'), guarda: guards(s) >= 2, muro: has('muro', 8) && has('vigia'), noites: s.al.nights >= 3, garagem: Object.keys(s.chars).some(function (k) { return s.chars[k].veh === 'rover'; }), posto2: has('posto'), estrutura: s.al.found, casas: has('casa', 6) || (s.ark.st === 2 && !sleepers(s).length) };
     var nc = ofType(s, 'casa', true).length;
     return D.tutorial.map(function (t) { var tx = t.text; if (t.id === 'casas') tx = 'Construa casas para os 12 colonos: ' + nc + ' de 6 prontas (2 leitos cada)'; return { id: t.id, text: tx, done: !!done[t.id] }; }); }
   function signal(s) { var v = 0, on = 0, plants = 0, lit = false, id; v = Math.min(34, pop(s) * 5);
@@ -633,6 +724,6 @@ var Sim = (function () {
 
   return { newGame: newGame, tick: tick, canPlace: canPlace, place: place, demolish: demolish, order: order, plant: plant, buyTech: buyTech, choose: choose,
     serialize: serialize, deserialize: deserialize, requirements: requirements, readiness: readiness, cinfo: cinfo, pop: pop, beds: beds, freeBeds: freeBeds, wakeNext: wakeNext, sleepers: sleepers, reqOK: reqOK, objectives: objectives, signal: signal, caps: caps, byId: byId, depById: depById,
-    playable: playable, addZone: addZone, zoneR: zoneR, upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
+    playable: playable, addZone: addZone, zoneR: zoneR, spawnVehicle: function (s, ty, x, z) { var id = 'v' + (++s.nv); regVeh(id, ty); var c = mkChar(s, id, x, z); c.veh = ty; c.bat = 100; c.needs = { health: 100, o2: 100, hunger: 0, thirst: 0, energy: 100, temp: 90, stress: 0, morale: 80, rad: 0 }; return c; }, orderItem: orderItem, arm: arm, guards: guards, upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
 })();
 if (typeof module !== 'undefined') module.exports = Sim;

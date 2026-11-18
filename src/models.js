@@ -158,6 +158,27 @@ var Models = (function () {
     k.add('solar', G.rbox(1.4, 0.04, 0.9, 0.01), { p: [-0.4, 2.15, 0.1], r: [0.35, 0.2, 0], d: 1.25 }); k.add('metal', G.rod([-1.4, 0.25, 1.2], [-1.4, 2.6, 1.2], 0.02)); k.add('flag', G.rbox(0.6, 0.38, 0.01, 0.005), { p: [-1.1, 2.4, 1.2], uv: 'keep' });
     o.lights = [[1.1, 5.1, -0.8, 0xfff1dc, 30, 1.8], [0, 1.4, 1.2]]; o.leds = true; return 5.5; };
 
+  // ---------- Era II: defesa ----------
+  B.muro = function (k, o) { bx(k, 'concrete', 1.98, 1.5, 1.98, 0, 0.75, 0); bx(k, 'dark', 2.0, 0.12, 2.0, 0, 0.06, 0); for (var i = -1; i <= 1; i += 2) bx(k, 'concrete', 0.7, 0.35, 1.98, i * 0.55, 1.67, 0); return 1.9; };
+  B.bastiao = function (k, o) { for (var s = -1; s <= 1; s += 2) for (var t2 = -1; t2 <= 1; t2 += 2) bx(k, 'dark', 0.16, 2.2, 0.16, s * 0.8, 1.1, t2 * 0.8);
+    bx(k, 'concrete', 1.98, 1.4, 1.98, 0, 0.7, 0); bx(k, 'metal', 2.1, 0.12, 2.1, 0, 2.25, 0); for (var i = 0; i < 4; i++) { var a = i * R / 2; bx(k, 'armor', i % 2 ? 0.08 : 2.1, 0.7, i % 2 ? 2.1 : 0.08, Math.round(Math.cos(a)) * 1.02, 2.6, Math.round(Math.sin(a)) * 1.02); }
+    bx(k, 'paint', 2.12, 0.06, 0.1, 0, 2.95, 1.02); for (i = 0; i < 6; i++) bx(k, 'metal', 0.5, 0.04, 0.05, 0, 0.3 + i * 0.32, 1.03); led(k, 'ledR', 0.9, 3.05, 0.9); return 3.1; };
+  B.quartel = function (k, o) { bx(k, 'dark', 5.9, 0.3, 3.9, 0, 0.15, 0); strip(k, 5.9, 'x', 0, 0.3, 1.96);
+    vol(k, 5.2, 2.4, 3.2, 0, 0.3, -0.1, 0, { gw: 0.5, fin: true }); bx(k, 'armor', 5.3, 0.5, 0.15, 0, 0.6, 1.58); bx(k, 'dark', 1.6, 1.8, 0.08, -1.6, 1.25, 1.55); bx(k, 'paint', 1.7, 0.12, 0.1, -1.6, 2.2, 1.58);
+    G.truss(k, 'dark', 4.2, 0.3, 5, 0.02, 2.4, -1.4, 0.3); bx(k, 'paint', 0.7, 0.45, 0.04, 2.4, 4.3, -1.25); led(k, 'ledR', 2.4, 4.6, -1.4);
+    for (var i = 0; i < 3; i++) bx(k, 'armor', 0.8, 0.5, 0.5, -2.2 + i * 0.9, 0.55, 2.4); o.lights = [[0, 2.6, 2.2, 0xffd8a8]]; return 4.6; };
+  B.arsenal = function (k, o) { bx(k, 'dark', 3.9, 0.3, 3.9, 0, 0.15, 0); bx(k, 'armor', 3.4, 2.2, 3.2, 0, 1.4, -0.1); bx(k, 'dark', 3.5, 0.12, 3.3, 0, 2.55, -0.1);
+    bx(k, 'dark', 2.0, 1.6, 0.06, 0.3, 1.1, 1.52); for (var i = 0; i < 8; i++) bx(k, 'metal', 1.95, 0.03, 0.08, 0.3, 0.4 + i * 0.19, 1.55); bx(k, 'paint', 0.15, 2.2, 0.2, -1.6, 1.4, 1.45); strip(k, 2.0, 'x', 0.3, 1.95, 1.56);
+    bx(k, 'paint', 1.0, 0.6, 0.8, -0.9, 2.9, -0.6); bx(k, 'metal', 0.3, 0.9, 0.3, 1.1, 3.0, -0.9); led(k, 'ledO', 1.1, 3.5, -0.9); o.lights = [[0.3, 2.2, 2.0]]; return 3.6; };
+  B.garagem = function (k, o) { bx(k, 'dark', 5.9, 0.25, 5.9, 0, 0.12, 0); strip(k, 5.9, 'x', 0, 0.25, 2.96);
+    bx(k, 'hull', 5.4, 2.8, 4.6, 0, 1.65, -0.5); bx(k, 'metal', 5.6, 0.15, 4.8, 0, 3.1, -0.5); for (var i = -1; i <= 1; i += 2) { bx(k, 'dark', 2.2, 2.2, 0.08, i * 1.3, 1.35, 1.82); for (var j = 0; j < 9; j++) bx(k, 'metal', 2.15, 0.03, 0.1, i * 1.3, 0.35 + j * 0.24, 1.86); strip(k, 2.2, 'x', i * 1.3, 2.55, 1.86); }
+    bx(k, 'paint', 0.2, 2.8, 0.25, 0, 1.65, 1.8); k.add('solar', G.rbox(2.4, 0.05, 1.6, 0.01), { p: [-1.2, 3.4, -1.3], r: [0.3, 0, 0], d: 1.25 }); bx(k, 'concrete', 5.6, 0.04, 1.2, 0, 0.27, 2.4);
+    for (i = 0; i < 4; i++) bx(k, 'paint', 0.5, 0.03, 0.12, -2 + i * 1.3, 0.3, 2.4); o.lights = [[-1.3, 2.7, 2.4], [1.3, 2.7, 2.4]]; return 3.6; };
+  B.vigia = function (k, o) { bx(k, 'dark', 1.6, 0.25, 1.6, 0, 0.12, 0); k.add('metal', G.cyl(0.18, 0.3, 3.4, 4), { p: [0, 1.9, 0], r: [0, R / 4, 0] });
+    var tur = grp(); tur.position.y = 3.7; var tk = new G.Kit(); tk.add('armor', G.rbox(0.9, 0.5, 0.9, 0.04), {}); tk.add('dark', G.rbox(0.6, 0.18, 0.3, 0.03), { p: [0, 0.3, -0.15] });
+    tk.add('dark', G.cyl(0.05, 0.05, 1.0, 8), { p: [0.12, 0.05, 0.85], r: [R / 2, 0, 0] }); tk.add('dark', G.cyl(0.05, 0.05, 1.0, 8), { p: [-0.12, 0.05, 0.85], r: [R / 2, 0, 0] }); tk.add('screenOn', G.rbox(0.3, 0.08, 0.03, 0.01), { p: [0, 0.12, 0.46], uv: 'keep' }); tk.add('paint', G.rbox(0.92, 0.06, 0.92, 0.02), { p: [0, -0.2, 0] });
+    tk.build(tur); o.dyn.turret = tur; k.extra.push(tur); led(k, 'ledR', 0, 4.25, 0); return 4.4; };
+
   B.torre = function (k, o) { // Torre de luz: mastro alto com refletores voltados para baixo
     k.add('dark', G.rbox(0.9, 0.2, 0.9, 0.05), { p: [0, 0.1, 0] }); k.add('concrete', G.rbox(0.5, 0.35, 0.5, 0.06), { p: [0, 0.35, 0] });
     G.truss(k, 'dark', 5.0, 0.42, 6, 0.025, 0, 0, 0.5); k.add('metal', G.rbox(1.2, 0.12, 0.5, 0.04), { p: [0, 5.55, 0] });
@@ -363,6 +384,14 @@ var Models = (function () {
       if (lv >= 4) { bx(k, 'dark', 0.6, 4.2, 0.6, -1.4, 2.1 + 0.3, -1.0); strip(k, 4, 'y', -1.09, 2.3, -0.69, 'paint'); bx(k, 'dark', 0.5, 0.5, 0.5, 1.4, 0.55, 2.0); k.add('metal', G.rod([1.4, 0.8, 2.0], [1.2, 1.7, 1.9], 0.06, 6)); k.add('metal', G.rod([1.2, 1.7, 1.9], [0.7, 1.5, 2.1], 0.05, 6)); bx(k, 'paint', 0.16, 0.16, 0.3, 0.7, 1.45, 2.1); o.vent = [-1.4, 4.7, -1.0]; }
       if (lv >= 5) { vol(k, 2.6, 1.4, 2.2, 0.3, h + 0.05, 0, 0.1, { gw: 0.9, fin: true }); bx(k, 'winOn', 2.0, 0.06, 0.06, 0.4, 0.5, 1.47); o.lights.push([0.3, h + 0.8, 1.4, 0xffb070]); h += 1.5; }
       o.lights.push([0.4, 2.3, 2.3]); return h; },
+    muro: function (k, o, W, D, lv) { var i; // 2 concreto armado · 3 blindado com espetos · 4 blindagem alta com luz · 5 muro de energia
+      bx(k, 'dark', 2.0, 0.15, 2.0, 0, 0.07, 0); var h = 1.6 + (lv - 2) * 0.35;
+      bx(k, lv >= 3 ? 'armor' : 'concrete', 1.98, h, 1.98, 0, h / 2, 0); for (i = -1; i <= 1; i += 2) bx(k, 'metal', 2.0, 0.08, 0.1, 0, h * (0.35 + i * 0.25), 1.0);
+      bx(k, 'metal', 2.04, 0.12, 2.04, 0, h + 0.06, 0);
+      if (lv >= 3) for (i = -2; i <= 2; i++) k.add('dark', G.cyl(0.0, 0.07, 0.4, 4), { p: [i * 0.42, h + 0.32, 0.2] });
+      if (lv >= 4) { strip(k, 2.0, 'x', 0, h - 0.15, 1.0); strip(k, 2.0, 'x', 0, h - 0.15, -1.0); bx(k, 'paint', 0.12, h, 0.12, 0.95, h / 2, 0.95); }
+      if (lv >= 5) { k.add('screenOn', G.rbox(1.9, 1.2, 0.06, 0.02), { p: [0, h + 0.75, 0], uv: 'keep' }); for (i = -1; i <= 1; i += 2) bx(k, 'dark', 0.14, 1.4, 0.14, i * 0.95, h + 0.7, 0); h += 1.4; }
+      return h + 0.2; },
     posto: function (k, o, W, D, lv) { return B.posto(k, o, W, D); }
   };
   function levelKit(k, type, def, W, D, h, lv, o) { var i, s, t2, M = Math.max(W, D);
@@ -474,6 +503,7 @@ var Models = (function () {
       tg.a0x = -s * 0.42; tg.a1x = s * 0.42; tg.f0 = -0.35 - Math.max(0, -s) * 0.3; tg.f1 = -0.35 - Math.max(0, s) * 0.3; tg.hy = 0.96 + Math.abs(Math.cos(ph)) * 0.035; tg.sy = s * 0.09; tg.sx = 0.06; }
     else if (st === 'carry') { s = Math.sin(ph); tg.t0 = -s * 0.5; tg.t1 = s * 0.5; tg.s0 = Math.max(0, Math.sin(ph + 1.9)) * 1.0 + 0.08; tg.s1 = Math.max(0, Math.sin(ph + 1.9 + R)) * 1.0 + 0.08; tg.a0x = tg.a1x = -0.55; tg.f0 = tg.f1 = -1.1; tg.a0z = 0.05; tg.a1z = -0.05; tg.hy = 0.96 + Math.abs(Math.cos(ph)) * 0.03; tg.sx = -0.05; }
     else if (st === 'work') { tg.a0x = -1.15 + Math.sin(t * 6) * 0.3; tg.a1x = -1.0 + Math.cos(t * 6.4) * 0.3; tg.f0 = -0.7 + Math.sin(t * 6 + 1) * 0.25; tg.f1 = -0.6; tg.sx = 0.18; tg.t0 = -0.12; tg.t1 = 0.14; tg.s0 = 0.2; tg.s1 = 0.05; tg.hy = 0.95; tg.hx = 0.2; }
+    else if (st === 'aim') { var rc = Math.max(0, Math.sin(t * 22)) * 0.06; tg.a0x = -1.5 + rc; tg.a1x = -1.3 + rc; tg.a0z = 0.12; tg.a1z = -0.5; tg.f0 = -0.12; tg.f1 = -0.6; tg.sx = 0.08; tg.hx = 0.05; }
     else if (st === 'mine') { var w = Math.pow(0.5 + 0.5 * Math.sin(t * 4.2), 1.6); tg.a0x = tg.a1x = -0.75 - 2.0 * w; tg.a0z = 0.16; tg.a1z = -0.16; tg.f0 = tg.f1 = -0.25 - 0.3 * w; tg.sx = 0.38 - 0.3 * w; tg.hx = 0.1; tg.t0 = -0.3; tg.t1 = 0.25; tg.s0 = 0.35; tg.s1 = 0.15; tg.hy = 0.93; }
     else if (st === 'crouch') { tg.t0 = tg.t1 = -1.3; tg.s0 = tg.s1 = 2.0; tg.k0 = tg.k1 = -0.7; tg.hy = 0.6; tg.sx = 0.45; tg.hx = 0.25; tg.a0x = -0.7 + Math.sin(t * 5) * 0.3; tg.a1x = -0.55 + Math.cos(t * 5.5) * 0.3; tg.f0 = tg.f1 = -0.5; }
     else if (st === 'look') { tg.hx = -0.35; tg.sx = -0.06; tg.a0z = 0.06; tg.a1z = -0.06; tg.f0 = tg.f1 = -0.1; }
@@ -485,5 +515,45 @@ var Models = (function () {
     rig.thigh[0].rotation.x = c.t0; rig.thigh[1].rotation.x = c.t1; rig.shin[0].rotation.x = c.s0; rig.shin[1].rotation.x = c.s1; rig.foot[0].rotation.x = c.k0; rig.foot[1].rotation.x = c.k1;
     rig.pose.rotation.x = -c.lie * R / 2; rig.pose.position.y = c.lie * 0.22; rig.pose.position.z = c.lie * 0.9; }
 
-  return { building: building, ark: ark, astronaut: astronaut, animate: animate, deposit: deposit, bed: bed, rocks: rocks, B: B };
+  // ---------- veículos (branco, laranja e preto, como na arte) ----------
+  function wheel(par, x, y, z, r, w) { var g = grp(); g.position.set(x, y, z); var k = new G.Kit(); k.add('tire', G.cyl(r, r, w, 18), { r: [0, 0, R / 2] }); for (var i = 0; i < 8; i++) k.add('tire', G.rbox(w * 1.02, 0.07, 0.16, 0.02), { p: [0, Math.cos(i * R / 4) * r, Math.sin(i * R / 4) * r], r: [i * R / 4, 0, 0] });
+    k.add('dark', G.cyl(r * 0.62, r * 0.62, w + 0.02, 12), { r: [0, 0, R / 2] }); k.add('paint', G.cyl(r * 0.64, r * 0.64, w * 0.4, 16), { p: [x > 0 ? w * 0.32 : -w * 0.32, 0, 0], r: [0, 0, R / 2] }); k.build(g); par.add(g); return g; }
+  function vehicle(type) { var root = grp(), body = grp(), k = new G.Kit(), wh = [], i, s; root.add(body);
+    if (type === 'rover') { // 6 rodas, cabine com vidro, faixas laranja
+      k.add('dark', G.rbox(2.3, 0.5, 5.2, 0.08), { p: [0, 1.0, 0] }); k.add('hull', G.rbox(2.4, 1.3, 3.2, 0.12), { p: [0, 1.9, -0.6] }); k.add('hull', G.rbox(2.3, 0.9, 1.8, 0.1), { p: [0, 1.65, 1.6] });
+      k.add('facade', G.rbox(2.0, 0.5, 0.05, 0.02), { p: [0, 2.0, 2.0], r: [-0.5, 0, 0], uv: 'keep' }); for (s = -1; s <= 1; s += 2) { k.add('facade', G.rbox(0.05, 0.45, 1.6, 0.02), { p: [s * 1.21, 2.15, -0.5], uv: 'keep' }); k.add('paint', G.rbox(0.06, 0.9, 0.5, 0.02), { p: [s * 1.22, 1.9, 0.9], r: [0, 0, 0], uv: 'keep' }); k.add('paint', G.rbox(0.05, 0.12, 3.0, 0.02), { p: [s * 1.22, 1.35, -0.4] }); }
+      k.add('screenOn', G.rbox(0.5, 0.08, 0.04, 0.01), { p: [0.6, 1.6, 2.52], uv: 'keep' }); k.add('screenOn', G.rbox(0.5, 0.08, 0.04, 0.01), { p: [-0.6, 1.6, 2.52], uv: 'keep' }); k.add('dark', G.rbox(2.2, 0.3, 0.3, 0.05), { p: [0, 1.1, 2.6] });
+      k.add('dark', G.rbox(1.6, 0.25, 2.4, 0.05), { p: [0, 2.65, -0.8] }); k.add('metal', G.rod([0.8, 2.7, -2.0], [0.8, 3.6, -2.0], 0.02)); k.add('metal', G.rod([-0.8, 2.7, -2.0], [-0.8, 3.3, -2.0], 0.02)); k.add('dark', G.rbox(0.5, 0.25, 0.4, 0.04), { p: [0, 2.85, 0.6] });
+      for (s = -1; s <= 1; s += 2) for (i = -1; i <= 1; i++) wh.push(wheel(body, s * 1.35, 0.62, i * 1.75, 0.62, 0.55)); }
+    else if (type === 'scout') { // quadriciclo explorador
+      k.add('dark', G.rbox(1.0, 0.3, 2.4, 0.06), { p: [0, 0.75, 0] }); k.add('hull', G.rbox(1.1, 0.45, 1.3, 0.1), { p: [0, 1.05, 0.5] }); k.add('paint', G.rbox(1.12, 0.12, 0.8, 0.04), { p: [0, 1.2, 0.6] });
+      k.add('dark', G.rbox(0.5, 0.25, 0.7, 0.06), { p: [0, 1.2, -0.4] }); k.add('metal', G.rod([0, 1.3, 1.0], [0, 1.65, 0.75], 0.03)); k.add('metal', G.rod([-0.35, 1.65, 0.75], [0.35, 1.65, 0.75], 0.025)); k.add('screenOn', G.rbox(0.4, 0.06, 0.04, 0.01), { p: [0, 1.0, 1.17], uv: 'keep' }); k.add('metal', G.rod([0.4, 1.0, -1.0], [0.4, 2.0, -1.0], 0.015));
+      for (s = -1; s <= 1; s += 2) for (i = -1; i <= 1; i += 2) wh.push(wheel(body, s * 0.75, 0.45, i * 0.85, 0.45, 0.38)); }
+    else { // resgate: furgão branco com cruz vermelha
+      k.add('dark', G.rbox(2.0, 0.4, 4.2, 0.08), { p: [0, 0.85, 0] }); k.add('hull', G.rbox(2.1, 1.6, 2.8, 0.15), { p: [0, 1.85, -0.5] }); k.add('hull', G.rbox(2.0, 1.0, 1.4, 0.12), { p: [0, 1.5, 1.5] });
+      k.add('facade', G.rbox(1.8, 0.5, 0.05, 0.02), { p: [0, 1.95, 1.85], r: [-0.55, 0, 0], uv: 'keep' }); for (s = -1; s <= 1; s += 2) { k.add('redX', G.rbox(0.05, 0.7, 0.22, 0.01), { p: [s * 1.06, 2.0, -0.5] }); k.add('redX', G.rbox(0.05, 0.22, 0.7, 0.01), { p: [s * 1.06, 2.0, -0.5] }); k.add('paint', G.rbox(0.05, 0.12, 2.6, 0.02), { p: [s * 1.06, 1.25, -0.4] }); }
+      k.add('dark', G.rbox(0.9, 0.12, 0.3, 0.03), { p: [0, 2.72, 0.5] }); k.add('ledR', G.rbox(0.3, 0.1, 0.2, 0.02), { p: [-0.25, 2.8, 0.5], uv: 'keep' }); k.add('screenOn', G.rbox(0.3, 0.1, 0.2, 0.02), { p: [0.25, 2.8, 0.5], uv: 'keep' });
+      for (s = -1; s <= 1; s += 2) for (i = -1; i <= 1; i += 2) wh.push(wheel(body, s * 1.15, 0.55, i * 1.35, 0.55, 0.45)); }
+    k.build(body); root.traverse(function (m) { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); return { root: root, body: body, wheels: wh, veh: true, cur: {} }; }
+  // ---------- o que vem do gelo ----------
+  function alien(type) { var root = grp(), body = grp(), k = new G.Kit(), legs = [], i; root.add(body);
+    if (type === 'spitter') { k.add('chitin', G.sphere(0.45, 14, 10), { p: [0, 1.15, -0.1], s: [1, 1.3, 1.1] }); k.add('alienGlow2', G.sphere(0.32, 12, 8), { p: [0, 1.5, -0.35] }); k.add('chitin', G.sphere(0.25, 10, 8), { p: [0, 1.0, 0.45], s: [1, 0.8, 1.3] }); k.add('alienGlow2', G.sphere(0.06, 6, 5), { p: [0.1, 1.05, 0.72] }); k.add('alienGlow2', G.sphere(0.06, 6, 5), { p: [-0.1, 1.05, 0.72] }); }
+    else { k.add('chitin', G.sphere(0.5, 14, 10), { p: [0, 0.55, -0.2], s: [0.9, 0.55, 1.5] }); k.add('chitin', G.sphere(0.32, 12, 8), { p: [0, 0.6, 0.6], s: [1, 0.7, 1.1] }); for (i = 0; i < 4; i++) k.add('chitin', G.cyl(0.0, 0.12, 0.35, 4), { p: [0, 0.82, -0.6 + i * 0.3], r: [-0.4, 0, 0] });
+      k.add('alienGlow', G.rbox(0.05, 0.04, 0.9, 0.01), { p: [0.32, 0.6, -0.2], uv: 'keep' }); k.add('alienGlow', G.rbox(0.05, 0.04, 0.9, 0.01), { p: [-0.32, 0.6, -0.2], uv: 'keep' }); k.add('alienGlow', G.sphere(0.05, 6, 5), { p: [0.12, 0.66, 0.92] }); k.add('alienGlow', G.sphere(0.05, 6, 5), { p: [-0.12, 0.66, 0.92] });
+      k.add('chitin', G.rod([0.12, 0.5, 0.85], [0.3, 0.2, 1.25], 0.035, 5)); k.add('chitin', G.rod([-0.12, 0.5, 0.85], [-0.3, 0.2, 1.25], 0.035, 5)); }
+    k.build(body);
+    for (i = 0; i < 6; i++) { var s = i < 3 ? 1 : -1, z = -0.5 + (i % 3) * 0.45, lg = grp(); lg.position.set(s * 0.3, type === 'spitter' ? 0.95 : 0.55, z); var lk = new G.Kit(); lk.add('chitin', G.rod([0, 0, 0], [s * 0.55, 0.3, 0], 0.04, 5)); lk.add('chitin', G.rod([s * 0.55, 0.3, 0], [s * 0.85, -(type === 'spitter' ? 0.95 : 0.55), 0], 0.03, 5)); lk.build(lg); body.add(lg); legs.push(lg); }
+    root.traverse(function (m) { if (m.isMesh) { m.castShadow = true; } }); return { root: root, body: body, legs: legs, type: type }; }
+  function animAlien(a, t, moving, attack) { var sp = moving ? 14 : attack ? 6 : 2; a.legs.forEach(function (l, i) { l.rotation.x = Math.sin(t * sp + i * 1.9) * (moving ? 0.45 : 0.1); l.rotation.z = Math.sin(t * sp + i * 1.9 + 1.5) * (moving ? 0.18 : 0.04); });
+    a.body.position.y = Math.abs(Math.sin(t * sp * 0.5)) * (moving ? 0.06 : 0.02); a.body.rotation.x = attack ? Math.sin(t * 9) * 0.25 : 0; }
+  function relic() { var g = grp(), k = new G.Kit(), i; // a estrutura enterrada: lâminas escuras saindo do gelo, com veios de luz
+    for (i = 0; i < 7; i++) { var a = i * 0.9, r = i ? 1.6 + (i % 3) * 0.6 : 0, h = i ? 2.2 + (i % 4) * 0.9 : 6.5; k.add('relic', G.cyl(0.05, i ? 0.45 : 0.9, h, 4), { p: [Math.cos(a) * r, h / 2 - 0.4, Math.sin(a) * r], r: [Math.sin(a) * 0.25, a, Math.cos(a) * 0.2] });
+      k.add('alienGlow', G.rbox(0.04, h * 0.7, 0.04, 0.01), { p: [Math.cos(a) * r + 0.12, h * 0.4, Math.sin(a) * r], r: [Math.sin(a) * 0.25, a, Math.cos(a) * 0.2], uv: 'keep' }); }
+    k.add('ice', G.cyl(4.2, 4.8, 0.5, 9), { p: [0, 0.0, 0] }); k.add('alienGlow', G.torus(3.0, 0.05, 6, 40), { p: [0, 0.3, 0], r: [R / 2, 0, 0] }); k.build(g); g.userData.lights = [[0, 3.5, 0, 0x3cf0e0, 30, 2]]; return g; }
+  function rifle(kind) { var g = grp(), k = new G.Kit(), L = kind === 'shotgun' ? 0.7 : kind === 'smg' ? 0.55 : 0.85; // arma da Guarda, nas cores da colônia
+    k.add('dark', G.rbox(0.07, 0.11, L, 0.015), { p: [0, 0, L / 2 - 0.15] }); k.add('hull', G.rbox(0.075, 0.08, L * 0.45, 0.015), { p: [0, 0.05, L * 0.3] }); k.add('paint', G.rbox(0.078, 0.03, L * 0.25, 0.01), { p: [0, 0.07, L * 0.15] });
+    k.add('dark', G.cyl(0.018, 0.018, 0.3, 6), { p: [0, 0.01, L - 0.05], r: [R / 2, 0, 0] }); k.add('dark', G.rbox(0.05, 0.14, 0.05, 0.01), { p: [0, -0.1, L * 0.35], r: [0.3, 0, 0] }); k.add('dark', G.rbox(0.05, 0.1, 0.18, 0.01), { p: [0, -0.02, -0.18] }); if (kind !== 'shotgun') k.add('screenOn', G.rbox(0.04, 0.04, 0.08, 0.01), { p: [0, 0.11, L * 0.3], uv: 'keep' });
+    k.build(g); return g; }
+
+  return { vehicle: vehicle, alien: alien, animAlien: animAlien, relic: relic, rifle: rifle, building: building, ark: ark, astronaut: astronaut, animate: animate, deposit: deposit, bed: bed, rocks: rocks, B: B };
 })();

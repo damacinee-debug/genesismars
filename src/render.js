@@ -193,11 +193,11 @@ var World = (function () {
     if (ch || force) fogTex.needsUpdate = true;
     if (s.rt.playDirty || force) { s.rt.playDirty = false; var P = s.rt.play; for (i = 0; i < N * N; i++) playData[i * 4] = P[i]; playTex.needsUpdate = true; } }
 
-  function ensureRig(k) { var rig = MD.astronaut(k, Sim.cinfo(k)); rig.root.userData.kind = 'c'; rig.root.userData.id = k; rig.ph = h2(k.length * 3.3 + k.charCodeAt(k.length - 1), 1.7) * 6;
+  function ensureRig(k, c) { var rig = c && c.veh ? MD.vehicle(c.veh) : MD.astronaut(k, Sim.cinfo(k)); rig.root.userData.kind = 'c'; rig.root.userData.id = k; rig.ph = h2(k.length * 3.3 + k.charCodeAt(k.length - 1), 1.7) * 6;
     var pk = new T.Mesh(new T.CylinderGeometry(0.6, 0.6, 2.2, 8), new T.MeshBasicMaterial({ visible: false })); pk.position.y = 1.1; rig.root.add(pk);
-    rig.ring = decal(0x6dffb0); rig.ring.material.uniforms.uRing.value = 1; rig.ring.scale.set(1.9, 1.9, 1);
+    rig.ring = decal(0x6dffb0); rig.ring.material.uniforms.uRing.value = 1; rig.ring.scale.set(rig.veh ? 5.5 : 1.9, rig.veh ? 5.5 : 1.9, 1); if (rig.veh) { pk.scale.set(2.5, 1.2, 2.5); }
     rig.root.traverse(function (m) { if (m.isMesh) { m.castShadow = m !== pk && !m.material.transparent; m.receiveShadow = true; } }); scene.add(rig.root); pickables.push(rig.root); cRig[k] = rig; return rig; }
-  W.rebuild = function (s) { var k; for (k in bMesh) removeB(k); for (k in cRig) { scene.remove(cRig[k].root); scene.remove(cRig[k].ring); } for (k in dMesh) scene.remove(dMesh[k]); bMesh = {}; cRig = {}; dMesh = {}; pickables = []; if (arkMesh) { scene.remove(arkMesh); arkMesh = null; }
+  W.rebuild = function (s) { var k; for (k in bMesh) removeB(k); for (k in cRig) { scene.remove(cRig[k].root); scene.remove(cRig[k].ring); } for (k in dMesh) scene.remove(dMesh[k]); bMesh = {}; cRig = {}; dMesh = {}; pickables = []; for (var fk in foeM) scene.remove(foeM[fk].root); foeM = {}; if (relicM) { scene.remove(relicM); relicM = null; } if (roadM) { scene.remove(roadM); roadM = null; } roadSig = ''; if (arkMesh) { scene.remove(arkMesh); arkMesh = null; }
     W.cam.x = N / 2; W.cam.z = N / 2 + 1.5; cam.updateMatrixWorld(); 
     if (mapSeed !== s.seed || !chunks.length) { mapSeed = s.seed; buildTerrain(s); } else { for (var i = 0; i < N * N; i++) trod[i] = 0; occSig = ''; }
     updateData(s, true); stream(s, 80); W.lastEnvForce = true; };
@@ -253,6 +253,7 @@ var World = (function () {
     for (i = 0; i < s.b.length; i++) { b = s.b[i]; d = BD[b.type]; seen[b.id] = 1; var o = bMesh[b.id];
       if (o && b.type === 'corridor') { var mk = corridorMask(s, b); if (mk !== o.mask) { removeB(b.id); o = null; } }
       if (o && o.lv !== (b.lv || 1)) { removeB(b.id); o = null; }
+      if (BD[b.type].floor) continue;
       if (!o) o = makeB(s, b); setBuilt(o, b.built); var u = o.g.userData.o;
       if (!b.built) { var cut = o.base + 0.05 + b.prog * (o.h + 0.1); o.clip.constant = cut; o.clipH.constant = -cut; o.holo.position.copy(o.g.position);
         for (k in s.chars) { var cc = s.chars[k]; if (cc.act && cc.act.type === 'build' && cc.act.id === b.id && cc.act.phase === 'work' && Math.random() < dt * 30) { var a = Math.random() * 6.28, rr = Math.min(d.w, d.h) * TS * 0.4; glow.emit(o.g.position.x + Math.cos(a) * rr, cut, o.g.position.z + Math.sin(a) * rr, (Math.random() - 0.5) * 3, Math.random() * 3, (Math.random() - 0.5) * 3, 0.09, 0.5 + Math.random() * 0.4, 1, 0.6, 0.25, 1, 0, 1, 6); } } }
@@ -264,6 +265,7 @@ var World = (function () {
       if (u.dyn.ramp) u.dyn.ramp.rotation.x = -Math.PI / 2 + (0.52 + Math.PI / 2) * (W.landerRamp == null ? 1 : W.landerRamp);
       if (!b.built) continue;
       if (u.dyn.spin && b.on && !b.idle) u.dyn.spin.rotation[u.dyn.spinAxis] += dt * (u.dyn.spinAxis === 'y' ? 9 : 7);
+      if (u.dyn.turret && s.foes.length) { var cbt = Sim.center(b), bf = null, bdd = 12; s.foes.forEach(function (f) { var dd = Math.hypot(f.x - cbt.x, f.z - cbt.z); if (dd < bdd) { bdd = dd; bf = f; } }); if (bf) u.dyn.turret.rotation.y = Math.atan2(bf.x - cbt.x, bf.z - cbt.z); }
       if (u.dyn.dish) { u.dyn.dish.rotation.y += dt * 0.08 * (b.on ? 1 : 0); }
       if (u.dyn.panel) { var tgy = Math.atan2(sunDir.x, sunDir.z), el = Math.asin(clamp(sunDir.y, -1, 1)), pn = u.dyn.panel; pn.rotation.order = 'YXZ'; var ty = b.on || sunDir.y > 0 ? tgy : pn.rotation.y; pn.rotation.y += (ty - pn.rotation.y) * Math.min(1, dt * 0.6); var tx2 = sunDir.y > 0.02 ? -(Math.PI / 2 - el) * 0.75 : 0; pn.rotation.x += (tx2 - pn.rotation.x) * Math.min(1, dt * 0.6);
         if (o.solar) { var du = b.dust; o.solar.color.setRGB(1 + du * 7, 1 + du * 3.6, 1 + du * 1.2); } }
@@ -279,10 +281,16 @@ var World = (function () {
     for (k in dMesh) if (!seen[k]) { scene.remove(dMesh[k]); pickables.splice(pickables.indexOf(dMesh[k]), 1); delete dMesh[k]; }
     // astronautas
     var si = 0; spots[0].intensity = 0; spots[1].intensity = 0;
-    for (k in s.chars) { var c = s.chars[k], rig = cRig[k]; if (!rig) { if (!c.alive) continue; rig = ensureRig(k); } var m = rig.root; var show = c.alive && !W.hideChars && (c.inside == null || c.critical > 0); m.visible = show; rig.ring.visible = show && !!W.selected[k];
+    for (k in s.chars) { var c = s.chars[k], rig = cRig[k]; if (!rig) { if (!c.alive) continue; rig = ensureRig(k, c); } var m = rig.root; var show = c.alive && !W.hideChars && (c.inside == null || c.critical > 0); m.visible = show; rig.ring.visible = show && !!W.selected[k];
       if (!show) continue;
       var gy = Hr(c.x, c.z); m.position.set(c.x * TS, gy, c.z * TS); rig.ring.position.set(c.x * TS, gy + 0.06, c.z * TS);
+      if (rig.veh) { var mv = rig.lx != null ? Math.hypot(c.x - rig.lx, c.z - rig.lz) : 0; rig.lx = c.x; rig.lz = c.z; rig.wheels.forEach(function (w) { w.rotation.x += mv * TS / 0.55; });
+        if (c.face != null) { var dfv = c.face - m.rotation.y; while (dfv > Math.PI) dfv -= 6.283; while (dfv < -Math.PI) dfv += 6.283; m.rotation.y += dfv * Math.min(1, dt * 4); }
+        var hx = Hr(c.x + Math.sin(m.rotation.y) * 1.2, c.z + Math.cos(m.rotation.y) * 1.2) - Hr(c.x - Math.sin(m.rotation.y) * 1.2, c.z - Math.cos(m.rotation.y) * 1.2); rig.body.rotation.x = -Math.atan2(hx, 4.8);
+        if (mv > 0.001 && Math.random() < dt * 14) dust.emit(m.position.x - Math.sin(m.rotation.y) * 2.4, gy + 0.3, m.position.z - Math.cos(m.rotation.y) * 2.4, (Math.random() - 0.5) * 1.5, 0.5 + Math.random() * 0.6, (Math.random() - 0.5) * 1.5, 0.9, 2.2, 0.62, 0.4, 0.26, 0.4, 1.2, 1.2, 0.1); continue; }
+      if (c.guard && !rig.gun) { rig.gun = MD.rifle(c.guard); rig.gun.rotation.x = Math.PI / 2; rig.gun.position.set(0, -0.3, 0.06); rig.fore[0].add(rig.gun); } if (rig.gun) { rig.gun.visible = !!c.guard; if (!c.guard) { rig.fore[0].remove(rig.gun); rig.gun = null; } }
       var a2 = c.act, st = 'idle'; if (c.critical > 0) st = 'lie'; else if (a2 && a2.phase === 'go') st = c.carry ? 'carry' : 'walk'; else if (a2 && a2.phase === 'work') { st = { gather: 'mine', plant: 'crouch', harvest: 'crouch', build: 'work', repair: 'work', clean: 'work', inspect: 'work', unload: 'work', contemplate: 'look', rescue: 'crouch' }[a2.type] || 'idle'; }
+      if (c.fighting && c.critical <= 0) st = c.firing ? 'aim' : 'walk';
       if (c.critical <= 0 && c.face != null) { var df = c.face - m.rotation.y; while (df > Math.PI) df -= 6.283; while (df < -Math.PI) df += 6.283; m.rotation.y += df * Math.min(1, dt * 8); }
       MD.animate(rig, st, time + rig.ph, dt, (s.stormK > 0.3 ? 0.65 : 1) * (c.weak > s.t ? 0.7 : 1)); rig.cargo.visible = !!c.carry; if (rig.pick) rig.pick.visible = st === 'mine';
       if ((st === 'walk' || st === 'carry') && Math.random() < dt * 5) dust.emit(m.position.x + (Math.random() - 0.5) * 0.3, gy + 0.08, m.position.z + (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.6, 0.25 + Math.random() * 0.3, (Math.random() - 0.5) * 0.6, 0.35, 1.4, 0.6, 0.38, 0.24, 0.35, 0.6, 1.2, 0.1);
@@ -305,6 +313,7 @@ var World = (function () {
     dust.update(dt); glow.update(dt);
     cables(s);
     if (W.overlayOn && Math.floor(time * 2) !== W.ovT) { W.ovT = Math.floor(time * 2); drawOverlay(s); }
+    warFx(s, dt, time); roads(s);
     // destaque da construção selecionada
     var sb = W.selB != null ? Sim.byId(s, W.selB) : null; selDecal.visible = !!sb; if (sb) { var sd = BD[sb.type]; selDecal.position.set((sb.x + sd.w / 2) * TS, Hr(sb.x + sd.w / 2, sb.z + sd.h / 2) + 0.12, (sb.z + sd.h / 2) * TS); selDecal.scale.set(sd.w * TS + 0.4, sd.h * TS + 0.4, 1); selDecal.material.uniforms.uAsp.value.set(sd.w * TS + 0.4, sd.h * TS + 0.4); }
     // câmera de estratégia
@@ -337,6 +346,44 @@ var World = (function () {
       near.sort(function (x, y) { return x.d - y.d; }); near.slice(0, 3).forEach(function (o) { var b = o.b, d0 = BD[b.type], c0 = Sim.center(b), dx = cpa.x - c0.x, dz = cpa.z - c0.z, L = Math.hypot(dx, dz) || 1, ex = c0.x + dx / L * Math.min(L, Math.max(d0.w, d0.h) * 0.5), ez = c0.z + dz / L * Math.min(L, Math.max(d0.w, d0.h) * 0.5);
         var p0 = top(pa); p0.y -= 0.15; span(p0, new T.Vector3(ex * TS, Hr(ex, ez) + 0.35, ez * TS), 0.25); }); }
     if (!pts.length) return; cabG = new T.LineSegments(new T.BufferGeometry().setFromPoints(pts), cabMat); cabG.frustumCulled = false; scene.add(cabG); }
+
+  // ---------- Era II: criaturas, tiros, estrutura ----------
+  var foeM = {}, relicM = null, tracers = [], trMat = null;
+  function tracer(x0, y0, z0, x1, y1, z1, col, life) { if (!trMat) trMat = {}; var key = col; if (!trMat[key]) trMat[key] = new T.LineBasicMaterial({ color: col, transparent: true, opacity: 1, blending: T.AdditiveBlending, depthWrite: false });
+    var g = new T.BufferGeometry().setFromPoints([new T.Vector3(x0, y0, z0), new T.Vector3(x1, y1, z1)]), l = new T.Line(g, trMat[key].clone()); l.userData.life = life; l.userData.max = life; scene.add(l); tracers.push(l); }
+  function warFx(s, dt, time) { var k, i;
+    // criaturas
+    var alive = {}; s.foes.forEach(function (f) { alive[f.id] = 1; var a = foeM[f.id]; if (!a) { a = foeM[f.id] = MD.alien(f.type); scene.add(a.root); a.ph = Math.random() * 9; }
+      var gy = Hr(f.x, f.z); a.root.position.set(f.x * TS, gy, f.z * TS); if (f.face != null) { var df = f.face - a.root.rotation.y; while (df > Math.PI) df -= 6.283; while (df < -Math.PI) df += 6.283; a.root.rotation.y += df * Math.min(1, dt * 6); }
+      MD.animAlien(a, time + a.ph, !!f.mv || !!f.flee, !f.mv && !f.flee); if (Math.random() < dt * 2) glow.emit(a.root.position.x, gy + 0.7, a.root.position.z, 0, 0.3, 0, 0.25, 0.8, 0.2, 0.9, 0.9, 0.6, 0.5, 1, 0); });
+    for (k in foeM) if (!alive[k]) { scene.remove(foeM[k].root); delete foeM[k]; }
+    // efeitos que a simulação pediu
+    var F = s.rt.fx || []; for (i = 0; i < F.length; i++) { var e = F[i], ex = e.x * TS, ez = e.z * TS, ey = Hr(e.x, e.z);
+      if (e.k === 'shot') { var ty = Hr(e.tx, e.tz) + 0.55, sy = ey + (e.w === 'tower' ? 3.75 : 1.35); tracer(ex, sy, ez, e.tx * TS + (Math.random() - 0.5) * 0.3, ty, e.tz * TS + (Math.random() - 0.5) * 0.3, e.w === 'energy' ? 0x66e0ff : 0xffd27a, 0.07);
+        glow.emit(ex, sy, ez, 0, 0, 0, 0.35, 0.06, 1, 0.8, 0.4, 1, 0, 1, 0); for (var q = 0; q < 2; q++) glow.emit(e.tx * TS, ty, e.tz * TS, (Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2, 0.12, 0.25, 0.5, 1, 0.9, 1, 0, 2, 3); }
+      else if (e.k === 'spit') { tracer(ex, ey + 1.2, ez, e.tx * TS, Hr(e.tx, e.tz) + 0.8, e.tz * TS, 0xc070ff, 0.25); }
+      else if (e.k === 'die') { for (q = 0; q < 26; q++) glow.emit(ex, ey + 0.5, ez, (Math.random() - 0.5) * 4, Math.random() * 3, (Math.random() - 0.5) * 4, 0.2, 0.9, 0.2, 1, 0.9, 1, 0, 1.5, 4); for (q = 0; q < 10; q++) dust.emit(ex, ey + 0.2, ez, (Math.random() - 0.5) * 2, Math.random() * 1.2, (Math.random() - 0.5) * 2, 0.8, 1.6, 0.25, 0.2, 0.22, 0.6, 1, 1.4, 0.4); }
+      else if (e.k === 'claw' || e.k === 'boom') { for (q = 0; q < (e.k === 'boom' ? 30 : 4); q++) dust.emit(ex, ey + 0.4, ez, (Math.random() - 0.5) * 3, Math.random() * 2, (Math.random() - 0.5) * 3, 0.8, 1.5, 0.6, 0.42, 0.3, 0.6, 1.2, 1.3, 0.5); } }
+    if (F.length) F.length = 0;
+    for (i = tracers.length - 1; i >= 0; i--) { var l = tracers[i]; l.userData.life -= dt; l.material.opacity = Math.max(0, l.userData.life / l.userData.max); if (l.userData.life <= 0) { scene.remove(l); l.geometry.dispose(); l.material.dispose(); tracers.splice(i, 1); } }
+    // a estrutura
+    if (s.al && s.al.site && !relicM) { relicM = MD.relic(); relicM.position.set(s.al.site.x * TS, Hr(s.al.site.x, s.al.site.z), s.al.site.z * TS); scene.add(relicM); relicM.traverse(function (m) { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); }
+    if (relicM) { relicM.rotation.y += dt * 0.02; if (Math.random() < dt * 6) glow.emit(relicM.position.x + (Math.random() - 0.5) * 4, relicM.position.y + Math.random() * 6, relicM.position.z + (Math.random() - 0.5) * 4, 0, 0.6, 0, 0.3, 2.5, 0.2, 0.95, 0.9, 0.8, 0.4, 1, -0.1); } }
+  // ---------- estradas: uma malha só, com o visual da Era ----------
+  var roadM = null, roadSig = '';
+  function roads(s) { var R0 = s.rt.road; if (!R0) return; var sig = s.era + ':', i, list = [];
+    for (i = 0; i < s.b.length; i++) { var b = s.b[i]; if (BD[b.type].floor && b.built) { list.push(b); sig += b.x + ',' + b.z + ';'; } } if (sig === roadSig) return; roadSig = sig;
+    if (roadM) { scene.remove(roadM); roadM.traverse(function (m) { if (m.geometry) m.geometry.dispose(); }); roadM = null; } if (!list.length) return;
+    var k = new G.Kit(), era = s.era, has = function (x, z) { return x >= 0 && z >= 0 && x < N && z < N && R0[z * N + x] === 2; };
+    list.forEach(function (b) { var x = b.x, z = b.z, cx = (x + 0.5) * TS, cz = (z + 0.5) * TS, y = Math.max(Hr(x + 0.5, z + 0.5), Hr(x, z), Hr(x + 1, z), Hr(x, z + 1), Hr(x + 1, z + 1)) + 0.04;
+      var nE = has(x + 1, z), nW = has(x - 1, z), nN = has(x, z - 1), nS = has(x, z + 1), horiz = nE || nW, vert = nN || nS;
+      var surf = era >= 4 ? 'facade' : era >= 3 ? 'rubber' : era >= 2 ? 'concrete' : 'dark';
+      k.add(surf, G.rbox(TS * 0.98, 0.08, TS * 0.98, 0.02), { p: [cx, y, cz] });
+      if (era === 2) { k.add('dark', G.rbox(0.03, 0.09, TS * 0.98, 0.01), { p: [cx, y + 0.005, cz] }); k.add('dark', G.rbox(TS * 0.98, 0.09, 0.03, 0.01), { p: [cx, y + 0.005, cz] }); if (!nN) k.add('paint', G.rbox(TS * 0.7, 0.1, 0.06, 0.01), { p: [cx, y + 0.01, cz - TS * 0.47] }); if (!nS) k.add('paint', G.rbox(TS * 0.7, 0.1, 0.06, 0.01), { p: [cx, y + 0.01, cz + TS * 0.47] }); }
+      if (era >= 3) { if (horiz && !vert) k.add(era >= 4 ? 'screenOn' : 'hull', G.rbox(TS * 0.45, 0.1, 0.06, 0.01), { p: [cx, y + 0.01, cz], uv: 'keep' }); else if (vert && !horiz) k.add(era >= 4 ? 'screenOn' : 'hull', G.rbox(0.06, 0.1, TS * 0.45, 0.01), { p: [cx, y + 0.01, cz], uv: 'keep' });
+        if (!nN && !horiz) {} k.add('screenOn', G.rbox(0.08, 0.1, 0.08, 0.02), { p: [cx - TS * 0.44, y + 0.02, cz - TS * 0.44], uv: 'keep' }); }
+      if (era >= 4) { if (!nN) k.add('screenOn', G.rbox(TS, 0.1, 0.04, 0.01), { p: [cx, y + 0.02, cz - TS * 0.49], uv: 'keep' }); if (!nS) k.add('screenOn', G.rbox(TS, 0.1, 0.04, 0.01), { p: [cx, y + 0.02, cz + TS * 0.49], uv: 'keep' }); if (!nE) k.add('screenOn', G.rbox(0.04, 0.1, TS, 0.01), { p: [cx + TS * 0.49, y + 0.02, cz], uv: 'keep' }); if (!nW) k.add('screenOn', G.rbox(0.04, 0.1, TS, 0.01), { p: [cx - TS * 0.49, y + 0.02, cz], uv: 'keep' }); } });
+    roadM = new T.Group(); k.build(roadM, true); roadM.traverse(function (m) { if (m.isMesh) { m.receiveShadow = true; m.castShadow = false; } }); scene.add(roadM); }
 
   function drawOverlay(s) { while (overlay.children.length) { var ch = overlay.children[0]; overlay.remove(ch); ch.geometry.dispose(); } if (!W.overlayOn) return;
     var pe = [], pp = [], po = [], i, j; function c3v(b) { var c = Sim.center(b); return new T.Vector3(c.x * TS, Hr(c.x, c.z) + 1.4, c.z * TS); }
