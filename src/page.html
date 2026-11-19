@@ -90,9 +90,9 @@ body.raid::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:5
 .al{pointer-events:auto;padding:.4em .8em;font-size:.88em;border-left:3px solid var(--blue);cursor:pointer;animation:in .3s;max-width:100%}
 .al.warn{border-color:var(--warn)}.al.crit{border-color:var(--crit);color:#ffd9d2}
 @keyframes in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
-#subs{position:absolute;left:50%;bottom:calc(10px + 12.5em);transform:translateX(-50%);max-width:min(40em,calc(100% - 32px));text-align:center;font-family:var(--display);font-size:1.45em;line-height:1.25;text-shadow:0 1px 6px #000,0 0 2px #000;pointer-events:none}
+#subs{position:absolute;left:50%;bottom:calc(var(--bh, 15em) + 3.4em);transform:translateX(-50%);max-width:min(40em,calc(100% - 32px));text-align:center;font-family:var(--display);font-size:1.45em;line-height:1.25;text-shadow:0 1px 6px #000,0 0 2px #000;pointer-events:none}
 #subs b{font-family:var(--cond);font-size:.6em;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);display:block}
-#toast{position:absolute;left:50%;bottom:calc(10px + 17.5em);transform:translateX(-50%);padding:.4em .9em;font-size:.9em;pointer-events:none;white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis}
+#toast{position:absolute;left:50%;bottom:calc(var(--bh, 15em) + 22px);transform:translateX(-50%);padding:.4em .9em;font-size:.9em;pointer-events:none;white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis}
 #pause{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-family:var(--cond);letter-spacing:.4em;text-transform:uppercase;font-size:1.3em;color:var(--warn);text-shadow:0 0 8px #000;pointer-events:none}
 /* cenas */
 #lbT,#lbB{position:absolute;left:0;right:0;height:0;background:#000;transition:height .9s;z-index:5}#lbT{top:0}#lbB{bottom:0}
@@ -139,7 +139,7 @@ body.raid::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:5
   #side{top:auto;bottom:calc(10px + 11em);left:var(--gl);right:var(--gr);width:auto;max-height:34%}
   #alerts{top:calc(8px + 12.5em);width:calc(100% - 32px)}
   .cw{min-width:0}.cw small{display:none}
-  #subs{font-size:1.2em;bottom:calc(10px + 11.5em)}#side:not([hidden])~#subs{display:none}
+  #subs{font-size:1.2em;bottom:calc(var(--bh, 15em) + 1.2em)}#side:not([hidden])~#subs{display:none}
 }
 @media (prefers-reduced-motion:reduce){#pulse{animation:none}.al{animation:none}}
 </style>

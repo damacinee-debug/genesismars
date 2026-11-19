@@ -371,19 +371,19 @@ var UI = (function () {
       else if (mode === 'cut') { cutTick(dt); }
       else { camKeys(dt); if (!paused && !modalKind) { var n = speed > 2 ? 2 : 1; for (var i = 0; i < n; i++) Sim.tick(s, dt * speed / n); showSub(dt); } drain();
         if (!modalKind && scenes.length && mode === 'play') startScene(scenes.shift());
-        hudAcc += dt; if (hudAcc > 0.22) { hudAcc = 0; updateHUD(); } nameplate(); if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').hidden = true; } }
+        hudAcc += dt; if (hudAcc > 0.22) { hudAcc = 0; updateHUD(); var bh = $('build').offsetHeight + 10; if (bh !== hudBH) { hudBH = bh; $('app').style.setProperty('--bh', bh + 'px'); } } nameplate(); if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').hidden = true; } }
       auUpdate(); W.sync(s, dt); buildLabels(dt); if (W.thumbStep && mode === 'play' && W.thumbStep()) itemSig = '';
     } catch (e) { fail(e); } }
   function fmtT(sec) { sec = Math.max(1, Math.round(sec)); if (sec < 60) return sec + ' s'; var m = Math.floor(sec / 60), r = sec % 60; return m + ' min' + (r >= 10 ? ' ' + r + ' s' : ''); }
-  var blPool = [], blAcc = 1;
+  var blPool = [], blAcc = 1, hudBH = 0;
   function buildLabels(dt) { var host = $('bl'); if (!host) return; blAcc += dt; var txt = blAcc > 0.25; if (txt) blAcc = 0; var n = 0, i, b;
     if (!W.hideChars && mode === 'play') for (i = 0; i < s.b.length && n < 10; i++) { b = s.b[i]; if (b.built && b.up == null) continue; var d = D.buildings[b.type]; if (!d) continue;
-      var p = W.screenPos(b.x + d.w / 2, b.z + d.h / 2, 5 + d.h * 0.9); if (!p.vis || p.x < -50 || p.y < -20 || p.x > innerWidth + 50 || p.y > innerHeight + 20) continue;
+      var p = W.screenPos(b.x + d.w / 2, b.z + d.h / 2, 3 + d.h * 0.6); if (!p.vis || p.x < -50 || p.y < -20 || p.x > innerWidth + 50 || p.y > innerHeight + 20) continue;
       var e = blPool[n]; if (!e) { e = document.createElement('div'); e.className = 'bl'; host.appendChild(e); blPool[n] = e; } n++;
       if (txt || e.hidden || e._id !== b.id) { var k = Sim.buildEta(s, b), nm = d.name;
         e.textContent = k.idle ? (k.up ? 'Melhoria parada · ' : 'Aguardando construtor · ') + nm : k.names.join(' e ') + (k.up ? ' melhorando ' : ' construindo ') + nm.charAt(0).toLowerCase() + nm.slice(1) + ': ' + fmtT(k.sec);
         e.classList.toggle('idle', k.idle); e._id = b.id; }
-      e.hidden = false; e.style.transform = 'translate(' + Math.round(p.x) + 'px,' + Math.round(p.y) + 'px) translate(-50%,-100%)'; }
+      e.hidden = false; e.style.transform = 'translate(' + Math.round(p.x) + 'px,' + Math.round(p.y - 30) + 'px) translate(-50%,-100%)'; }
     for (i = n; i < blPool.length; i++) blPool[i].hidden = true; }
   function nameplate() { var e = $('np'), id = sel.c[0], c = id && s.chars[id]; if (!c || !c.alive || (c.inside != null && c.critical <= 0) || W.hideChars) { e.hidden = true; return; }
     var p = W.screenPos(c.x, c.z, 2.5); if (!p.vis) { e.hidden = true; return; } e.hidden = false; e.textContent = Sim.cinfo(id).short + (sel.c.length > 1 ? ' +' + (sel.c.length - 1) : '') + (c.act ? ' · ' + Sim.LABEL[c.act.type] : ''); e.style.transform = 'translate(' + Math.round(p.x) + 'px,' + Math.round(p.y) + 'px) translate(-50%,-100%)'; }
