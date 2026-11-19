@@ -12,7 +12,7 @@ O Genesis Mars é um app instalável (PWA). Com o GitHub Pages ligado, abra `htt
 - **Android (Chrome):** menu ⋮ → **Instalar app**.
 - **iPhone e iPad (Safari):** Compartilhar → **Adicionar à Tela de Início**.
 
-Depois de instalado, o jogo abre mesmo sem internet. Para mandar uma atualização aos jogadores, mude a versão em `sw.js` (`genesis-mars-v8.0`) a cada publicação.
+Depois de instalado, o jogo abre mesmo sem internet. Para mandar uma atualização aos jogadores, mude a versão em `sw.js` (`genesis-mars-v9.0`) a cada publicação.
 
 ## Jogar
 
@@ -76,4 +76,4 @@ Trilha: **God Particle**, de Out of Flux e Danny Shields (`music/god-particle.mp
 
 ## Estado
 
-Versão 5. O manual completo e o roteiro das próximas fases (Guarda, eras seguintes, versão em Unreal Engine 5) estão nos documentos do projeto.
+Versão 9. O manual completo e o roteiro das próximas fases (Guarda, eras seguintes, versão em Unreal Engine 5) estão nos documentos do projeto.

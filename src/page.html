@@ -46,6 +46,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 #era{font-size:.84em;color:var(--muted)}#era b{color:var(--fg)}
 /* painel lateral */
 #side{position:absolute;top:calc(8px + 7.6em);right:var(--gr);width:20em;max-height:calc(100% - 20em);overflow-y:auto;padding:.8em .9em;display:flex;flex-direction:column;gap:.55em}
+#side.cs{width:15em;gap:.35em;padding:.6em .7em}#side.cs h2{font-size:1.25em}#side.cs .bar{font-size:.86em}
 #side h2{margin:0;font-family:var(--display);font-weight:600;font-size:1.6em;line-height:1.05}
 #side p{margin:0;font-size:.88em;line-height:1.4;color:var(--muted)}
 .st{font-size:.86em}.st.ok{color:var(--green)}.st.bad{color:var(--crit)}.st.mid{color:var(--warn)}
@@ -66,6 +67,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 .av{display:grid!important;place-items:center;font-family:var(--display);font-weight:600;color:#14100d;font-size:1.05em}.who .av{font-size:2.2em}
 #crew{max-width:100%;overflow-x:auto;scrollbar-width:thin}.cw{flex:0 0 auto}.cw.col{min-width:0;padding:.3em .55em .3em .35em}.cw.col small{display:none}.cw.col .mono{width:1.9em;height:1.9em}.cw.col .mini i{width:1.7em}.cw.all{min-width:0;font-family:var(--cond);text-transform:uppercase;letter-spacing:.08em;font-size:.85em;color:var(--muted)}
 .quote{font-family:var(--display);font-style:italic;font-size:1.02em!important;color:#e2d4c4!important}
+#bl{position:absolute;inset:0;pointer-events:none;overflow:hidden}.bl{position:absolute;left:0;top:0;font-family:var(--cond);letter-spacing:.04em;font-size:.78em;padding:.15em .5em;border-radius:3px;background:rgba(10,7,6,.62);border:1px solid rgba(255,190,90,.45);color:#ffd9a0;white-space:nowrap}.bl.idle{color:#bba;border-color:rgba(200,200,200,.3)}
 #np{position:absolute;left:0;top:0;pointer-events:none;font-family:var(--cond);letter-spacing:.06em;font-size:.85em;padding:.2em .55em;border-radius:3px;background:rgba(10,7,6,.7);border:1px solid rgba(109,255,176,.5);color:var(--fg);white-space:nowrap}
 .cw b{display:block;font-size:.92em}.cw small{display:block;font-size:.76em;color:var(--muted);white-space:nowrap}
 .cw .mini{display:flex;gap:2px;margin-top:.2em}.cw .mini i{display:block;height:.22em;width:2.6em;background:rgba(255,255,255,.12)}.cw .mini i b{display:block;height:100%;background:var(--green)}
@@ -78,7 +80,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 body.raid::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:5;box-shadow:inset 0 0 180px rgba(210,30,25,.5);animation:raidp 1.8s ease-in-out infinite}@keyframes raidp{50%{box-shadow:inset 0 0 110px rgba(210,30,25,.28)}}
 #bq{flex:0 0 13em;min-width:9em;padding:.45em .7em;border-radius:3px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.35);color:var(--fg);font:inherit;font-size:.9em}#bq:focus{outline:none;border-color:var(--blue)}
 #cats button:hover{color:var(--fg)}#cats button.on{background:rgba(116,198,255,.16);color:var(--blue)}
-#items button{flex:0 0 auto;text-align:left;padding:.45em .7em;border:1px solid var(--line);border-radius:3px;min-width:9.5em}
+#items button{flex:0 0 auto;text-align:left;padding:.35em .5em .4em;border:1px solid var(--line);border-radius:3px;width:8.6em;display:flex;flex-direction:column;gap:2px}#items .th{display:block;width:100%;aspect-ratio:4/3;border-radius:2px;background:radial-gradient(ellipse at 50% 70%,rgba(255,170,110,.14),rgba(0,0,0,.25));object-fit:contain}#items b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#items button small{white-space:normal;line-height:1.25;overflow-wrap:anywhere}
 #items button:hover{border-color:var(--blue)}#items button.on{border-color:var(--green)}#items button.no small{color:var(--warn)}
 #items b{display:block;font-size:.92em;font-weight:600}#items small{display:block;font-size:.76em;color:var(--muted);white-space:nowrap}
 #tip{position:absolute;pointer-events:none;padding:.35em .6em;font-size:.84em;white-space:nowrap;transform:translate(14px,14px)}
@@ -154,6 +156,7 @@ body.raid::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:5
     <div id="build"><div id="crew"></div><div id="items" class="pn" hidden></div><div id="cats" class="pn"></div></div>
     <div id="tip" class="pn" hidden></div>
     <div id="np" hidden></div>
+    <div id="bl"></div>
   </div>
   <div id="lbT"></div><div id="lbB"></div><div id="black"></div>
   <div id="cut"><div id="cutT"></div><div id="cutS"></div><div id="cutL"></div></div>

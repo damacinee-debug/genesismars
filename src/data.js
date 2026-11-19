@@ -8,7 +8,7 @@ var DATA = {
   bal: {
     N: 256,             // mapa N x N tiles (múltiplo de 8: o terreno é carregado em blocos de 8)
     zone0: 46, outpostR: 30, // raio da bacia inicial e de cada Posto avançado (em tiles)
-    solSec: 480,        // segundos reais por sol na velocidade 1x
+    solSec: 480, buildMul: 2.0,        // segundos reais por sol na velocidade 1x
     sunrise: 6, sunset: 18,
     start: { o2: 120, water: 60, food: 30, metal: 30, comp: 10, reg: 0, seeds: 0, ice: 0, research: 0, energy: 60, ammo: 0 },
     cargo: { metal: 50, comp: 34, seeds: 12 },
@@ -74,8 +74,8 @@ var DATA = {
     battery: { name: 'Bateria', cat: 'Energia', w: 1, h: 1, cost: { metal: 10, comp: 5 }, t: 14, cap: 130, desc: 'Guarda energia para a noite.' },
     airlock: { name: 'Câmara de descompressão', cat: 'Infraestrutura', w: 1, h: 1, cost: { metal: 12, comp: 4 }, t: 16, press: true, desc: 'Entrada e saída da área pressurizada. Comece o complexo por ela.' },
     corridor:{ name: 'Corredor pressurizado', cat: 'Infraestrutura', w: 1, h: 1, cost: { metal: 6 }, t: 7, press: true, needPress: true, desc: 'Liga módulos pressurizados.' },
-    habitat: { name: 'Habitat', cat: 'Habitação', w: 3, h: 3, cost: { metal: 25, comp: 8, reg: 10 }, t: 30, use: 1.5, prio: 9, press: true, needPress: true, beds: 4, desc: 'Quatro leitos. Dormir, comer e recuperar. Aquecido e pressurizado.' },
-    casa:    { name: 'Casa', cat: 'Habitação', w: 2, h: 2, cost: { metal: 14, comp: 4, reg: 8 }, t: 16, use: 0.4, prio: 9, press: true, selfPress: true, beds: 2, desc: 'Dois leitos, com câmara própria. Três casas vizinhas formam um bairro. Mais casas, mais gente.' },
+    habitat: { name: 'Habitat', cat: 'Habitação', w: 3, h: 3, cost: { metal: 25, comp: 8, reg: 10 }, t: 30, use: 1.5, prio: 9, press: true, needPress: true, beds: 4, hint: 'Habitat: a base comum. 4 leitos, comida e enfermaria.', desc: 'Coração da base: 4 leitos, comida e recuperação, ligado à câmara por corredores. Diferente da Casa, que é o lar de 2 colonos e fica solta no bairro.' },
+    casa:    { name: 'Casa', cat: 'Habitação', w: 2, h: 2, cost: { metal: 14, comp: 4, reg: 8 }, t: 16, use: 0.4, prio: 9, press: true, selfPress: true, beds: 2, hint: 'Casa: o lar de 2 colonos. Não precisa de corredor.', desc: 'Lar de 2 colonos, com câmara própria: não precisa de corredor. Três casas vizinhas formam um bairro. O Habitat é a base comum; a Casa é onde se mora.' },
     o2ext:   { name: 'Extrator de oxigênio', cat: 'Oxigênio', w: 2, h: 2, cost: { metal: 15, comp: 8 }, t: 20, use: 3, prio: 8, out: { o2: 2.4 }, desc: 'Tira O₂ do CO₂ da atmosfera marciana.' },
     o2tank:  { name: 'Tanque de oxigênio', cat: 'Oxigênio', w: 1, h: 1, cost: { metal: 10, comp: 2 }, t: 10, store: { o2: 90 }, desc: 'Aumenta a reserva de O₂.' },
     drill:   { name: 'Perfurador de gelo', cat: 'Água', w: 1, h: 1, cost: { metal: 18, comp: 8 }, t: 22, use: 3, prio: 5, out: { ice: 2.4 }, needIce: true, desc: 'Extrai gelo subterrâneo. Só funciona sobre gelo.' },
@@ -83,7 +83,7 @@ var DATA = {
     wtank:   { name: 'Tanque de água', cat: 'Água', w: 1, h: 1, cost: { metal: 10, comp: 2 }, t: 10, store: { water: 90 }, desc: 'Aumenta a reserva de água.' },
     greenhouse:{ name: 'Estufa', cat: 'Agricultura', w: 3, h: 2, cost: { metal: 20, comp: 8, reg: 15 }, t: 30, use: 2.5, prio: 7, press: true, needPress: true, desc: 'Quatro canteiros. Produz alimento e um pouco de O₂.' },
     lab:     { name: 'Bancada de pesquisa', cat: 'Pesquisa', w: 2, h: 2, cost: { metal: 12, comp: 10 }, t: 20, use: 1.5, prio: 3, press: true, needPress: true, desc: 'Gera pesquisa quando alguém opera.' },
-    workshop:{ name: 'Oficina', cat: 'Produção', w: 2, h: 2, cost: { metal: 20, comp: 6, reg: 10 }, t: 24, use: 3, prio: 2, desc: 'Faz 3 componentes por hora com regolito e metal (cada um gasta 2 de regolito e 1 de metal).' },
+    workshop:{ name: 'Oficina', cat: 'Produção', w: 2, h: 2, cost: { metal: 25, reg: 10 }, t: 24, use: 3, prio: 2, desc: 'Faz 3 componentes por hora com regolito e metal (cada um gasta 2 de regolito e 1 de metal).' },
     storage: { name: 'Armazém', cat: 'Armazenamento', w: 2, h: 2, cost: { metal: 10, reg: 10 }, t: 12, store: { mat: 160 }, desc: 'Mais espaço para materiais. Ponto de entrega.' },
     antenna: { name: 'Antena', cat: 'Comunicação', w: 1, h: 1, cost: { metal: 12, comp: 10 }, t: 20, use: 1, prio: 4, desc: 'Mensagens da Terra, telemetria da Alvorada e guia de pouso.' },
     pad:     { name: 'Zona de Pouso', cat: 'Comunicação', w: 4, h: 4, cost: { metal: 20, comp: 4, reg: 30 }, t: 40, use: 1, prio: 8, need: 'antenna', unique: true, desc: 'Onde a Alvorada pousa. Exige uma antena e precisa de energia para manter as cápsulas.' },

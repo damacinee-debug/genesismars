@@ -46,6 +46,8 @@ const want = n => !only.length || only.includes(n);
   if (want('base')) { await cam({ x: 0, z: 4, dist: 52, yaw: 0.6, pitch: 0.7 }, D0 + 10.5); await shot('base', 14); }
   if (want('bairro')) { await cam({ x: 1.5, z: 11, dist: 20, yaw: 0.9, pitch: 0.42 }, D0 + 15.5); await shot('bairro', 8); }
   if (want('chars')) { await pg.evaluate(() => { const s = window._s; ['c1', 'c2', 'c3'].forEach((k, i) => { s.chars[k].face = 0.25 + (i - 1) * 0.25; s.chars[k].act = null; }); s.chars.c3.carry = null; const dp = s.deps[0]; s.chars.c2.act = { type: 'gather', phase: 'work', kind: 'd', id: dp.id, x: s.chars.c2.x + 1, z: s.chars.c2.z, t: 0 }; }); await cam({ x: 2.3, z: 13.5, dist: 4.4, yaw: 0.25, pitch: 0.12 }, D0 + 11); await shot('chars', 12); }
+  if (want('ui9')) { await pg.evaluate(() => { const s = window._s, u = s.b.find(b => b.type === 'casa' && !b.built); s.chars.helena.x = u.x - 0.6; s.chars.helena.z = u.z + 0.5; s.chars.helena.act = { type: 'build', kind: 'b', id: u.id, phase: 'work' };
+      document.querySelector('#cats button[data-a="Habitação"]').click(); document.querySelector('[data-act="selc"][data-a="helena"]').click(); }); await cam({ x: 1.5, z: 11, dist: 20, yaw: 0.9, pitch: 0.42 }, D0 + 15.5); await shot('ui9', 30); }
   if (want('ark')) { await cam({ x: 11, z: -7, dist: 30, yaw: 2.2, pitch: 0.28 }, D0 + 16.8); await shot('ark', 8); }
   if (want('berco')) { await cam({ x: -5.5, z: 11.5, dist: 22, yaw: -0.5, pitch: 0.4 }, D0 + 9); await shot('berco', 8); }
   if (want('ground')) { await cam({ x: 15, z: -2, dist: 9, yaw: 0.5, pitch: 0.55 }, D0 + 11); await shot('ground', 10); }

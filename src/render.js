@@ -25,14 +25,14 @@ var World = (function () {
   // ---------------- inicialização ----------------
   W.init = function (canvas, q) { W.q = q || 'high';
     renderer = new T.WebGLRenderer({ canvas: canvas, antialias: false, powerPreference: 'high-performance', stencil: false });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, W.q === 'high' ? 2 : W.q === 'mid' ? 1.25 : 1));
+    W.prMax = Math.min(window.devicePixelRatio || 1, W.q === 'high' ? 1.5 : W.q === 'mid' ? 1.15 : 1); W.pr = W.prMax; renderer.setPixelRatio(W.pr);
     renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.localClippingEnabled = true;
     scene = new T.Scene(); scene.fog = new T.FogExp2(0xc9a27a, 0.004); cam = new T.PerspectiveCamera(36, 1, 0.3, 3000);
     G.init(renderer, W.q);
     G.U.uFog = { value: null }; G.U.uPlay = { value: null }; G.U.uN = { value: N }; G.U.uTS = { value: TS };
     hemi = new T.HemisphereLight(0xffe2c4, 0x5a3220, 0.25); scene.add(hemi);
-    sunL = new T.DirectionalLight(0xfff0dc, 3); sunL.castShadow = true; var ss = W.q === 'high' ? 4096 : W.q === 'mid' ? 2048 : 1024; sunL.shadow.mapSize.set(ss, ss);
+    sunL = new T.DirectionalLight(0xfff0dc, 3); sunL.castShadow = true; var ss = W.q === 'high' ? 2048 : W.q === 'mid' ? 2048 : 1024; sunL.shadow.mapSize.set(ss, ss);
     sunL.shadow.bias = -0.0004; sunL.shadow.normalBias = 0.04; scene.add(sunL); scene.add(sunL.target);
     for (var i = 0; i < 8; i++) { var pl = new T.PointLight(0xffb070, 0, 16, 2); scene.add(pl); pool.push(pl); }
     for (i = 0; i < 2; i++) { var sp = new T.SpotLight(0xe8f2ff, 0, 22, 0.42, 0.5, 1.6); scene.add(sp); scene.add(sp.target); spots.push(sp); }
@@ -202,7 +202,7 @@ var World = (function () {
   W.rebuild = function (s) { var k; for (k in bMesh) removeB(k); for (k in cRig) { scene.remove(cRig[k].root); scene.remove(cRig[k].ring); } for (k in dMesh) scene.remove(dMesh[k]); bMesh = {}; cRig = {}; dMesh = {}; pickables = []; for (var fk in foeM) scene.remove(foeM[fk].root); foeM = {}; for (var bk in fbM) scene.remove(fbM[bk]); fbM = {}; if (relicM) { scene.remove(relicM); relicM = null; } if (roadM) { scene.remove(roadM); roadM = null; } roadSig = ''; if (arkMesh) { scene.remove(arkMesh); arkMesh = null; }
     W.cam.x = N / 2; W.cam.z = N / 2 + 1.5; cam.updateMatrixWorld(); 
     if (mapSeed !== s.seed || !chunks.length) { mapSeed = s.seed; buildTerrain(s); } else { for (var i = 0; i < N * N; i++) trod[i] = 0; occSig = ''; }
-    updateData(s, true); stream(s, 80); W.lastEnvForce = true; };
+    updateData(s, true); stream(s, 80); W.lastEnvForce = true; try { renderer.compile(scene, cam); } catch (e) { } };
 
   // ---------------- construções ----------------
   var EMIT = { winOn: 'winOff', ledG: 'ledOff', ledO: 'ledOff', ledR: 'ledOff', screenOn: 'ledOff', grow: 'ledOff' };
@@ -249,9 +249,13 @@ var World = (function () {
     grade.uniforms.uNight.value = W.nf; grade.uniforms.uStorm.value = k; }
 
   // ---------------- quadro a quadro ----------------
-  var lightT = 0, dataT = 0, fxT = 0;
+  var lightT = 0, dataT = 0, fxT = 0, slowT = 0, fastT = 0;
+  // resolução adaptativa: se o quadro passar de ~28 ms por alguns segundos, reduz a escala; se sobrar folga, volta
+  function adaptRes(dt) { if (!(dt > 0) || dt > 0.25) return; var ft = W.ft; if (ft > 0.028) { slowT += dt; fastT = 0; } else if (ft < 0.018) { fastT += dt; slowT = 0; } else { slowT = Math.max(0, slowT - dt); fastT = Math.max(0, fastT - dt); }
+    var pr = W.pr; if (slowT > 2.5 && pr > 0.7) { pr = Math.max(0.7, pr - 0.15); slowT = 0; } else if (fastT > 8 && pr < W.prMax) { pr = Math.min(W.prMax, pr + 0.1); fastT = 0; }
+    if (pr !== W.pr) { W.pr = pr; renderer.setPixelRatio(pr); W.resize(); } }
   W.sync = function (s, dt) { time += dt; G.U.uTime.value = time; grade.uniforms.uTime.value = time; var i, k, b, d, nf;
-    dataT += dt; if (s.rt.fogDirty || s.rt.playDirty || dataT > 0.5) { updateData(s, s.rt.fogDirty); s.rt.fogDirty = false; dataT = 0; }
+    dataT += dt; if (s.rt.fogDirty || s.rt.playDirty || dataT > 1.2) { updateData(s, s.rt.fogDirty); s.rt.fogDirty = false; dataT = 0; }
     atmosphere(s); nf = W.nf; var seen = {}; var GM = G.mats; GM.winOn.emissiveIntensity = 0.25 + 1.7 * nf; GM.grow.emissiveIntensity = 0.8 + 1.8 * nf; GM.screenOn.emissiveIntensity = 0.9 + 1.4 * nf;
     for (i = 0; i < s.b.length; i++) { b = s.b[i]; d = BD[b.type]; seen[b.id] = 1; var o = bMesh[b.id];
       if (o && b.type === 'corridor') { var mk = corridorMask(s, b); if (mk !== o.mask) { removeB(b.id); o = null; } }
@@ -299,6 +303,9 @@ var World = (function () {
       if (c.guard && !rig.gun) { rig.gun = MD.rifle(c.guard); rig.gun.rotation.x = Math.PI / 2; rig.gun.position.set(0, -0.3, 0.06); rig.fore[0].add(rig.gun); } if (rig.gun) { rig.gun.visible = !!c.guard; if (!c.guard) { rig.fore[0].remove(rig.gun); rig.gun = null; } }
       var a2 = c.act, st = 'idle'; if (c.critical > 0) st = 'lie'; else if (a2 && a2.phase === 'go') st = c.carry ? 'carry' : 'walk'; else if (a2 && a2.phase === 'work') { st = { gather: 'mine', plant: 'crouch', harvest: 'crouch', build: 'work', repair: 'work', clean: 'work', inspect: 'work', unload: 'work', contemplate: 'look', rescue: 'crouch' }[a2.type] || 'idle'; }
       if (c.fighting && c.critical <= 0) st = c.firing ? 'aim' : 'walk';
+      // só anda se realmente se mover (evita andar parado depois de cenas ou pausas)
+      if (rig.px == null) { rig.px = c.x; rig.pz = c.z; rig.mvS = 0; } var dmv = Math.hypot(c.x - rig.px, c.z - rig.pz); rig.px = c.x; rig.pz = c.z; rig.mvS += ((dt > 0 ? dmv / dt : 0) - rig.mvS) * Math.min(1, dt * 10);
+      if ((st === 'walk' || st === 'carry') && rig.mvS < 0.08) st = 'idle';
       if (c.critical <= 0 && c.face != null) { var df = c.face - m.rotation.y; while (df > Math.PI) df -= 6.283; while (df < -Math.PI) df += 6.283; m.rotation.y += df * Math.min(1, dt * 8); }
       MD.animate(rig, st, time + rig.ph, dt, (s.stormK > 0.3 ? 0.65 : 1) * (c.weak > s.t ? 0.7 : 1)); rig.cargo.visible = !!c.carry; if (rig.pick) rig.pick.visible = st === 'mine';
       if ((st === 'walk' || st === 'carry') && Math.random() < dt * 5) dust.emit(m.position.x + (Math.random() - 0.5) * 0.3, gy + 0.08, m.position.z + (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.6, 0.25 + Math.random() * 0.3, (Math.random() - 0.5) * 0.6, 0.35, 1.4, 0.6, 0.38, 0.24, 0.35, 0.6, 1.2, 0.1);
@@ -309,7 +316,7 @@ var World = (function () {
       if (W.arkFlame) { flameMesh.visible = true; flameMesh.position.set(arkMesh.position.x, arkMesh.position.y - 2.4, arkMesh.position.z); flameMesh.scale.set(1.8 + Math.sin(time * 40) * 0.2, 1.3 + Math.sin(time * 31) * 0.15, 1.8 + Math.cos(time * 37) * 0.2);
         if (W.arkY < 50) for (var q2 = 0; q2 < 7; q2++) { var an2 = Math.random() * 6.28, sp3 = 7 + Math.random() * 11; dust.emit(arkMesh.position.x + Math.cos(an2) * 3, pbm.base + 0.5, arkMesh.position.z + Math.sin(an2) * 3, Math.cos(an2) * sp3, 0.5 + Math.random() * 1.5, Math.sin(an2) * sp3, 1.4, 2.5 + Math.random() * 2, 0.62, 0.38, 0.22, 0.5 * (1 - W.arkY / 50), 2.4, 0.8, 0); } } }
     else if (arkMesh) arkMesh.visible = false;
-    stream(s, 3);
+    W.ft = (W.ft || 0.016) * 0.95 + dt * 0.05; stream(s, W.ft > 0.03 ? 1 : 2); adaptRes(dt);
     // luzes da base: as mais próximas da câmera
     lightT -= dt; if (lightT <= 0) { lightT = 0.4; var cand = []; for (k in bMesh) { var bo = bMesh[k], bb = Sim.byId(s, +k); if (!bb || !bb.built || !(bb.on || (bb.type === 'lander' && s.lifeSupport))) continue; (bo.g.userData.o.lights || []).forEach(function (L) { var wp = bo.g.localToWorld(new T.Vector3(L[0], L[1], L[2])); cand.push({ p: wp, c: L[3] || 0xffb070, r: L[4] || 16, k: L[5] || 1, d: Math.hypot(wp.x - W.cam.x * TS, wp.z - W.cam.z * TS) - (L[4] ? 30 : 0) }); }); }
       cand.sort(function (a, b) { return a.d - b.d; }); pool.forEach(function (pl, j) { var cd = cand[j]; pl.userData.on = !!cd; if (cd) { pl.position.copy(cd.p); pl.color.setHex(cd.c); pl.distance = cd.r; pl.userData.k = cd.k; } }); }
@@ -435,6 +442,19 @@ var World = (function () {
   W.pick = function (px, py) { ray.setFromCamera(ndc(px, py), cam); var hits = ray.intersectObjects(pickables, true), res = null;
     for (var i = 0; i < hits.length && !res; i++) { var o = hits[i].object; while (o && !(o.userData && o.userData.kind)) o = o.parent; if (!o || !o.visible) continue; res = { kind: o.userData.kind, id: o.userData.id }; }
     var g = groundHit(); if (g) { if (!res) res = { kind: 'tile' }; res.x = g.x; res.z = g.z; } return res; };
+  // miniaturas do menu de construção: renderiza cada prédio uma vez num alvo pequeno e guarda como imagem
+  var thumbC = {}, thumbQ = [], thumbS = null, thumbRT = null, thumbCam = null, thumbCv = null;
+  W.thumb = function (type) { if (thumbC[type]) return thumbC[type]; if (thumbQ.indexOf(type) < 0) thumbQ.push(type); return null; };
+  W.thumbStep = function () { if (!thumbQ.length || !renderer) return null; var type = thumbQ.shift(), TW = 128, TH = 96;
+    try { if (!thumbS) { thumbS = new T.Scene(); thumbS.add(new T.HemisphereLight(0xfff3e6, 0x6a4030, 1.1)); var dl = new T.DirectionalLight(0xffffff, 2.4); dl.position.set(-6, 10, 7); thumbS.add(dl); var dl2 = new T.DirectionalLight(0xffd0b0, 0.6); dl2.position.set(8, 4, -6); thumbS.add(dl2);
+        thumbRT = new T.WebGLRenderTarget(TW, TH, { depthBuffer: true }); thumbRT.texture.encoding = T.sRGBEncoding; thumbCam = new T.PerspectiveCamera(30, TW / TH, 0.1, 400); thumbCv = document.createElement('canvas'); thumbCv.width = TW; thumbCv.height = TH; }
+      thumbS.environment = scene.environment; var d = BD[type], g = MD.building(type, d); thumbS.add(g); g.updateMatrixWorld(true);
+      var bb = new T.Box3().setFromObject(g), ctr = bb.getCenter(new T.Vector3()), sz = bb.getSize(new T.Vector3()), r = Math.max(sz.x, sz.y * 1.2, sz.z, 1.2) * 0.5;
+      var dist = r / Math.tan(15 * Math.PI / 180) * 1.05; thumbCam.position.set(ctr.x + dist * 0.62, ctr.y + dist * 0.5, ctr.z + dist * 0.6); thumbCam.lookAt(ctr); thumbCam.updateMatrixWorld();
+      var ex = renderer.toneMappingExposure; renderer.toneMappingExposure = 1.0; var cc = renderer.getClearColor(new T.Color()), ca = renderer.getClearAlpha(); renderer.setRenderTarget(thumbRT); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(thumbS, thumbCam); renderer.setRenderTarget(null); renderer.setClearColor(cc, ca); renderer.toneMappingExposure = ex;
+      var px = new Uint8Array(TW * TH * 4); renderer.readRenderTargetPixels(thumbRT, 0, 0, TW, TH, px); var cx = thumbCv.getContext('2d'), im = cx.createImageData(TW, TH);
+      for (var y = 0; y < TH; y++) im.data.set(px.subarray((TH - 1 - y) * TW * 4, (TH - y) * TW * 4), y * TW * 4); cx.putImageData(im, 0, 0);
+      thumbS.remove(g); thumbC[type] = thumbCv.toDataURL('image/png'); return type; } catch (e) { thumbC[type] = 'x'; return null; } };
   W.setGhost = function (type) { if (ghost) { scene.remove(ghost); ghost = null; } ghostType = type; footDecal.visible = !!type; if (!type) return;
     ghost = MD.building(type, BD[type]); ghost.traverse(function (m) { if (m.isMesh) { m.material = ghostHolo; m.castShadow = false; } }); scene.add(ghost); };
   W.moveGhost = function (x, z, ok) { if (!ghost) return; var d = BD[ghostType], cx = x + d.w / 2, cz = z + d.h / 2, y = Hr(cx, cz); ghost.position.set(cx * TS, y, cz * TS);

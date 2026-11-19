@@ -46,6 +46,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 #era{font-size:.84em;color:var(--muted)}#era b{color:var(--fg)}
 /* painel lateral */
 #side{position:absolute;top:calc(8px + 7.6em);right:var(--gr);width:20em;max-height:calc(100% - 20em);overflow-y:auto;padding:.8em .9em;display:flex;flex-direction:column;gap:.55em}
+#side.cs{width:15em;gap:.35em;padding:.6em .7em}#side.cs h2{font-size:1.25em}#side.cs .bar{font-size:.86em}
 #side h2{margin:0;font-family:var(--display);font-weight:600;font-size:1.6em;line-height:1.05}
 #side p{margin:0;font-size:.88em;line-height:1.4;color:var(--muted)}
 .st{font-size:.86em}.st.ok{color:var(--green)}.st.bad{color:var(--crit)}.st.mid{color:var(--warn)}
@@ -66,6 +67,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 .av{display:grid!important;place-items:center;font-family:var(--display);font-weight:600;color:#14100d;font-size:1.05em}.who .av{font-size:2.2em}
 #crew{max-width:100%;overflow-x:auto;scrollbar-width:thin}.cw{flex:0 0 auto}.cw.col{min-width:0;padding:.3em .55em .3em .35em}.cw.col small{display:none}.cw.col .mono{width:1.9em;height:1.9em}.cw.col .mini i{width:1.7em}.cw.all{min-width:0;font-family:var(--cond);text-transform:uppercase;letter-spacing:.08em;font-size:.85em;color:var(--muted)}
 .quote{font-family:var(--display);font-style:italic;font-size:1.02em!important;color:#e2d4c4!important}
+#bl{position:absolute;inset:0;pointer-events:none;overflow:hidden}.bl{position:absolute;left:0;top:0;font-family:var(--cond);letter-spacing:.04em;font-size:.78em;padding:.15em .5em;border-radius:3px;background:rgba(10,7,6,.62);border:1px solid rgba(255,190,90,.45);color:#ffd9a0;white-space:nowrap}.bl.idle{color:#bba;border-color:rgba(200,200,200,.3)}
 #np{position:absolute;left:0;top:0;pointer-events:none;font-family:var(--cond);letter-spacing:.06em;font-size:.85em;padding:.2em .55em;border-radius:3px;background:rgba(10,7,6,.7);border:1px solid rgba(109,255,176,.5);color:var(--fg);white-space:nowrap}
 .cw b{display:block;font-size:.92em}.cw small{display:block;font-size:.76em;color:var(--muted);white-space:nowrap}
 .cw .mini{display:flex;gap:2px;margin-top:.2em}.cw .mini i{display:block;height:.22em;width:2.6em;background:rgba(255,255,255,.12)}.cw .mini i b{display:block;height:100%;background:var(--green)}
@@ -78,7 +80,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 body.raid::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:5;box-shadow:inset 0 0 180px rgba(210,30,25,.5);animation:raidp 1.8s ease-in-out infinite}@keyframes raidp{50%{box-shadow:inset 0 0 110px rgba(210,30,25,.28)}}
 #bq{flex:0 0 13em;min-width:9em;padding:.45em .7em;border-radius:3px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.35);color:var(--fg);font:inherit;font-size:.9em}#bq:focus{outline:none;border-color:var(--blue)}
 #cats button:hover{color:var(--fg)}#cats button.on{background:rgba(116,198,255,.16);color:var(--blue)}
-#items button{flex:0 0 auto;text-align:left;padding:.45em .7em;border:1px solid var(--line);border-radius:3px;min-width:9.5em}
+#items button{flex:0 0 auto;text-align:left;padding:.35em .5em .4em;border:1px solid var(--line);border-radius:3px;width:8.6em;display:flex;flex-direction:column;gap:2px}#items .th{display:block;width:100%;aspect-ratio:4/3;border-radius:2px;background:radial-gradient(ellipse at 50% 70%,rgba(255,170,110,.14),rgba(0,0,0,.25));object-fit:contain}#items b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#items button small{white-space:normal;line-height:1.25;overflow-wrap:anywhere}
 #items button:hover{border-color:var(--blue)}#items button.on{border-color:var(--green)}#items button.no small{color:var(--warn)}
 #items b{display:block;font-size:.92em;font-weight:600}#items small{display:block;font-size:.76em;color:var(--muted);white-space:nowrap}
 #tip{position:absolute;pointer-events:none;padding:.35em .6em;font-size:.84em;white-space:nowrap;transform:translate(14px,14px)}
@@ -154,6 +156,7 @@ body.raid::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:5
     <div id="build"><div id="crew"></div><div id="items" class="pn" hidden></div><div id="cats" class="pn"></div></div>
     <div id="tip" class="pn" hidden></div>
     <div id="np" hidden></div>
+    <div id="bl"></div>
   </div>
   <div id="lbT"></div><div id="lbB"></div><div id="black"></div>
   <div id="cut"><div id="cutT"></div><div id="cutS"></div><div id="cutL"></div></div>
@@ -1100,7 +1103,7 @@ var DATA = {
   bal: {
     N: 256,             // mapa N x N tiles (múltiplo de 8: o terreno é carregado em blocos de 8)
     zone0: 46, outpostR: 30, // raio da bacia inicial e de cada Posto avançado (em tiles)
-    solSec: 480,        // segundos reais por sol na velocidade 1x
+    solSec: 480, buildMul: 2.0,        // segundos reais por sol na velocidade 1x
     sunrise: 6, sunset: 18,
     start: { o2: 120, water: 60, food: 30, metal: 30, comp: 10, reg: 0, seeds: 0, ice: 0, research: 0, energy: 60, ammo: 0 },
     cargo: { metal: 50, comp: 34, seeds: 12 },
@@ -1166,8 +1169,8 @@ var DATA = {
     battery: { name: 'Bateria', cat: 'Energia', w: 1, h: 1, cost: { metal: 10, comp: 5 }, t: 14, cap: 130, desc: 'Guarda energia para a noite.' },
     airlock: { name: 'Câmara de descompressão', cat: 'Infraestrutura', w: 1, h: 1, cost: { metal: 12, comp: 4 }, t: 16, press: true, desc: 'Entrada e saída da área pressurizada. Comece o complexo por ela.' },
     corridor:{ name: 'Corredor pressurizado', cat: 'Infraestrutura', w: 1, h: 1, cost: { metal: 6 }, t: 7, press: true, needPress: true, desc: 'Liga módulos pressurizados.' },
-    habitat: { name: 'Habitat', cat: 'Habitação', w: 3, h: 3, cost: { metal: 25, comp: 8, reg: 10 }, t: 30, use: 1.5, prio: 9, press: true, needPress: true, beds: 4, desc: 'Quatro leitos. Dormir, comer e recuperar. Aquecido e pressurizado.' },
-    casa:    { name: 'Casa', cat: 'Habitação', w: 2, h: 2, cost: { metal: 14, comp: 4, reg: 8 }, t: 16, use: 0.4, prio: 9, press: true, selfPress: true, beds: 2, desc: 'Dois leitos, com câmara própria. Três casas vizinhas formam um bairro. Mais casas, mais gente.' },
+    habitat: { name: 'Habitat', cat: 'Habitação', w: 3, h: 3, cost: { metal: 25, comp: 8, reg: 10 }, t: 30, use: 1.5, prio: 9, press: true, needPress: true, beds: 4, hint: 'Habitat: a base comum. 4 leitos, comida e enfermaria.', desc: 'Coração da base: 4 leitos, comida e recuperação, ligado à câmara por corredores. Diferente da Casa, que é o lar de 2 colonos e fica solta no bairro.' },
+    casa:    { name: 'Casa', cat: 'Habitação', w: 2, h: 2, cost: { metal: 14, comp: 4, reg: 8 }, t: 16, use: 0.4, prio: 9, press: true, selfPress: true, beds: 2, hint: 'Casa: o lar de 2 colonos. Não precisa de corredor.', desc: 'Lar de 2 colonos, com câmara própria: não precisa de corredor. Três casas vizinhas formam um bairro. O Habitat é a base comum; a Casa é onde se mora.' },
     o2ext:   { name: 'Extrator de oxigênio', cat: 'Oxigênio', w: 2, h: 2, cost: { metal: 15, comp: 8 }, t: 20, use: 3, prio: 8, out: { o2: 2.4 }, desc: 'Tira O₂ do CO₂ da atmosfera marciana.' },
     o2tank:  { name: 'Tanque de oxigênio', cat: 'Oxigênio', w: 1, h: 1, cost: { metal: 10, comp: 2 }, t: 10, store: { o2: 90 }, desc: 'Aumenta a reserva de O₂.' },
     drill:   { name: 'Perfurador de gelo', cat: 'Água', w: 1, h: 1, cost: { metal: 18, comp: 8 }, t: 22, use: 3, prio: 5, out: { ice: 2.4 }, needIce: true, desc: 'Extrai gelo subterrâneo. Só funciona sobre gelo.' },
@@ -1175,7 +1178,7 @@ var DATA = {
     wtank:   { name: 'Tanque de água', cat: 'Água', w: 1, h: 1, cost: { metal: 10, comp: 2 }, t: 10, store: { water: 90 }, desc: 'Aumenta a reserva de água.' },
     greenhouse:{ name: 'Estufa', cat: 'Agricultura', w: 3, h: 2, cost: { metal: 20, comp: 8, reg: 15 }, t: 30, use: 2.5, prio: 7, press: true, needPress: true, desc: 'Quatro canteiros. Produz alimento e um pouco de O₂.' },
     lab:     { name: 'Bancada de pesquisa', cat: 'Pesquisa', w: 2, h: 2, cost: { metal: 12, comp: 10 }, t: 20, use: 1.5, prio: 3, press: true, needPress: true, desc: 'Gera pesquisa quando alguém opera.' },
-    workshop:{ name: 'Oficina', cat: 'Produção', w: 2, h: 2, cost: { metal: 20, comp: 6, reg: 10 }, t: 24, use: 3, prio: 2, desc: 'Faz 3 componentes por hora com regolito e metal (cada um gasta 2 de regolito e 1 de metal).' },
+    workshop:{ name: 'Oficina', cat: 'Produção', w: 2, h: 2, cost: { metal: 25, reg: 10 }, t: 24, use: 3, prio: 2, desc: 'Faz 3 componentes por hora com regolito e metal (cada um gasta 2 de regolito e 1 de metal).' },
     storage: { name: 'Armazém', cat: 'Armazenamento', w: 2, h: 2, cost: { metal: 10, reg: 10 }, t: 12, store: { mat: 160 }, desc: 'Mais espaço para materiais. Ponto de entrega.' },
     antenna: { name: 'Antena', cat: 'Comunicação', w: 1, h: 1, cost: { metal: 12, comp: 10 }, t: 20, use: 1, prio: 4, desc: 'Mensagens da Terra, telemetria da Alvorada e guia de pouso.' },
     pad:     { name: 'Zona de Pouso', cat: 'Comunicação', w: 4, h: 4, cost: { metal: 20, comp: 4, reg: 30 }, t: 40, use: 1, prio: 8, need: 'antenna', unique: true, desc: 'Onde a Alvorada pousa. Exige uma antena e precisa de energia para manter as cápsulas.' },
@@ -1754,6 +1757,12 @@ var Sim = (function () {
   var SKILL = { gather: 'geo', haul: 'geo', build: 'eng', upgrade: 'eng', repair: 'eng', clean: 'eng', plant: 'bot', harvest: 'bot', research: 'sci', rescue: 'med' };
   var LABEL = { move: 'Caminhando', upgrade: 'Melhorando', gather: 'Coletando', haul: 'Levando material', build: 'Construindo', repair: 'Reparando', clean: 'Limpando painel', inspect: 'Inspecionando o módulo', unload: 'Retirando suprimentos',
     sleep: 'Dormindo', eat: 'Comendo', drink: 'Bebendo', refill: 'Reabastecendo O₂', research: 'Pesquisando', plant: 'Plantando', harvest: 'Colhendo', talk: 'Conversando', contemplate: 'Olhando o horizonte', rescue: 'Resgatando', shelter: 'Indo para o abrigo', warm: 'Aquecendo-se no abrigo' };
+  function bT(type) { return BD[type].t * (B.buildMul || 1); }
+  // quem está construindo (ou melhorando) b e quantos segundos reais faltam na velocidade 1x
+  function buildEta(s, b) { var names = [], rate = 0, up = b.built && b.up != null, i, c;
+    for (i in s.chars) { c = s.chars[i]; if (!c.alive || !c.act || c.act.id !== b.id || c.act.type !== (up ? 'upgrade' : 'build')) continue; names.push(cinfo(c.id).short || cinfo(c.id).name.split(' ')[0]); rate += sp(s, c, 'eng'); }
+    var left = up ? (1 - b.up) * bT(b.type) * (lvl(b) + 1) : (1 - b.prog) * bT(b.type);
+    return { names: names, sec: rate > 0 ? left / rate : left, idle: !names.length, up: up }; }
   function sp(s, c, k) { return (0.6 + 0.08 * (c.skills[k] || 0)) * (c.needs.stress > 85 ? 0.7 : 1) * (c.needs.energy < 12 ? 0.7 : 1) * (k === 'eng' && c.id === 'helena' ? 1.1 : 1) * (k === 'bot' && c.id === 'elias' ? 1.1 : 1) * (c.weak > s.t ? 0.6 : 1); }
   function xp(s, c, k, dtS) { if (!k) return; c.xp[k] = (c.xp[k] || 0) + dtS * 0.012 * (s.trad.oficio ? 1.5 : 1) * (s.school ? 1.5 : 1); var need = 1 + c.skills[k] * 0.6;
     if (c.xp[k] >= need && c.skills[k] < 10) { c.xp[k] = 0; c.skills[k]++; alertK(s, 'info', cname(c.id) + ': ' + D.skillNames[k] + ' nível ' + c.skills[k], 'lv' + c.id + k + c.skills[k], c.x, c.z, 0); } }
@@ -1839,8 +1848,8 @@ var Sim = (function () {
           var dr = dropoff(s, c); if (!start(s, c, { type: 'haul', kind: 'b', id: dr.id, back: a.id }, a.player)) return true; return false; } return false;
       case 'haul': if (c.carry) { if (!a.player) a.back = null; var got = addRes(s, c.carry.res, c.carry.n); if (got < c.carry.n - 0.01) alertK(s, 'warn', 'Armazém cheio: construa um armazém', 'full', c.x, c.z, 6); c.carry = null; s.stats.trips++; s.flags.gathered = true; emit(s, { type: 'sound', id: 'drop' }); }
         if (a.back && depById(s, a.back) && start(s, c, { type: 'gather', kind: 'd', id: a.back }, a.player)) return false; return true;
-      case 'upgrade': if (!b || b.up == null) return true; b.up += dtS * sp(s, c, 'eng') / (BD[b.type].t * (lvl(b) + 1)); if (b.up >= 1) { b.up = null; b.lv = lvl(b) + 1; if (BD[b.type].beds) assignHomes(s); alertK(s, 'info', BD[b.type].name + ' chegou ao nível ' + b.lv, 'lv' + b.id + b.lv, b.x, b.z, 0); emit(s, { type: 'sound', id: 'built' }); return true; } return false;
-      case 'build': if (!b || b.built) return true; b.prog += dtS * sp(s, c, 'eng') / BD[b.type].t; if (b.prog >= 1) { finishBuilding(s, b, c); return true; } return false;
+      case 'upgrade': if (!b || b.up == null) return true; b.up += dtS * sp(s, c, 'eng') / (bT(b.type) * (lvl(b) + 1)); if (b.up >= 1) { b.up = null; b.lv = lvl(b) + 1; if (BD[b.type].beds) assignHomes(s); alertK(s, 'info', BD[b.type].name + ' chegou ao nível ' + b.lv, 'lv' + b.id + b.lv, b.x, b.z, 0); emit(s, { type: 'sound', id: 'built' }); return true; } return false;
+      case 'build': if (!b || b.built) return true; b.prog += dtS * sp(s, c, 'eng') / bT(b.type); if (b.prog >= 1) { finishBuilding(s, b, c); return true; } return false;
       case 'repair': if (!b) return true; if (s.res.metal < 0.2) { alertK(s, 'warn', 'Falta metal para o reparo', 'repm', c.x, c.z, 6); return true; } var dh = Math.min(100 - b.hp, dtS * sp(s, c, 'eng') * 5); s.res.metal -= dh * 0.06; b.hp += dh; if (b.hp >= 100) { b.leak = false; return true; } return false;
       case 'clean': if (!b) return true; if (a.t >= 3) { b.dust = 0; return true; } return false;
       case 'sleep': c.sleeping = true; var hb = b && b.type !== 'lander' && BD[b.type].beds && b.on; c.needs.energy = Math.min(100, c.needs.energy + 20 * dtH * (hb ? 1.4 : 1)); c.needs.stress = Math.max(0, c.needs.stress - (hb ? 7 : 4) * dtH);
@@ -2232,7 +2241,7 @@ var Sim = (function () {
     s.b.forEach(function (b) { if (!b.built) { var w = false; for (var i in s.chars) if (s.chars[i].act && s.chars[i].act.type === 'build' && s.chars[i].act.id === b.id) w = true; if (!w) out.push({ who: 'sem dono', label: 'Construir ' + BD[b.type].name, state: 'Aguardando' }); } });
     return out; }
 
-  return { newGame: newGame, tick: tick, canPlace: canPlace, place: place, demolish: demolish, order: order, plant: plant, buyTech: buyTech, choose: choose,
+  return { buildEta: buildEta, bT: bT, newGame: newGame, tick: tick, canPlace: canPlace, place: place, demolish: demolish, order: order, plant: plant, buyTech: buyTech, choose: choose,
     serialize: serialize, deserialize: deserialize, requirements: requirements, readiness: readiness, cinfo: cinfo, pop: pop, beds: beds, freeBeds: freeBeds, wakeNext: wakeNext, sleepers: sleepers, reqOK: reqOK, objectives: objectives, signal: signal, caps: caps, byId: byId, depById: depById,
     playable: playable, addZone: addZone, zoneR: zoneR, spawnVehicle: spawnVeh, quick: quick, dip: dip, facBase: facBase, orderItem: orderItem, arm: arm, guards: guards, upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
 })();
@@ -3125,14 +3134,14 @@ var World = (function () {
   // ---------------- inicialização ----------------
   W.init = function (canvas, q) { W.q = q || 'high';
     renderer = new T.WebGLRenderer({ canvas: canvas, antialias: false, powerPreference: 'high-performance', stencil: false });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, W.q === 'high' ? 2 : W.q === 'mid' ? 1.25 : 1));
+    W.prMax = Math.min(window.devicePixelRatio || 1, W.q === 'high' ? 1.5 : W.q === 'mid' ? 1.15 : 1); W.pr = W.prMax; renderer.setPixelRatio(W.pr);
     renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.localClippingEnabled = true;
     scene = new T.Scene(); scene.fog = new T.FogExp2(0xc9a27a, 0.004); cam = new T.PerspectiveCamera(36, 1, 0.3, 3000);
     G.init(renderer, W.q);
     G.U.uFog = { value: null }; G.U.uPlay = { value: null }; G.U.uN = { value: N }; G.U.uTS = { value: TS };
     hemi = new T.HemisphereLight(0xffe2c4, 0x5a3220, 0.25); scene.add(hemi);
-    sunL = new T.DirectionalLight(0xfff0dc, 3); sunL.castShadow = true; var ss = W.q === 'high' ? 4096 : W.q === 'mid' ? 2048 : 1024; sunL.shadow.mapSize.set(ss, ss);
+    sunL = new T.DirectionalLight(0xfff0dc, 3); sunL.castShadow = true; var ss = W.q === 'high' ? 2048 : W.q === 'mid' ? 2048 : 1024; sunL.shadow.mapSize.set(ss, ss);
     sunL.shadow.bias = -0.0004; sunL.shadow.normalBias = 0.04; scene.add(sunL); scene.add(sunL.target);
     for (var i = 0; i < 8; i++) { var pl = new T.PointLight(0xffb070, 0, 16, 2); scene.add(pl); pool.push(pl); }
     for (i = 0; i < 2; i++) { var sp = new T.SpotLight(0xe8f2ff, 0, 22, 0.42, 0.5, 1.6); scene.add(sp); scene.add(sp.target); spots.push(sp); }
@@ -3302,7 +3311,7 @@ var World = (function () {
   W.rebuild = function (s) { var k; for (k in bMesh) removeB(k); for (k in cRig) { scene.remove(cRig[k].root); scene.remove(cRig[k].ring); } for (k in dMesh) scene.remove(dMesh[k]); bMesh = {}; cRig = {}; dMesh = {}; pickables = []; for (var fk in foeM) scene.remove(foeM[fk].root); foeM = {}; for (var bk in fbM) scene.remove(fbM[bk]); fbM = {}; if (relicM) { scene.remove(relicM); relicM = null; } if (roadM) { scene.remove(roadM); roadM = null; } roadSig = ''; if (arkMesh) { scene.remove(arkMesh); arkMesh = null; }
     W.cam.x = N / 2; W.cam.z = N / 2 + 1.5; cam.updateMatrixWorld(); 
     if (mapSeed !== s.seed || !chunks.length) { mapSeed = s.seed; buildTerrain(s); } else { for (var i = 0; i < N * N; i++) trod[i] = 0; occSig = ''; }
-    updateData(s, true); stream(s, 80); W.lastEnvForce = true; };
+    updateData(s, true); stream(s, 80); W.lastEnvForce = true; try { renderer.compile(scene, cam); } catch (e) { } };
 
   // ---------------- construções ----------------
   var EMIT = { winOn: 'winOff', ledG: 'ledOff', ledO: 'ledOff', ledR: 'ledOff', screenOn: 'ledOff', grow: 'ledOff' };
@@ -3349,9 +3358,13 @@ var World = (function () {
     grade.uniforms.uNight.value = W.nf; grade.uniforms.uStorm.value = k; }
 
   // ---------------- quadro a quadro ----------------
-  var lightT = 0, dataT = 0, fxT = 0;
+  var lightT = 0, dataT = 0, fxT = 0, slowT = 0, fastT = 0;
+  // resolução adaptativa: se o quadro passar de ~28 ms por alguns segundos, reduz a escala; se sobrar folga, volta
+  function adaptRes(dt) { if (!(dt > 0) || dt > 0.25) return; var ft = W.ft; if (ft > 0.028) { slowT += dt; fastT = 0; } else if (ft < 0.018) { fastT += dt; slowT = 0; } else { slowT = Math.max(0, slowT - dt); fastT = Math.max(0, fastT - dt); }
+    var pr = W.pr; if (slowT > 2.5 && pr > 0.7) { pr = Math.max(0.7, pr - 0.15); slowT = 0; } else if (fastT > 8 && pr < W.prMax) { pr = Math.min(W.prMax, pr + 0.1); fastT = 0; }
+    if (pr !== W.pr) { W.pr = pr; renderer.setPixelRatio(pr); W.resize(); } }
   W.sync = function (s, dt) { time += dt; G.U.uTime.value = time; grade.uniforms.uTime.value = time; var i, k, b, d, nf;
-    dataT += dt; if (s.rt.fogDirty || s.rt.playDirty || dataT > 0.5) { updateData(s, s.rt.fogDirty); s.rt.fogDirty = false; dataT = 0; }
+    dataT += dt; if (s.rt.fogDirty || s.rt.playDirty || dataT > 1.2) { updateData(s, s.rt.fogDirty); s.rt.fogDirty = false; dataT = 0; }
     atmosphere(s); nf = W.nf; var seen = {}; var GM = G.mats; GM.winOn.emissiveIntensity = 0.25 + 1.7 * nf; GM.grow.emissiveIntensity = 0.8 + 1.8 * nf; GM.screenOn.emissiveIntensity = 0.9 + 1.4 * nf;
     for (i = 0; i < s.b.length; i++) { b = s.b[i]; d = BD[b.type]; seen[b.id] = 1; var o = bMesh[b.id];
       if (o && b.type === 'corridor') { var mk = corridorMask(s, b); if (mk !== o.mask) { removeB(b.id); o = null; } }
@@ -3399,6 +3412,9 @@ var World = (function () {
       if (c.guard && !rig.gun) { rig.gun = MD.rifle(c.guard); rig.gun.rotation.x = Math.PI / 2; rig.gun.position.set(0, -0.3, 0.06); rig.fore[0].add(rig.gun); } if (rig.gun) { rig.gun.visible = !!c.guard; if (!c.guard) { rig.fore[0].remove(rig.gun); rig.gun = null; } }
       var a2 = c.act, st = 'idle'; if (c.critical > 0) st = 'lie'; else if (a2 && a2.phase === 'go') st = c.carry ? 'carry' : 'walk'; else if (a2 && a2.phase === 'work') { st = { gather: 'mine', plant: 'crouch', harvest: 'crouch', build: 'work', repair: 'work', clean: 'work', inspect: 'work', unload: 'work', contemplate: 'look', rescue: 'crouch' }[a2.type] || 'idle'; }
       if (c.fighting && c.critical <= 0) st = c.firing ? 'aim' : 'walk';
+      // só anda se realmente se mover (evita andar parado depois de cenas ou pausas)
+      if (rig.px == null) { rig.px = c.x; rig.pz = c.z; rig.mvS = 0; } var dmv = Math.hypot(c.x - rig.px, c.z - rig.pz); rig.px = c.x; rig.pz = c.z; rig.mvS += ((dt > 0 ? dmv / dt : 0) - rig.mvS) * Math.min(1, dt * 10);
+      if ((st === 'walk' || st === 'carry') && rig.mvS < 0.08) st = 'idle';
       if (c.critical <= 0 && c.face != null) { var df = c.face - m.rotation.y; while (df > Math.PI) df -= 6.283; while (df < -Math.PI) df += 6.283; m.rotation.y += df * Math.min(1, dt * 8); }
       MD.animate(rig, st, time + rig.ph, dt, (s.stormK > 0.3 ? 0.65 : 1) * (c.weak > s.t ? 0.7 : 1)); rig.cargo.visible = !!c.carry; if (rig.pick) rig.pick.visible = st === 'mine';
       if ((st === 'walk' || st === 'carry') && Math.random() < dt * 5) dust.emit(m.position.x + (Math.random() - 0.5) * 0.3, gy + 0.08, m.position.z + (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.6, 0.25 + Math.random() * 0.3, (Math.random() - 0.5) * 0.6, 0.35, 1.4, 0.6, 0.38, 0.24, 0.35, 0.6, 1.2, 0.1);
@@ -3409,7 +3425,7 @@ var World = (function () {
       if (W.arkFlame) { flameMesh.visible = true; flameMesh.position.set(arkMesh.position.x, arkMesh.position.y - 2.4, arkMesh.position.z); flameMesh.scale.set(1.8 + Math.sin(time * 40) * 0.2, 1.3 + Math.sin(time * 31) * 0.15, 1.8 + Math.cos(time * 37) * 0.2);
         if (W.arkY < 50) for (var q2 = 0; q2 < 7; q2++) { var an2 = Math.random() * 6.28, sp3 = 7 + Math.random() * 11; dust.emit(arkMesh.position.x + Math.cos(an2) * 3, pbm.base + 0.5, arkMesh.position.z + Math.sin(an2) * 3, Math.cos(an2) * sp3, 0.5 + Math.random() * 1.5, Math.sin(an2) * sp3, 1.4, 2.5 + Math.random() * 2, 0.62, 0.38, 0.22, 0.5 * (1 - W.arkY / 50), 2.4, 0.8, 0); } } }
     else if (arkMesh) arkMesh.visible = false;
-    stream(s, 3);
+    W.ft = (W.ft || 0.016) * 0.95 + dt * 0.05; stream(s, W.ft > 0.03 ? 1 : 2); adaptRes(dt);
     // luzes da base: as mais próximas da câmera
     lightT -= dt; if (lightT <= 0) { lightT = 0.4; var cand = []; for (k in bMesh) { var bo = bMesh[k], bb = Sim.byId(s, +k); if (!bb || !bb.built || !(bb.on || (bb.type === 'lander' && s.lifeSupport))) continue; (bo.g.userData.o.lights || []).forEach(function (L) { var wp = bo.g.localToWorld(new T.Vector3(L[0], L[1], L[2])); cand.push({ p: wp, c: L[3] || 0xffb070, r: L[4] || 16, k: L[5] || 1, d: Math.hypot(wp.x - W.cam.x * TS, wp.z - W.cam.z * TS) - (L[4] ? 30 : 0) }); }); }
       cand.sort(function (a, b) { return a.d - b.d; }); pool.forEach(function (pl, j) { var cd = cand[j]; pl.userData.on = !!cd; if (cd) { pl.position.copy(cd.p); pl.color.setHex(cd.c); pl.distance = cd.r; pl.userData.k = cd.k; } }); }
@@ -3535,6 +3551,19 @@ var World = (function () {
   W.pick = function (px, py) { ray.setFromCamera(ndc(px, py), cam); var hits = ray.intersectObjects(pickables, true), res = null;
     for (var i = 0; i < hits.length && !res; i++) { var o = hits[i].object; while (o && !(o.userData && o.userData.kind)) o = o.parent; if (!o || !o.visible) continue; res = { kind: o.userData.kind, id: o.userData.id }; }
     var g = groundHit(); if (g) { if (!res) res = { kind: 'tile' }; res.x = g.x; res.z = g.z; } return res; };
+  // miniaturas do menu de construção: renderiza cada prédio uma vez num alvo pequeno e guarda como imagem
+  var thumbC = {}, thumbQ = [], thumbS = null, thumbRT = null, thumbCam = null, thumbCv = null;
+  W.thumb = function (type) { if (thumbC[type]) return thumbC[type]; if (thumbQ.indexOf(type) < 0) thumbQ.push(type); return null; };
+  W.thumbStep = function () { if (!thumbQ.length || !renderer) return null; var type = thumbQ.shift(), TW = 128, TH = 96;
+    try { if (!thumbS) { thumbS = new T.Scene(); thumbS.add(new T.HemisphereLight(0xfff3e6, 0x6a4030, 1.1)); var dl = new T.DirectionalLight(0xffffff, 2.4); dl.position.set(-6, 10, 7); thumbS.add(dl); var dl2 = new T.DirectionalLight(0xffd0b0, 0.6); dl2.position.set(8, 4, -6); thumbS.add(dl2);
+        thumbRT = new T.WebGLRenderTarget(TW, TH, { depthBuffer: true }); thumbRT.texture.encoding = T.sRGBEncoding; thumbCam = new T.PerspectiveCamera(30, TW / TH, 0.1, 400); thumbCv = document.createElement('canvas'); thumbCv.width = TW; thumbCv.height = TH; }
+      thumbS.environment = scene.environment; var d = BD[type], g = MD.building(type, d); thumbS.add(g); g.updateMatrixWorld(true);
+      var bb = new T.Box3().setFromObject(g), ctr = bb.getCenter(new T.Vector3()), sz = bb.getSize(new T.Vector3()), r = Math.max(sz.x, sz.y * 1.2, sz.z, 1.2) * 0.5;
+      var dist = r / Math.tan(15 * Math.PI / 180) * 1.05; thumbCam.position.set(ctr.x + dist * 0.62, ctr.y + dist * 0.5, ctr.z + dist * 0.6); thumbCam.lookAt(ctr); thumbCam.updateMatrixWorld();
+      var ex = renderer.toneMappingExposure; renderer.toneMappingExposure = 1.0; var cc = renderer.getClearColor(new T.Color()), ca = renderer.getClearAlpha(); renderer.setRenderTarget(thumbRT); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(thumbS, thumbCam); renderer.setRenderTarget(null); renderer.setClearColor(cc, ca); renderer.toneMappingExposure = ex;
+      var px = new Uint8Array(TW * TH * 4); renderer.readRenderTargetPixels(thumbRT, 0, 0, TW, TH, px); var cx = thumbCv.getContext('2d'), im = cx.createImageData(TW, TH);
+      for (var y = 0; y < TH; y++) im.data.set(px.subarray((TH - 1 - y) * TW * 4, (TH - y) * TW * 4), y * TW * 4); cx.putImageData(im, 0, 0);
+      thumbS.remove(g); thumbC[type] = thumbCv.toDataURL('image/png'); return type; } catch (e) { thumbC[type] = 'x'; return null; } };
   W.setGhost = function (type) { if (ghost) { scene.remove(ghost); ghost = null; } ghostType = type; footDecal.visible = !!type; if (!type) return;
     ghost = MD.building(type, BD[type]); ghost.traverse(function (m) { if (m.isMesh) { m.material = ghostHolo; m.castShadow = false; } }); scene.add(ghost); };
   W.moveGhost = function (x, z, ok) { if (!ghost) return; var d = BD[ghostType], cx = x + d.w / 2, cz = z + d.h / 2, y = Hr(cx, cz); ghost.position.set(cx * TS, y, cz * TS);
@@ -3571,8 +3600,10 @@ var UI = (function () {
       Au.mus = c.createGain(); Au.mus.gain.value = 0; var dl = c.createDelay(2), fb = c.createGain(), lp = c.createBiquadFilter(); dl.delayTime.value = 0.62; fb.gain.value = 0.42; lp.type = 'lowpass'; lp.frequency.value = 1400;
       Au.musIn = c.createGain(); Au.musIn.connect(lp); lp.connect(Au.mus); lp.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(Au.mus); Au.mus.connect(Au.master); Au.next = c.currentTime + 2;
       var trk = window.GM_MUSIC || 'music/god-particle.mp3'; // trilha: Out of Flux & Danny Shields — God Particle (em loop); se o arquivo faltar, volta a trilha gerada
-      if (trk && location.protocol !== 'file:') { try { var el = new Audio(trk); el.loop = true; el.preload = 'auto'; var ms = c.createMediaElementSource(el), tg = c.createGain(); tg.gain.value = 0.45; ms.connect(tg); tg.connect(Au.mus); Au.file = el;
-          el.addEventListener('error', function () { Au.file = null; }); var pr = el.play(); if (pr && pr.catch) pr.catch(function () { Au.file = null; }); } catch (e2) { Au.file = null; } }
+      // a trilha é baixada e decodificada pelo próprio WebAudio (mais confiável que <audio> dentro de artefatos e do app instalado)
+      if (trk && location.protocol !== 'file:' && window.fetch) { Au.file = 'loading'; fetch(trk).then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (ok, no) { var p = c.decodeAudioData(ab, ok, no); if (p && p.then) p.then(ok, no); }); })
+          .then(function (buf) { var src = c.createBufferSource(), tg = c.createGain(); src.buffer = buf; src.loop = true; tg.gain.value = 0.5; src.connect(tg); tg.connect(Au.mus); src.start(); Au.file = src; window.__musOK = true; })
+          .catch(function (e3) { Au.file = null; window.__musErr = String(e3 && e3.message || e3); if (window.console) console.warn('trilha: ' + window.__musErr); }); }
       var o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 55; var o2 = c.createOscillator(); o2.type = 'square'; o2.frequency.value = 82.5; var f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 170; Au.hum = c.createGain(); Au.hum.gain.value = 0; o.connect(f); o2.connect(f); f.connect(Au.hum); Au.hum.connect(Au.master); o.start(); o2.start();
     } catch (e) { Au.ctx = null; } }
   function tone(f, dur, type, vol, at) { if (!Au.ctx) return; var c = Au.ctx, t = c.currentTime + (at || 0), o = c.createOscillator(), g = c.createGain(); o.type = type || 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol || 0.12, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(Au.master); o.start(t); o.stop(t + dur + 0.05); }
@@ -3652,22 +3683,19 @@ var UI = (function () {
     var list = Object.keys(BD).filter(function (k) { return bqv ? norm(BD[k].name + ' ' + BD[k].cat + ' ' + BD[k].desc + ' ' + k).indexOf(bqv) >= 0 : BD[k].cat === cat; }), rq = Sim.reqOK(s), sig = cat + bqv + placing + rq + list.map(function (k) { var c = BD[k].cost, ok = 1; for (var r in c) if (s.res[r] < c[r]) ok = 0; return ok; }).join('');
     if (sig === itemSig) return; itemSig = sig; el.hidden = false;
     el.innerHTML = list.map(function (k) { var d = BD[k], ok = true; for (var r in d.cost) if (s.res[r] < d.cost[r]) ok = false; var lock = d.landmark && !rq;
-      return '<button data-act="build" data-a="' + k + '" class="' + (placing === k ? 'on ' : '') + (ok && !lock ? '' : 'no') + '" title="' + esc(d.desc) + '"><b>' + d.name + '</b><small>' + (lock ? 'requisitos da Era pendentes' : Sim.costText(d.cost)) + '</small></button>'; }).join('') || '<span class="lb" style="padding:.7em 1em">Nenhuma construção com esse nome</span>'; }
+      return '<button data-act="build" data-a="' + k + '" class="' + (placing === k ? 'on ' : '') + (ok && !lock ? '' : 'no') + '" title="' + esc(d.desc) + '">' + (function () { var u = W.thumb && W.thumb(k); return u && u !== 'x' ? '<img class="th" alt="" src="' + u + '">' : '<span class="th"></span>'; })() + '<b>' + d.name + '</b><small>' + (lock ? 'requisitos da Era pendentes' : Sim.costText(d.cost)) + '</small></button>'; }).join('') || '<span class="lb" style="padding:.7em 1em">Nenhuma construção com esse nome</span>'; }
 
-  var NEEDS = [['health', 'Saúde', 0], ['o2', 'O₂ do traje', 0], ['hunger', 'Alimentação', 1], ['thirst', 'Hidratação', 1], ['energy', 'Descanso', 0], ['temp', 'Temperatura', 0], ['morale', 'Moral', 0], ['stress', 'Estresse', 2], ['rad', 'Radiação', 2]];
+  var NEEDS = [['health', 'Saúde', 0], ['o2', 'O₂ do traje', 0], ['hunger', 'Alimentação', 1], ['thirst', 'Hidratação', 1], ['energy', 'Descanso', 0], ['morale', 'Moral', 0]];
   function bar(key, label) { return '<div class="bar" data-bar="' + key + '"><span>' + label + '</span><u><i></i></u><span class="num"></span></div>'; }
   function renderSide() { var el = $('side'), html = '', sig = '', dyn = {}, c, b, d, i;
     if (sel.c.length && !s.chars[sel.c[0]]) setSel({});
     if (sel.c.length && s.chars[sel.c[0]].veh) { c = s.chars[sel.c[0]]; var vi = D.vehicles[c.veh]; sig = 'v' + c.id + c.alive + (c.act ? c.act.type : '');
       html = '<span class="lb">Veículo · Era ' + D.eras[vi.era - 1].n + '</span><h2>' + esc(Sim.cinfo(c.id).name) + '</h2><div class="st">' + esc(vi.desc) + '</div>' + bar('vhp', 'Blindagem') + bar('bat', 'Bateria') + '<div class="st">' + (c.act ? Sim.LABEL[c.act.type] || '' : 'Parado') + '</div><div class="st">Botão direito no mapa para mover; num depósito, para coletar. Recarrega perto da Garagem.</div>';
       dyn.vhp = [c.needs.health, c.needs.health < 40 ? 'c' : 'g']; dyn.bat = [c.bat || 0, (c.bat || 0) < 20 ? 'c' : 'g']; }
-    else if (sel.c.length) { c = s.chars[sel.c[0]]; var cd = Sim.cinfo(c.id), hm = c.home != null ? Sim.byId(s, c.home) : null; sig = 'c' + sel.c.join() + (hm ? hm.id + '' + !!hm.bairro : 'x') + (c.weak > s.t) + c.guard + s.era + c.alive + (c.critical > 0) + (c.act ? c.act.type : '') + c.queue.length + c.mem.join() + JSON.stringify(c.skills) + Sim.bondName(s.bond) + (c.inside != null);
-      html = '<div class="who">' + avatar(c.id, 'big') + '<div><span class="lb">' + cd.role + ' · ' + (cd.born ? 'nasceu no sol ' + (Math.floor((c.bornT || 0) / 24) + 1) : cd.age + ' anos') + (sel.c.length > 1 ? ' · ' + sel.c.length + ' selecionados' : '') + '</span><h2>' + esc(cd.name) + '</h2></div></div><p class="quote">' + (cd.quote ? '“' + esc(cd.quote) + '”' : esc(cd.why)) + '</p><div class="st ' + (c.critical > 0 || !c.alive ? 'bad' : 'ok') + '">' + charStatus(c) + (c.queue.length ? ' · ' + c.queue.length + ' na fila' : '') + '</div>' +
-        NEEDS.map(function (n) { return bar(n[0], n[1]); }).join('') + '<div class="st">Casa: <b>' + (hm ? BD[hm.type].name + (hm.bairro ? ', num bairro' : '') : 'sem leito') + '</b>' + (c.weak > s.t ? ' · recém-desperto, ainda fraco' : '') + '</div><div class="st">Coesão da comunidade: <b>' + Sim.bondName(s.bond) + '</b></div>' +
-        '<h3>Habilidades</h3><div class="tags">' + Object.keys(c.skills).map(function (k) { return '<span class="tag">' + D.skillNames[k] + ' <b>' + c.skills[k] + '</b></span>'; }).join('') + '</div>' +
-        '<h3>Traços</h3><div class="tags">' + (cd.traits || [cd.trait]).map(function (t) { return '<span class="tag" title="' + esc(t[1]) + '"><b>' + t[0] + '</b></span>'; }).join('') + '</div>' +
-        (c.mem.length ? '<h3>Memórias</h3><div class="tags">' + c.mem.map(function (m) { return '<span class="tag" title="' + esc(D.memories[m][1]) + '"><b>' + D.memories[m][0] + '</b></span>'; }).join('') + '</div>' : '') +
-        (c.guard ? '<div class="st ok">Guarda · ' + D.weapons[c.guard].short + '</div>' : '') + (c.alive && c.critical <= 0 && s.era >= 2 && Sim.ofType(s, 'quartel', true).length ? '<div class="btns"><button class="bt' + (c.guard ? '' : ' pri') + '" data-act="arm">' + (c.guard ? 'Desarmar' : 'Armar (Guarda)') + '</button></div>' : '') + (c.alive && c.critical <= 0 ? '<div class="btns"><button class="bt" data-act="co" data-a="sleep">Dormir</button><button class="bt" data-act="co" data-a="eat">Comer</button><button class="bt" data-act="co" data-a="drink">Beber</button><button class="bt" data-act="co" data-a="talk">Conversar</button><button class="bt" data-act="co" data-a="contemplate">Olhar o horizonte</button><button class="bt" data-act="co" data-a="stop">Parar</button><button class="bt" data-act="focus">Centralizar</button></div><p>Botão direito no terreno, num depósito ou numa construção dá a ordem. Shift põe na fila.' + (D.chars[c.id] ? '' : ' Sem ordens, os colonos constroem, coletam e cuidam da base sozinhos.') + '</p>' : '');
+    else if (sel.c.length) { c = s.chars[sel.c[0]]; var cd = Sim.cinfo(c.id); sig = 'c' + sel.c.join() + c.guard + s.era + c.alive + (c.critical > 0) + (c.inside != null);
+      html = '<div class="who">' + avatar(c.id, 'big') + '<div>' + (sel.c.length > 1 ? '<span class="lb">' + sel.c.length + ' selecionados</span>' : '') + '<h2>' + esc(cd.name) + '</h2></div></div>' +
+        NEEDS.map(function (n) { return bar(n[0], n[1]); }).join('') +
+        (c.alive && c.critical <= 0 && s.era >= 2 && Sim.ofType(s, 'quartel', true).length ? '<div class="btns"><button class="bt' + (c.guard ? '' : ' pri') + '" data-act="arm">' + (c.guard ? 'Desarmar' : 'Armar (Guarda)') + '</button></div>' : '');
       NEEDS.forEach(function (n) { var v = c.needs[n[0]], shown = n[2] === 1 ? 100 - v : v; dyn[n[0]] = [shown, n[2] === 2 ? (v > 70 ? 'c' : v > 45 ? 'w' : 'g') : (shown < 22 ? 'c' : shown < 45 ? 'w' : n[0] === 'health' || n[0] === 'morale' ? 'g' : '')]; });
     } else if (sel.b != null && (b = Sim.byId(s, sel.b))) { d = BD[b.type]; var pl = b.plots ? b.plots.map(function (p) { return !p ? '0' : p.order ? 'o' : p.g >= 1 ? 'r' : 'g'; }).join('') : '';
       sig = 'b' + b.id + (b.fab ? 'f' : '') + JSON.stringify(s.arms) + s.al.nights + Sim.lvl(b) + (b.up != null) + Sim.canUpgrade(s, b).ok + (b.gest ? 1 : 0) + (s.ark.wake ? s.ark.wake.id : '') + s.ark.st + Sim.pop(s) + Sim.beds(s) + !!b.bairro + b.built + b.on + b.why + pl + b.off + (b.hp < 95) + (b.dust > 0.08) + (demo === b.id) + s.flags.unloaded + s.flags.inspected + (b.idle ? 1 : 0);
@@ -3710,7 +3738,7 @@ var UI = (function () {
       html += '<div class="btns">' + bt + '</div>';
     } else if (sel.d != null && (d = Sim.depById(s, sel.d))) { sig = 'd' + d.id; html = '<span class="lb">Depósito</span><h2>' + (d.res === 'metal' ? 'Minério metálico' : 'Regolito solto') + '</h2><div class="st">Restam <b data-txt="left"></b> unidades</div><p>' + (d.res === 'metal' ? 'Metal para estruturas e painéis.' : 'Regolito para blindagem, estufas e componentes.') + '</p><div class="btns"><button class="bt pri" data-act="gather" data-a="elias">Elias coleta</button><button class="bt" data-act="gather" data-a="helena">Helena coleta</button></div>'; dyn.left = r0(d.left); }
     else { sel.b = sel.d = null; }
-    if (!html) { el.hidden = true; sideSig = ''; return; } el.hidden = false; if (sig !== sideSig) { sideSig = sig; el.innerHTML = html; }
+    if (!html) { el.hidden = true; sideSig = ''; return; } el.hidden = false; el.classList.toggle('cs', !!(sel.c.length && c && !c.veh)); if (sig !== sideSig) { sideSig = sig; el.innerHTML = html; }
     var bars = el.querySelectorAll('[data-bar]'); for (i = 0; i < bars.length; i++) { var v = dyn[bars[i].dataset.bar]; if (!v) continue; bars[i].className = 'bar ' + v[1]; bars[i].children[1].firstChild.style.width = clamp(v[0], 0, 100) + '%'; bars[i].children[2].textContent = r0(v[0]); }
     var tx = el.querySelectorAll('[data-txt]'); for (i = 0; i < tx.length; i++) if (dyn[tx[i].dataset.txt] != null) tx[i].textContent = dyn[tx[i].dataset.txt]; }
 
@@ -3864,10 +3892,10 @@ var UI = (function () {
   // ---------------- ENTRADA ----------------
   function tileFor(type, p) { var d = BD[type]; return { x: Math.floor(p.x - d.w / 2 + 0.5), z: Math.floor(p.z - d.h / 2 + 0.5) }; }
   function hoverPlace(px, py) { var p = W.pick(px, py, s); if (!p || p.x == null) return null; var t = tileFor(placing, p), r = Sim.canPlace(s, placing, t.x, t.z); W.moveGhost(t.x, t.z, r.ok);
-    var tip = $('tip'), rc = $('app').getBoundingClientRect(); tip.hidden = false; tip.textContent = r.reason; tip.className = 'pn ' + (r.ok ? 'ok' : 'bad'); tip.style.left = Math.min(px - rc.left, rc.width - 260) + 'px'; tip.style.top = (py - rc.top) + 'px'; return { t: t, r: r }; }
+    var tip = $('tip'), rc = $('app').getBoundingClientRect(); tip.hidden = false; tip.textContent = r.ok && D.buildings[placing] && D.buildings[placing].hint ? D.buildings[placing].hint : r.reason; tip.className = 'pn ' + (r.ok ? 'ok' : 'bad'); tip.style.left = Math.min(px - rc.left, rc.width - 260) + 'px'; tip.style.top = (py - rc.top) + 'px'; return { t: t, r: r }; }
   function clickAt(px, py, right, shift, touch) { if (mode !== 'play') return; var p;
     if (placing) { if (right) { setPlacing(null); return; } var h = hoverPlace(px, py); if (!h) return; if (!h.r.ok) { toast(h.r.reason); sfx('warn'); return; } var type = placing, res = Sim.place(s, type, h.t.x, h.t.z);
-      if (res.ok) { if (!(shift || type === 'solar' || type === 'corridor' || type === 'poste' || type === 'casa' || type === 'estrada' || type === 'muro' || type === 'bastiao')) setPlacing(null); else hoverPlace(px, py); } return; }
+      if (res.ok) { var dd = D.buildings[type]; if (dd.unique || dd.landmark || dd.max) setPlacing(null); else { hoverPlace(px, py); if (!W.contHint) { W.contHint = 1; toast('Continue clicando para construir mais. Esc ou botão direito para parar.'); } } } return; }
     p = W.pick(px, py, s); if (!p) return;
     var orderNow = right || (touch && sel.c.length && p.kind !== 'c');
     if (orderNow) { if (!sel.c.length) { if (p.kind === 'b' && right) { copyB(p.id); return; } toast('Selecione alguém primeiro'); return; } sel.c.forEach(function (id, i) { if (!s.chars[id]) return; var tg = { kind: p.kind, id: p.id, x: p.x + (i % 4) * 0.9, z: p.z + Math.floor(i / 4) * 0.9 }; if (p.kind === 'c' && p.id === id) return; doOrder(s.chars[id], tg, shift); }); return; }
@@ -3921,8 +3949,19 @@ var UI = (function () {
       else { camKeys(dt); if (!paused && !modalKind) { var n = speed > 2 ? 2 : 1; for (var i = 0; i < n; i++) Sim.tick(s, dt * speed / n); showSub(dt); } drain();
         if (!modalKind && scenes.length && mode === 'play') startScene(scenes.shift());
         hudAcc += dt; if (hudAcc > 0.22) { hudAcc = 0; updateHUD(); } nameplate(); if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').hidden = true; } }
-      auUpdate(); W.sync(s, dt);
+      auUpdate(); W.sync(s, dt); buildLabels(dt); if (W.thumbStep && mode === 'play' && W.thumbStep()) itemSig = '';
     } catch (e) { fail(e); } }
+  function fmtT(sec) { sec = Math.max(1, Math.round(sec)); if (sec < 60) return sec + ' s'; var m = Math.floor(sec / 60), r = sec % 60; return m + ' min' + (r >= 10 ? ' ' + r + ' s' : ''); }
+  var blPool = [], blAcc = 1;
+  function buildLabels(dt) { var host = $('bl'); if (!host) return; blAcc += dt; var txt = blAcc > 0.25; if (txt) blAcc = 0; var n = 0, i, b;
+    if (!W.hideChars && mode === 'play') for (i = 0; i < s.b.length && n < 10; i++) { b = s.b[i]; if (b.built && b.up == null) continue; var d = D.buildings[b.type]; if (!d) continue;
+      var p = W.screenPos(b.x + d.w / 2, b.z + d.h / 2, 5 + d.h * 0.9); if (!p.vis || p.x < -50 || p.y < -20 || p.x > innerWidth + 50 || p.y > innerHeight + 20) continue;
+      var e = blPool[n]; if (!e) { e = document.createElement('div'); e.className = 'bl'; host.appendChild(e); blPool[n] = e; } n++;
+      if (txt || e.hidden || e._id !== b.id) { var k = Sim.buildEta(s, b), nm = d.name;
+        e.textContent = k.idle ? (k.up ? 'Melhoria parada · ' : 'Aguardando construtor · ') + nm : k.names.join(' e ') + (k.up ? ' melhorando ' : ' construindo ') + nm.charAt(0).toLowerCase() + nm.slice(1) + ': ' + fmtT(k.sec);
+        e.classList.toggle('idle', k.idle); e._id = b.id; }
+      e.hidden = false; e.style.transform = 'translate(' + Math.round(p.x) + 'px,' + Math.round(p.y) + 'px) translate(-50%,-100%)'; }
+    for (i = n; i < blPool.length; i++) blPool[i].hidden = true; }
   function nameplate() { var e = $('np'), id = sel.c[0], c = id && s.chars[id]; if (!c || !c.alive || (c.inside != null && c.critical <= 0) || W.hideChars) { e.hidden = true; return; }
     var p = W.screenPos(c.x, c.z, 2.5); if (!p.vis) { e.hidden = true; return; } e.hidden = false; e.textContent = Sim.cinfo(id).short + (sel.c.length > 1 ? ' +' + (sel.c.length - 1) : '') + (c.act ? ' · ' + Sim.LABEL[c.act.type] : ''); e.style.transform = 'translate(' + Math.round(p.x) + 'px,' + Math.round(p.y) + 'px) translate(-50%,-100%)'; }
   function fail(e) { var el = $('err'); if (!el.hidden) return; el.hidden = false; el.textContent = 'Algo quebrou no jogo: ' + (e && e.message ? e.message : e) + '. Recarregue a página; o último salvamento automático continua guardado.'; if (window.console) console.error(e); }

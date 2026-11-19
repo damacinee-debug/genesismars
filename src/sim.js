@@ -326,6 +326,12 @@ var Sim = (function () {
   var SKILL = { gather: 'geo', haul: 'geo', build: 'eng', upgrade: 'eng', repair: 'eng', clean: 'eng', plant: 'bot', harvest: 'bot', research: 'sci', rescue: 'med' };
   var LABEL = { move: 'Caminhando', upgrade: 'Melhorando', gather: 'Coletando', haul: 'Levando material', build: 'Construindo', repair: 'Reparando', clean: 'Limpando painel', inspect: 'Inspecionando o módulo', unload: 'Retirando suprimentos',
     sleep: 'Dormindo', eat: 'Comendo', drink: 'Bebendo', refill: 'Reabastecendo O₂', research: 'Pesquisando', plant: 'Plantando', harvest: 'Colhendo', talk: 'Conversando', contemplate: 'Olhando o horizonte', rescue: 'Resgatando', shelter: 'Indo para o abrigo', warm: 'Aquecendo-se no abrigo' };
+  function bT(type) { return BD[type].t * (B.buildMul || 1); }
+  // quem está construindo (ou melhorando) b e quantos segundos reais faltam na velocidade 1x
+  function buildEta(s, b) { var names = [], rate = 0, up = b.built && b.up != null, i, c;
+    for (i in s.chars) { c = s.chars[i]; if (!c.alive || !c.act || c.act.id !== b.id || c.act.type !== (up ? 'upgrade' : 'build')) continue; names.push(cinfo(c.id).short || cinfo(c.id).name.split(' ')[0]); rate += sp(s, c, 'eng'); }
+    var left = up ? (1 - b.up) * bT(b.type) * (lvl(b) + 1) : (1 - b.prog) * bT(b.type);
+    return { names: names, sec: rate > 0 ? left / rate : left, idle: !names.length, up: up }; }
   function sp(s, c, k) { return (0.6 + 0.08 * (c.skills[k] || 0)) * (c.needs.stress > 85 ? 0.7 : 1) * (c.needs.energy < 12 ? 0.7 : 1) * (k === 'eng' && c.id === 'helena' ? 1.1 : 1) * (k === 'bot' && c.id === 'elias' ? 1.1 : 1) * (c.weak > s.t ? 0.6 : 1); }
   function xp(s, c, k, dtS) { if (!k) return; c.xp[k] = (c.xp[k] || 0) + dtS * 0.012 * (s.trad.oficio ? 1.5 : 1) * (s.school ? 1.5 : 1); var need = 1 + c.skills[k] * 0.6;
     if (c.xp[k] >= need && c.skills[k] < 10) { c.xp[k] = 0; c.skills[k]++; alertK(s, 'info', cname(c.id) + ': ' + D.skillNames[k] + ' nível ' + c.skills[k], 'lv' + c.id + k + c.skills[k], c.x, c.z, 0); } }
@@ -411,8 +417,8 @@ var Sim = (function () {
           var dr = dropoff(s, c); if (!start(s, c, { type: 'haul', kind: 'b', id: dr.id, back: a.id }, a.player)) return true; return false; } return false;
       case 'haul': if (c.carry) { if (!a.player) a.back = null; var got = addRes(s, c.carry.res, c.carry.n); if (got < c.carry.n - 0.01) alertK(s, 'warn', 'Armazém cheio: construa um armazém', 'full', c.x, c.z, 6); c.carry = null; s.stats.trips++; s.flags.gathered = true; emit(s, { type: 'sound', id: 'drop' }); }
         if (a.back && depById(s, a.back) && start(s, c, { type: 'gather', kind: 'd', id: a.back }, a.player)) return false; return true;
-      case 'upgrade': if (!b || b.up == null) return true; b.up += dtS * sp(s, c, 'eng') / (BD[b.type].t * (lvl(b) + 1)); if (b.up >= 1) { b.up = null; b.lv = lvl(b) + 1; if (BD[b.type].beds) assignHomes(s); alertK(s, 'info', BD[b.type].name + ' chegou ao nível ' + b.lv, 'lv' + b.id + b.lv, b.x, b.z, 0); emit(s, { type: 'sound', id: 'built' }); return true; } return false;
-      case 'build': if (!b || b.built) return true; b.prog += dtS * sp(s, c, 'eng') / BD[b.type].t; if (b.prog >= 1) { finishBuilding(s, b, c); return true; } return false;
+      case 'upgrade': if (!b || b.up == null) return true; b.up += dtS * sp(s, c, 'eng') / (bT(b.type) * (lvl(b) + 1)); if (b.up >= 1) { b.up = null; b.lv = lvl(b) + 1; if (BD[b.type].beds) assignHomes(s); alertK(s, 'info', BD[b.type].name + ' chegou ao nível ' + b.lv, 'lv' + b.id + b.lv, b.x, b.z, 0); emit(s, { type: 'sound', id: 'built' }); return true; } return false;
+      case 'build': if (!b || b.built) return true; b.prog += dtS * sp(s, c, 'eng') / bT(b.type); if (b.prog >= 1) { finishBuilding(s, b, c); return true; } return false;
       case 'repair': if (!b) return true; if (s.res.metal < 0.2) { alertK(s, 'warn', 'Falta metal para o reparo', 'repm', c.x, c.z, 6); return true; } var dh = Math.min(100 - b.hp, dtS * sp(s, c, 'eng') * 5); s.res.metal -= dh * 0.06; b.hp += dh; if (b.hp >= 100) { b.leak = false; return true; } return false;
       case 'clean': if (!b) return true; if (a.t >= 3) { b.dust = 0; return true; } return false;
       case 'sleep': c.sleeping = true; var hb = b && b.type !== 'lander' && BD[b.type].beds && b.on; c.needs.energy = Math.min(100, c.needs.energy + 20 * dtH * (hb ? 1.4 : 1)); c.needs.stress = Math.max(0, c.needs.stress - (hb ? 7 : 4) * dtH);
@@ -804,7 +810,7 @@ var Sim = (function () {
     s.b.forEach(function (b) { if (!b.built) { var w = false; for (var i in s.chars) if (s.chars[i].act && s.chars[i].act.type === 'build' && s.chars[i].act.id === b.id) w = true; if (!w) out.push({ who: 'sem dono', label: 'Construir ' + BD[b.type].name, state: 'Aguardando' }); } });
     return out; }
 
-  return { newGame: newGame, tick: tick, canPlace: canPlace, place: place, demolish: demolish, order: order, plant: plant, buyTech: buyTech, choose: choose,
+  return { buildEta: buildEta, bT: bT, newGame: newGame, tick: tick, canPlace: canPlace, place: place, demolish: demolish, order: order, plant: plant, buyTech: buyTech, choose: choose,
     serialize: serialize, deserialize: deserialize, requirements: requirements, readiness: readiness, cinfo: cinfo, pop: pop, beds: beds, freeBeds: freeBeds, wakeNext: wakeNext, sleepers: sleepers, reqOK: reqOK, objectives: objectives, signal: signal, caps: caps, byId: byId, depById: depById,
     playable: playable, addZone: addZone, zoneR: zoneR, spawnVehicle: spawnVeh, quick: quick, dip: dip, facBase: facBase, orderItem: orderItem, arm: arm, guards: guards, upgrade: upgrade, canUpgrade: canUpgrade, upCost: upCost, lvl: lvl, bedsOf: bedsOf, sol: sol, hour: hour, sun: sun, isNight: isNight, bondName: bondName, tasks: tasks, LABEL: LABEL, costText: costText, center: center, HS: HS, N: N, ofType: ofType };
 })();
